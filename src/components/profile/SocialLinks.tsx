@@ -71,7 +71,7 @@ export function SocialLinks({ links, accentColor = '#8b5cf6' }: SocialLinksProps
       className="w-full max-w-sm space-y-3"
     >
       {links.map((link) => {
-        const Icon = platformIcons[link.platform.toLowerCase()] || HiLink;
+        const Icon = platformIcons[link.platform.toLowerCase()] || Link2;
         const color = platformColors[link.platform.toLowerCase()] || accentColor;
 
         return (
