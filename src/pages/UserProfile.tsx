@@ -2,11 +2,11 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader2, ArrowLeft } from 'lucide-react';
-import { useProfileByUsername, useSocialLinks, useBadges, useRecordProfileView } from '@/hooks/useProfile';
+import { useProfileByUsername, useSocialLinks, useRecordProfileView } from '@/hooks/useProfile';
+import { useProfileBadges } from '@/hooks/useBadges';
 import { ProfileCard } from '@/components/profile/ProfileCard';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import { BackgroundEffects } from '@/components/profile/BackgroundEffects';
-import { MusicPlayer } from '@/components/profile/MusicPlayer';
 import { CustomCursor } from '@/components/profile/CustomCursor';
 import { DiscordPresence } from '@/components/profile/DiscordPresence';
 import { StartScreen } from '@/components/profile/StartScreen';
@@ -26,19 +26,20 @@ export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
   const { data: profile, isLoading, error } = useProfileByUsername(username || '');
   const { data: socialLinks = [] } = useSocialLinks(profile?.id || '');
-  const { data: badges = [] } = useBadges(profile?.id || '');
+  const { data: badges = [] } = useProfileBadges(profile?.id || '');
   const recordView = useRecordProfileView();
   
   const [showStartScreen, setShowStartScreen] = useState(true);
   const [currentTheme, setCurrentTheme] = useState('home');
   const [volume, setVolume] = useState(0.3);
-  const [transparency, setTransparency] = useState(0.7);
+  const [transparency, setTransparency] = useState(1);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [enableVideoAudio, setEnableVideoAudio] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Get current theme colors
+  // Get current theme colors - use profile accent if available, otherwise theme
   const theme = defaultThemes.find(t => t.id === currentTheme) || defaultThemes[0];
-  const accentColor = theme.primaryColor;
+  const accentColor = profile?.accent_color || theme.primaryColor;
 
   // Record profile view
   useEffect(() => {
@@ -126,6 +127,8 @@ export default function UserProfile() {
         backgroundVideoUrl={(profile as any).background_video_url}
         backgroundColor={profile.background_color}
         accentColor={accentColor}
+        enableAudio={enableVideoAudio && hasInteracted}
+        audioVolume={volume}
       />
 
       <div 
@@ -138,7 +141,15 @@ export default function UserProfile() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="w-full max-w-md mx-auto space-y-6"
         >
-          <ProfileCard profile={{...profile, accent_color: accentColor}} badges={badges} />
+          <ProfileCard 
+            profile={{...profile, accent_color: accentColor}} 
+            badges={badges.map(b => ({
+              id: b.id,
+              name: b.name,
+              color: b.color,
+              icon_url: b.icon_url,
+            }))} 
+          />
 
           {/* Discord Presence Widget */}
           {(profile as any).discord_user_id && (

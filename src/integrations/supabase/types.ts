@@ -141,6 +141,48 @@ export type Database = {
           },
         ]
       }
+      global_badges: {
+        Row: {
+          claims_count: number | null
+          color: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon_url: string | null
+          id: string
+          is_limited: boolean | null
+          max_claims: number | null
+          name: string
+          rarity: string | null
+        }
+        Insert: {
+          claims_count?: number | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          is_limited?: boolean | null
+          max_claims?: number | null
+          name: string
+          rarity?: string | null
+        }
+        Update: {
+          claims_count?: number | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          is_limited?: boolean | null
+          max_claims?: number | null
+          name?: string
+          rarity?: string | null
+        }
+        Relationships: []
+      }
       profile_views: {
         Row: {
           id: number
@@ -337,15 +379,72 @@ export type Database = {
         }
         Relationships: []
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          claimed_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          claimed_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          claimed_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "global_badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_profile_owner: { Args: { profile_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -472,6 +571,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
