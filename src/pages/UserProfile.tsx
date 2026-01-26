@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -9,6 +9,18 @@ import { BackgroundEffects } from '@/components/profile/BackgroundEffects';
 import { MusicPlayer } from '@/components/profile/MusicPlayer';
 import { CustomCursor } from '@/components/profile/CustomCursor';
 import { DiscordPresence } from '@/components/profile/DiscordPresence';
+import { StartScreen } from '@/components/profile/StartScreen';
+import { ThemeSwitcher, Theme } from '@/components/profile/ThemeSwitcher';
+import { ControlsBar } from '@/components/profile/ControlsBar';
+import { GlitchOverlay } from '@/components/profile/GlitchOverlay';
+
+const defaultThemes: Theme[] = [
+  { id: 'home', name: 'Home', primaryColor: '#8B5CF6', secondaryColor: '#EC4899' },
+  { id: 'hacker', name: 'Hacker', primaryColor: '#22C55E', secondaryColor: '#2DD4BF' },
+  { id: 'ocean', name: 'Ocean', primaryColor: '#0EA5E9', secondaryColor: '#6366F1' },
+  { id: 'sunset', name: 'Sunset', primaryColor: '#F97316', secondaryColor: '#EF4444' },
+  { id: 'gold', name: 'Gold', primaryColor: '#EAB308', secondaryColor: '#F59E0B' },
+];
 
 export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
@@ -16,6 +28,17 @@ export default function UserProfile() {
   const { data: socialLinks = [] } = useSocialLinks(profile?.id || '');
   const { data: badges = [] } = useBadges(profile?.id || '');
   const recordView = useRecordProfileView();
+  
+  const [showStartScreen, setShowStartScreen] = useState(true);
+  const [currentTheme, setCurrentTheme] = useState('home');
+  const [volume, setVolume] = useState(0.3);
+  const [transparency, setTransparency] = useState(0.7);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Get current theme colors
+  const theme = defaultThemes.find(t => t.id === currentTheme) || defaultThemes[0];
+  const accentColor = theme.primaryColor;
 
   // Record profile view
   useEffect(() => {
@@ -23,6 +46,25 @@ export default function UserProfile() {
       recordView.mutate(profile.id);
     }
   }, [profile?.id]);
+
+  // Handle start screen click
+  const handleStart = () => {
+    setShowStartScreen(false);
+    setHasInteracted(true);
+    
+    // Start audio if available
+    if (audioRef.current && profile?.music_url) {
+      audioRef.current.volume = volume;
+      audioRef.current.play().catch(console.error);
+    }
+  };
+
+  // Update audio volume
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
 
   if (isLoading) {
     return (
@@ -55,14 +97,29 @@ export default function UserProfile() {
   }
 
   const showCursorTrail = profile.effects_config?.sparkles;
-  const accentColor = profile.accent_color || '#8b5cf6';
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      {/* Start Screen */}
+      {showStartScreen && (
+        <StartScreen 
+          onStart={handleStart} 
+          message="Click anywhere to enter" 
+        />
+      )}
+
+      {/* Hidden audio element */}
+      {profile.music_url && (
+        <audio ref={audioRef} src={profile.music_url} loop />
+      )}
+
       {/* Custom cursor with trail */}
-      {showCursorTrail && (
+      {showCursorTrail && hasInteracted && (
         <CustomCursor color={accentColor} showTrail={true} />
       )}
+
+      {/* Glitch overlay effect */}
+      <GlitchOverlay active={currentTheme === 'hacker'} intensity="low" />
 
       <BackgroundEffects
         backgroundUrl={profile.background_url}
@@ -71,14 +128,17 @@ export default function UserProfile() {
         accentColor={accentColor}
       />
 
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 py-12">
+      <div 
+        className="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 py-12"
+        style={{ opacity: transparency }}
+      >
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          animate={{ opacity: showStartScreen ? 0 : 1, y: showStartScreen ? 30 : 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
           className="w-full max-w-md mx-auto space-y-6"
         >
-          <ProfileCard profile={profile} badges={badges} />
+          <ProfileCard profile={{...profile, accent_color: accentColor}} badges={badges} />
 
           {/* Discord Presence Widget */}
           {(profile as any).discord_user_id && (
@@ -90,10 +150,6 @@ export default function UserProfile() {
               activityDetails="Working on UserVault"
               accentColor={accentColor}
             />
-          )}
-
-          {profile.music_url && (
-            <MusicPlayer url={profile.music_url} accentColor={accentColor} />
           )}
 
           {socialLinks.length > 0 && (
@@ -108,8 +164,8 @@ export default function UserProfile() {
         {/* Footer */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
+          animate={{ opacity: showStartScreen ? 0 : 1 }}
+          transition={{ delay: 1 }}
           className="mt-12 text-center"
         >
           <Link
@@ -120,6 +176,26 @@ export default function UserProfile() {
           </Link>
         </motion.div>
       </div>
+
+      {/* Controls Bar */}
+      {!showStartScreen && profile.music_url && (
+        <ControlsBar
+          volume={volume}
+          onVolumeChange={setVolume}
+          transparency={transparency}
+          onTransparencyChange={setTransparency}
+          accentColor={accentColor}
+        />
+      )}
+
+      {/* Theme Switcher */}
+      {!showStartScreen && (
+        <ThemeSwitcher
+          themes={defaultThemes}
+          currentTheme={currentTheme}
+          onThemeChange={setCurrentTheme}
+        />
+      )}
     </div>
   );
 }
