@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface BackgroundEffectsProps {
   backgroundUrl?: string | null;
   backgroundVideoUrl?: string | null;
   backgroundColor?: string | null;
   accentColor?: string | null;
+  enableAudio?: boolean;
+  audioVolume?: number;
 }
 
 export function BackgroundEffects({
@@ -12,8 +14,38 @@ export function BackgroundEffects({
   backgroundVideoUrl,
   backgroundColor = '#0a0a0a',
   accentColor = '#8b5cf6',
+  enableAudio = true,
+  audioVolume = 0.3,
 }: BackgroundEffectsProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  // Handle user interaction to enable audio
+  useEffect(() => {
+    const handleInteraction = () => {
+      setHasInteracted(true);
+      if (videoRef.current && enableAudio) {
+        videoRef.current.muted = false;
+        videoRef.current.volume = audioVolume;
+      }
+    };
+
+    document.addEventListener('click', handleInteraction, { once: true });
+    document.addEventListener('touchstart', handleInteraction, { once: true });
+
+    return () => {
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('touchstart', handleInteraction);
+    };
+  }, [enableAudio, audioVolume]);
+
+  // Update volume when it changes
+  useEffect(() => {
+    if (videoRef.current && hasInteracted && enableAudio) {
+      videoRef.current.volume = audioVolume;
+    }
+  }, [audioVolume, hasInteracted, enableAudio]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -120,12 +152,13 @@ export function BackgroundEffects({
 
   return (
     <div className="fixed inset-0 -z-10">
-      {/* Video background */}
+      {/* Video background with audio support */}
       {backgroundVideoUrl && (
         <video
+          ref={videoRef}
           autoPlay
           loop
-          muted
+          muted={!hasInteracted || !enableAudio}
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
         >

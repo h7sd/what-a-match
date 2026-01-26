@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth';
-import { useCurrentUserProfile, useUpdateProfile, useSocialLinks, useCreateSocialLink, useDeleteSocialLink, useBadges } from '@/hooks/useProfile';
+import { useCurrentUserProfile, useUpdateProfile, useSocialLinks, useCreateSocialLink, useDeleteSocialLink } from '@/hooks/useProfile';
+import { useIsAdmin, useUserBadges, useGlobalBadges, useClaimBadge } from '@/hooks/useBadges';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +26,8 @@ import {
   MessageSquare,
   LayoutDashboard,
   Puzzle,
+  Shield,
+  Award,
 } from 'lucide-react';
 import {
   Select,
@@ -40,15 +43,17 @@ import { GiveawaysSection } from '@/components/dashboard/GiveawaysSection';
 import { WalletOverview } from '@/components/dashboard/WalletOverview';
 import { ProfileVisitorsChart } from '@/components/dashboard/ProfileVisitorsChart';
 import { TopLinksChart } from '@/components/dashboard/TopLinksChart';
+import { AdminBadgeManager } from '@/components/admin/AdminBadgeManager';
 import { cn } from '@/lib/utils';
 
-type TabType = 'overview' | 'profile' | 'appearance' | 'links' | 'widgets' | 'effects';
+type TabType = 'overview' | 'profile' | 'appearance' | 'links' | 'widgets' | 'effects' | 'badges' | 'admin';
 
-const navItems: { icon: React.ElementType; label: string; tab: TabType }[] = [
+const baseNavItems: { icon: React.ElementType; label: string; tab: TabType }[] = [
   { icon: LayoutDashboard, label: 'Overview', tab: 'overview' },
   { icon: User, label: 'Profile', tab: 'profile' },
   { icon: Palette, label: 'Appearance', tab: 'appearance' },
   { icon: LinkIcon, label: 'Links', tab: 'links' },
+  { icon: Award, label: 'Badges', tab: 'badges' },
   { icon: Puzzle, label: 'Widgets', tab: 'widgets' },
   { icon: Sparkles, label: 'Effects', tab: 'effects' },
 ];
@@ -57,13 +62,22 @@ export default function Dashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { data: profile, isLoading: profileLoading } = useCurrentUserProfile();
   const { data: socialLinks = [] } = useSocialLinks(profile?.id || '');
-  const { data: badges = [] } = useBadges(profile?.id || '');
+  const { data: isAdmin = false } = useIsAdmin();
+  const { data: userBadges = [] } = useUserBadges(user?.id || '');
+  const { data: globalBadges = [] } = useGlobalBadges();
+  const claimBadge = useClaimBadge();
   const updateProfile = useUpdateProfile();
   const createLink = useCreateSocialLink();
   const deleteLink = useDeleteSocialLink();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+
+  // Build nav items based on admin status
+  const navItems = [
+    ...baseNavItems,
+    ...(isAdmin ? [{ icon: Shield, label: 'Admin', tab: 'admin' as TabType }] : []),
+  ];
 
   // Get active tab from hash
   const getActiveTab = (): TabType => {
@@ -74,7 +88,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     setActiveTab(getActiveTab());
-  }, [location.hash]);
+  }, [location.hash, isAdmin]);
 
   // Profile state
   const [displayName, setDisplayName] = useState('');
@@ -344,7 +358,13 @@ export default function Dashboard() {
 
                 <div className="grid lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
-                    <BadgesCarousel badges={badges} totalBadges={10} />
+                    <BadgesCarousel badges={userBadges.map(ub => ({
+                      id: ub.badge?.id || ub.id,
+                      name: ub.badge?.name || 'Unknown',
+                      icon_url: ub.badge?.icon_url,
+                      color: ub.badge?.color,
+                      description: ub.badge?.description,
+                    }))} totalBadges={globalBadges.length || 10} />
                   </div>
                   <div>
                     <DiscordCard isConnected={!!discordUserId} />
@@ -825,6 +845,111 @@ export default function Dashboard() {
                       />
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Badges Tab */}
+            {activeTab === 'badges' && (
+              <div className="space-y-6 max-w-4xl">
+                <div className="glass-card p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Award className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">Your Badges</h3>
+                  </div>
+
+                  {userBadges.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {userBadges.map((ub) => (
+                        <motion.div
+                          key={ub.id}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="p-4 rounded-xl border border-border bg-secondary/20 text-center"
+                          style={{ borderColor: `${ub.badge?.color}40` }}
+                        >
+                          <div
+                            className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center"
+                            style={{ backgroundColor: `${ub.badge?.color}20` }}
+                          >
+                            {ub.badge?.icon_url ? (
+                              <img src={ub.badge.icon_url} alt={ub.badge.name} className="w-10 h-10" />
+                            ) : (
+                              <Award className="w-8 h-8" style={{ color: ub.badge?.color || '#8B5CF6' }} />
+                            )}
+                          </div>
+                          <p className="font-medium text-sm">{ub.badge?.name}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{ub.badge?.rarity}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Award className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                      <p>You don't have any badges yet.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="glass-card p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Plus className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">Available Badges</h3>
+                  </div>
+
+                  <div className="grid gap-4">
+                    {globalBadges.filter(gb => !userBadges.some(ub => ub.badge_id === gb.id)).map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="flex items-center gap-4 p-4 rounded-lg border border-border bg-secondary/10"
+                      >
+                        <div
+                          className="w-12 h-12 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: `${badge.color}20` }}
+                        >
+                          {badge.icon_url ? (
+                            <img src={badge.icon_url} alt={badge.name} className="w-8 h-8" />
+                          ) : (
+                            <Award className="w-6 h-6" style={{ color: badge.color || '#8B5CF6' }} />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{badge.name}</p>
+                            <span
+                              className="text-xs px-2 py-0.5 rounded-full capitalize"
+                              style={{ backgroundColor: `${badge.color}20`, color: badge.color || '#8B5CF6' }}
+                            >
+                              {badge.rarity}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{badge.description}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => claimBadge.mutate(badge.id)}
+                          disabled={claimBadge.isPending || (badge.is_limited && (badge.claims_count || 0) >= (badge.max_claims || Infinity))}
+                        >
+                          {claimBadge.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Claim'}
+                        </Button>
+                      </div>
+                    ))}
+
+                    {globalBadges.filter(gb => !userBadges.some(ub => ub.badge_id === gb.id)).length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No more badges available to claim.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Admin Tab */}
+            {activeTab === 'admin' && isAdmin && (
+              <div className="space-y-6 max-w-4xl">
+                <div className="glass-card p-6">
+                  <AdminBadgeManager />
                 </div>
               </div>
             )}
