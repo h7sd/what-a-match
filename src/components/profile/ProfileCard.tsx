@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
 import { useState, useRef } from 'react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Eye, MapPin, Briefcase } from 'lucide-react';
 import type { Profile } from '@/hooks/useProfile';
 import { TypewriterText } from './TypewriterText';
 import { SparkleEffect } from './SparkleEffect';
+import { GlitchText } from './GlitchText';
+import { OrbitingAvatar } from './OrbitingAvatar';
 
 interface ProfileCardProps {
   profile: Profile;
@@ -115,52 +116,38 @@ export function ProfileCard({ profile, badges = [] }: ProfileCardProps) {
         />
 
         <div className="relative z-10 flex flex-col items-center text-center">
-          {/* Avatar with glow */}
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="relative mb-6"
-          >
-            <motion.div
-              className="absolute -inset-2 blur-lg opacity-60"
-              style={{ backgroundColor: accentColor }}
-              animate={{
-                opacity: [0.4, 0.7, 0.4],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
+          {/* Avatar with orbiting effect */}
+          <div className="mb-6">
+            <OrbitingAvatar
+              avatarUrl={profile.avatar_url || undefined}
+              displayName={profile.display_name || profile.username}
+              size={120}
+              accentColor={accentColor}
+              shape={avatarShape as 'circle' | 'rounded' | 'soft' | 'square'}
             />
-            <Avatar 
-              className={`w-28 h-28 ring-2 ring-white/20 relative ${avatarClasses[avatarShape as keyof typeof avatarClasses] || 'rounded-full'}`}
-            >
-              <AvatarImage
-                src={profile.avatar_url || undefined}
-                alt={profile.display_name || profile.username}
-                className="object-cover"
-              />
-              <AvatarFallback 
-                className="text-3xl text-foreground"
-                style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}80)` }}
-              >
-                {(profile.display_name || profile.username).charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          </motion.div>
+          </div>
 
-          {/* Display Name */}
+          {/* Display Name with glitch effect */}
           <h1 
             className="text-2xl font-bold mb-1"
             style={{ 
               fontFamily: (profile as any).name_font || 'Inter',
               color: 'white',
+              textShadow: `0 0 10px ${accentColor}40`,
             }}
           >
             {profile.effects_config?.typewriter ? (
-              <TypewriterText text={profile.display_name || profile.username} />
+              <GlitchText 
+                text={profile.display_name || profile.username} 
+                typewriter 
+                loop
+                glitchIntensity={0.05}
+              />
             ) : (
-              profile.display_name || profile.username
+              <GlitchText 
+                text={profile.display_name || profile.username}
+                glitchIntensity={0.03}
+              />
             )}
           </h1>
 

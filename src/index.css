@@ -204,4 +204,120 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Glitch effect */
+  @keyframes glitch {
+    0% {
+      transform: translate(0);
+      text-shadow: none;
+    }
+    20% {
+      transform: translate(-2px, 2px);
+      text-shadow: -2px 0 #ff0000, 2px 0 #00ffff;
+    }
+    40% {
+      transform: translate(-2px, -2px);
+      text-shadow: 2px 0 #ff0000, -2px 0 #00ffff;
+    }
+    60% {
+      transform: translate(2px, 2px);
+      text-shadow: -2px 0 #00ffff, 2px 0 #ff0000;
+    }
+    80% {
+      transform: translate(2px, -2px);
+      text-shadow: 2px 0 #00ffff, -2px 0 #ff0000;
+    }
+    100% {
+      transform: translate(0);
+      text-shadow: none;
+    }
+  }
+
+  .glitch {
+    animation: glitch 0.3s ease-in-out;
+  }
+
+  /* Orbiting particle */
+  @keyframes orbit {
+    from {
+      transform: rotate(0deg) translateX(50%) rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg) translateX(50%) rotate(-360deg);
+    }
+  }
+
+  .orbit::after {
+    animation: orbit 3s linear infinite;
+  }
+
+  /* LED border glow */
+  @keyframes led-glow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .led-border::before {
+    animation: led-glow 4s ease-in-out infinite;
+  }
+
+  /* Border spin */
+  @keyframes border-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Shine effect */
+  @keyframes shine {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+  }
+
+  .shine-effect::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
+    transform: translateX(-100%) rotate(45deg);
+    animation: shine 3s infinite;
+  }
+
+  /* Rainbow border */
+  @keyframes rainbow-border {
+    0% { border-color: #ff0000; }
+    17% { border-color: #ff8000; }
+    33% { border-color: #ffff00; }
+    50% { border-color: #00ff00; }
+    67% { border-color: #0080ff; }
+    83% { border-color: #8000ff; }
+    100% { border-color: #ff0000; }
+  }
+
+  .rainbow-border {
+    animation: rainbow-border 5s linear infinite;
+  }
+
+  /* Scale bounce */
+  @keyframes scale-bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .scale-bounce {
+    animation: scale-bounce 2s ease-in-out infinite;
+  }
+
+  /* Cursor none for custom cursor */
+  .cursor-none * {
+    cursor: none !important;
+  }
 }
