@@ -280,24 +280,35 @@ export function ProfileCard({ profile, badges = [] }: ProfileCardProps) {
             )}
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Eye className="w-3.5 h-3.5" />
-            <motion.span
-              key={profile.views_count}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              {profile.views_count.toLocaleString()} views
-            </motion.span>
-            <motion.span
-              className="ml-1"
-              animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1, 0.8] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              style={{ color: accentColor }}
-            >
-              ✦
-            </motion.span>
+          {/* Stats - UID and Views */}
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            {/* UID */}
+            {(profile as any).uid_number && (
+              <div className="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-md">
+                <span className="font-medium text-foreground/70">UID</span>
+                <span className="font-mono">{(profile as any).uid_number.toLocaleString()}</span>
+              </div>
+            )}
+            
+            {/* Views */}
+            <div className="flex items-center gap-1">
+              <Eye className="w-3.5 h-3.5" />
+              <motion.span
+                key={profile.views_count}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                {profile.views_count.toLocaleString()} views
+              </motion.span>
+              <motion.span
+                className="ml-1"
+                animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1, 0.8] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                style={{ color: accentColor }}
+              >
+                ✦
+              </motion.span>
+            </div>
           </div>
         </div>
       </div>
