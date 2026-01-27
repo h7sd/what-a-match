@@ -34,14 +34,9 @@ export function LiquidEther({
     const config = {
       mouseForce,
       cursorSize,
-      isViscous: false,
-      viscous: 30,
-      iterationsViscous: 32,
       iterationsPoisson: 32,
       dt: 0.014,
-      BFECC: true,
       resolution,
-      isBounce: false,
       autoDemo,
       autoSpeed,
       autoIntensity,
@@ -51,10 +46,10 @@ export function LiquidEther({
       colors,
     };
 
-    let width = container.clientWidth;
-    let height = container.clientHeight;
-    let simWidth = Math.floor(width * config.resolution);
-    let simHeight = Math.floor(height * config.resolution);
+    let width = container.clientWidth || window.innerWidth;
+    let height = container.clientHeight || window.innerHeight;
+    let simWidth = Math.max(1, Math.floor(width * config.resolution));
+    let simHeight = Math.max(1, Math.floor(height * config.resolution));
 
     // Three.js setup
     const scene = new THREE.Scene();
@@ -70,7 +65,7 @@ export function LiquidEther({
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Shader materials
+    // Shader code
     const vertexShader = `
       varying vec2 vUv;
       void main() {
@@ -164,25 +159,69 @@ export function LiquidEther({
       }
     `;
 
+    // Display shader with base color gradient
     const displayShader = `
       precision highp float;
       uniform sampler2D uTexture;
       uniform vec3 color0;
       uniform vec3 color1;
       uniform vec3 color2;
+      uniform float uTime;
       varying vec2 vUv;
+
+      // Simplex noise for base animation
+      vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+
+      float snoise(vec2 v) {
+        const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+        vec2 i  = floor(v + dot(v, C.yy));
+        vec2 x0 = v - i + dot(i, C.xx);
+        vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        vec4 x12 = x0.xyxy + C.xxzz;
+        x12.xy -= i1;
+        i = mod289(i);
+        vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+        m = m*m; m = m*m;
+        vec3 x = 2.0 * fract(p * C.www) - 1.0;
+        vec3 h = abs(x) - 0.5;
+        vec3 ox = floor(x + 0.5);
+        vec3 a0 = x - ox;
+        m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+        vec3 g;
+        g.x = a0.x * x0.x + h.x * x0.y;
+        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+      }
 
       void main() {
         vec2 vel = texture2D(uTexture, vUv).xy;
-        float speed = length(vel) * 0.5;
-        speed = clamp(speed, 0.0, 1.0);
+        float speed = length(vel);
+        
+        // Base animated gradient using noise
+        float noise1 = snoise(vUv * 2.0 + uTime * 0.3);
+        float noise2 = snoise(vUv * 3.0 - uTime * 0.2);
+        float baseGradient = (noise1 + noise2) * 0.25 + 0.5;
+        
+        // Combine velocity-based effect with base gradient
+        float t = clamp(baseGradient + speed * 2.0, 0.0, 1.0);
         
         vec3 color;
-        if (speed < 0.5) {
-          color = mix(color0, color1, speed * 2.0);
+        if (t < 0.5) {
+          color = mix(color0, color1, t * 2.0);
         } else {
-          color = mix(color1, color2, (speed - 0.5) * 2.0);
+          color = mix(color1, color2, (t - 0.5) * 2.0);
         }
+        
+        // Add subtle pulsing glow
+        float glow = sin(uTime * 1.5) * 0.1 + 0.9;
+        color *= glow;
+        
+        // Vignette effect
+        float vignette = 1.0 - length(vUv - 0.5) * 0.4;
+        color *= vignette;
         
         gl_FragColor = vec4(color, 1.0);
       }
@@ -195,7 +234,7 @@ export function LiquidEther({
         parseInt(result[1], 16) / 255,
         parseInt(result[2], 16) / 255,
         parseInt(result[3], 16) / 255
-      ) : new THREE.Vector3(0, 0, 0);
+      ) : new THREE.Vector3(0.32, 0.15, 1.0);
     };
 
     const color0 = parseColor(config.colors[0] || '#5227FF');
@@ -282,6 +321,7 @@ export function LiquidEther({
         color0: { value: color0 },
         color1: { value: color1 },
         color2: { value: color2 },
+        uTime: { value: 0 },
       },
     });
 
@@ -297,6 +337,7 @@ export function LiquidEther({
     let lastInteractionTime = 0;
     let autoTime = 0;
     let autoRampProgress = 1;
+    let globalTime = 0;
 
     const handleMouseMove = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
@@ -317,7 +358,7 @@ export function LiquidEther({
     };
 
     container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('touchmove', handleTouchMove);
+    container.addEventListener('touchmove', handleTouchMove, { passive: true });
 
     const blit = (target: THREE.WebGLRenderTarget | null, material: THREE.ShaderMaterial) => {
       quad.material = material;
@@ -334,10 +375,24 @@ export function LiquidEther({
       [velocity0, velocity1] = [velocity1, velocity0];
     };
 
+    // Initial splats to start with some movement
+    const initializeSplats = () => {
+      for (let i = 0; i < 5; i++) {
+        const x = 0.2 + Math.random() * 0.6;
+        const y = 0.2 + Math.random() * 0.6;
+        const dx = (Math.random() - 0.5) * 2;
+        const dy = (Math.random() - 0.5) * 2;
+        splat(x, y, dx, dy);
+      }
+    };
+    
+    initializeSplats();
+
     const animate = () => {
       animationRef.current = requestAnimationFrame(animate);
 
       const now = performance.now();
+      globalTime += 0.016;
       
       // Auto demo mode
       if (config.autoDemo && now - lastInteractionTime > config.autoResumeDelay) {
@@ -390,8 +445,9 @@ export function LiquidEther({
       blit(velocity1, gradientSubtractMaterial);
       [velocity0, velocity1] = [velocity1, velocity0];
 
-      // Display
+      // Display with time uniform
       displayMaterial.uniforms.uTexture.value = velocity0.texture;
+      displayMaterial.uniforms.uTime.value = globalTime;
       quad.material = displayMaterial;
       renderer.setRenderTarget(null);
       renderer.render(scene, camera);
@@ -400,10 +456,10 @@ export function LiquidEther({
     animate();
 
     const handleResize = () => {
-      width = container.clientWidth;
-      height = container.clientHeight;
-      simWidth = Math.floor(width * config.resolution);
-      simHeight = Math.floor(height * config.resolution);
+      width = container.clientWidth || window.innerWidth;
+      height = container.clientHeight || window.innerHeight;
+      simWidth = Math.max(1, Math.floor(width * config.resolution));
+      simHeight = Math.max(1, Math.floor(height * config.resolution));
       
       renderer.setSize(width, height);
       texelSize.set(1 / simWidth, 1 / simHeight);
