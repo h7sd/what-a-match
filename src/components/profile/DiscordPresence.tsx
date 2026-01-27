@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { SiDiscord, SiSpotify } from 'react-icons/si';
+import { SiSpotify } from 'react-icons/si';
 import { Circle, Loader2 } from 'lucide-react';
 import { useDiscordPresence, getActivityAssetUrl, LanyardActivity } from '@/hooks/useDiscordPresence';
 
@@ -15,23 +15,15 @@ const statusColors = {
   offline: '#6b7280',
 };
 
-const statusLabels = {
-  online: 'Online',
-  idle: 'Idle',
-  dnd: 'Do Not Disturb',
-  offline: 'Offline',
-};
-
 const activityTypeLabels: Record<number, string> = {
   0: 'Playing',
   1: 'Streaming',
   2: 'Listening to',
   3: 'Watching',
-  4: 'Custom Status',
   5: 'Competing in',
 };
 
-export function DiscordPresence({ discordUserId, accentColor = '#5865F2' }: DiscordPresenceProps) {
+export function DiscordPresence({ discordUserId, accentColor = '#8b5cf6' }: DiscordPresenceProps) {
   const { data, isLoading, error } = useDiscordPresence(discordUserId);
 
   if (isLoading) {
@@ -39,9 +31,9 @@ export function DiscordPresence({ discordUserId, accentColor = '#5865F2' }: Disc
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="w-full max-w-sm overflow-hidden rounded-xl bg-card/50 border border-border p-8 flex items-center justify-center"
+        className="w-full max-w-sm overflow-hidden rounded-xl bg-black/40 backdrop-blur-md border border-white/10 p-6 flex items-center justify-center"
       >
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
       </motion.div>
     );
   }
@@ -53,204 +45,184 @@ export function DiscordPresence({ discordUserId, accentColor = '#5865F2' }: Disc
   const mainActivity = data.activities[0];
   const activityImage = mainActivity ? getActivityAssetUrl(mainActivity) : null;
 
+  // Spotify takes priority if listening
+  if (data.isListeningToSpotify && data.spotify) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-sm overflow-hidden rounded-xl bg-black/40 backdrop-blur-md border border-white/10"
+      >
+        <div className="p-4 flex items-center gap-3">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            <img 
+              src={data.avatar} 
+              alt={data.username}
+              className="w-14 h-14 rounded-full object-cover border-2 border-white/20"
+            />
+            {data.avatarDecoration && (
+              <img 
+                src={data.avatarDecoration}
+                alt=""
+                className="absolute -inset-1 w-16 h-16 pointer-events-none"
+              />
+            )}
+            <div
+              className="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-black/50"
+              style={{ backgroundColor: statusColors[data.status] }}
+            />
+          </div>
+
+          {/* User info and activity */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-white text-sm">
+                {data.globalName || data.username}
+              </span>
+              <span 
+                className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                style={{ backgroundColor: accentColor, color: 'white' }}
+              >
+                UV
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-[#1DB954] text-xs mt-0.5">
+              <SiSpotify className="w-3 h-3" />
+              <span>Listening to Spotify</span>
+            </div>
+            <p className="text-white/80 text-xs truncate mt-0.5">{data.spotify.song}</p>
+            <p className="text-white/50 text-xs truncate">by {data.spotify.artist}</p>
+          </div>
+
+          {/* Spotify album art */}
+          <img
+            src={data.spotify.album_art_url}
+            alt={data.spotify.album}
+            className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+          />
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Game/App Activity
+  if (mainActivity) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-sm overflow-hidden rounded-xl bg-black/40 backdrop-blur-md border border-white/10"
+      >
+        <div className="p-4 flex items-center gap-3">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            <img 
+              src={data.avatar} 
+              alt={data.username}
+              className="w-14 h-14 rounded-full object-cover border-2 border-white/20"
+            />
+            {data.avatarDecoration && (
+              <img 
+                src={data.avatarDecoration}
+                alt=""
+                className="absolute -inset-1 w-16 h-16 pointer-events-none"
+              />
+            )}
+            <div
+              className="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-black/50"
+              style={{ backgroundColor: statusColors[data.status] }}
+            />
+          </div>
+
+          {/* User info and activity */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-white text-sm">
+                {data.globalName || data.username}
+              </span>
+              <span 
+                className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                style={{ backgroundColor: accentColor, color: 'white' }}
+              >
+                UV
+              </span>
+            </div>
+            <p className="text-white/60 text-xs mt-0.5">
+              <span style={{ color: accentColor }}>{activityTypeLabels[mainActivity.type] || 'Playing'}</span>
+              {' '}{mainActivity.name}
+            </p>
+            {mainActivity.details && (
+              <p className="text-white/50 text-xs truncate">{mainActivity.details}</p>
+            )}
+            {mainActivity.state && (
+              <p className="text-white/40 text-xs truncate">{mainActivity.state}</p>
+            )}
+          </div>
+
+          {/* Activity image */}
+          {activityImage && (
+            <img
+              src={activityImage}
+              alt={mainActivity.name}
+              className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+            />
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Just status, no activity
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-sm overflow-hidden rounded-xl"
-      style={{
-        background: `linear-gradient(135deg, ${accentColor}20, transparent)`,
-        border: `1px solid ${accentColor}40`,
-      }}
+      className="w-full max-w-sm overflow-hidden rounded-xl bg-black/40 backdrop-blur-md border border-white/10"
     >
-      {/* Header with gradient */}
-      <div
-        className="h-16 relative"
-        style={{
-          background: `linear-gradient(135deg, ${accentColor}, ${accentColor}80)`,
-        }}
-      />
-
-      <div className="p-4 -mt-8 relative">
-        {/* Avatar with decoration */}
-        <div className="relative inline-block mb-3">
-          <div className="w-16 h-16 rounded-full bg-background border-4 border-background overflow-hidden relative">
-            <img 
-              src={data.avatar} 
-              alt={data.username} 
-              className="w-full h-full object-cover" 
-            />
-          </div>
-          {/* Avatar decoration */}
+      <div className="p-4 flex items-center gap-3">
+        {/* Avatar */}
+        <div className="relative flex-shrink-0">
+          <img 
+            src={data.avatar} 
+            alt={data.username}
+            className="w-14 h-14 rounded-full object-cover border-2 border-white/20"
+          />
           {data.avatarDecoration && (
             <img 
               src={data.avatarDecoration}
               alt=""
-              className="absolute -inset-2 w-20 h-20 pointer-events-none"
+              className="absolute -inset-1 w-16 h-16 pointer-events-none"
             />
           )}
-          {/* Status indicator */}
           <div
-            className="absolute bottom-0 right-0 w-5 h-5 rounded-full border-4 border-background z-10"
+            className="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-black/50"
             style={{ backgroundColor: statusColors[data.status] }}
           />
         </div>
 
-        {/* Username */}
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-semibold text-foreground">
-            {data.globalName || data.username}
-          </span>
-          <Circle
-            className="w-2 h-2"
-            fill={statusColors[data.status]}
-            stroke={statusColors[data.status]}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground mb-2">@{data.username}</p>
-
-        {/* Spotify Activity */}
-        {data.isListeningToSpotify && data.spotify && (
-          <div className="flex items-start gap-3 mt-3 p-3 rounded-lg bg-[#1DB954]/20 border border-[#1DB954]/30">
-            <img
-              src={data.spotify.album_art_url}
-              alt={data.spotify.album}
-              className="w-14 h-14 rounded-lg object-cover"
+        {/* User info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-white text-sm">
+              {data.globalName || data.username}
+            </span>
+            <span 
+              className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+              style={{ backgroundColor: accentColor, color: 'white' }}
+            >
+              UV
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 mt-1">
+            <Circle
+              className="w-2 h-2"
+              fill={statusColors[data.status]}
+              stroke={statusColors[data.status]}
             />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1 text-xs text-[#1DB954]">
-                <SiSpotify className="w-3 h-3" />
-                <span>Listening to Spotify</span>
-              </div>
-              <p className="font-medium text-foreground truncate">{data.spotify.song}</p>
-              <p className="text-sm text-muted-foreground truncate">by {data.spotify.artist}</p>
-            </div>
+            <span className="text-white/50 text-xs capitalize">{data.status}</span>
           </div>
-        )}
-
-        {/* Game/App Activity */}
-        {!data.isListeningToSpotify && mainActivity && (
-          <div className="flex items-start gap-3 mt-3 p-3 rounded-lg bg-black/30">
-            {activityImage && (
-              <img
-                src={activityImage}
-                alt={mainActivity.name}
-                className="w-14 h-14 rounded-lg object-cover"
-              />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                {activityTypeLabels[mainActivity.type] || 'Playing'}
-              </p>
-              <p className="font-medium text-foreground truncate">{mainActivity.name}</p>
-              {mainActivity.details && (
-                <p className="text-sm text-muted-foreground truncate">{mainActivity.details}</p>
-              )}
-              {mainActivity.state && (
-                <p className="text-sm text-muted-foreground truncate">{mainActivity.state}</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* No activity */}
-        {!data.isListeningToSpotify && !mainActivity && (
-          <p className="text-sm text-muted-foreground">{statusLabels[data.status]}</p>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
-// Legacy props support for backwards compatibility
-interface LegacyDiscordPresenceProps {
-  username: string;
-  avatar?: string;
-  status: 'online' | 'idle' | 'dnd' | 'offline';
-  activityName?: string;
-  activityType?: string;
-  activityDetails?: string;
-  activityLargeImage?: string;
-  accentColor?: string;
-}
-
-export function DiscordPresenceLegacy({
-  username,
-  avatar,
-  status,
-  activityName,
-  activityType,
-  activityDetails,
-  activityLargeImage,
-  accentColor = '#5865F2',
-}: LegacyDiscordPresenceProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-sm overflow-hidden rounded-xl"
-      style={{
-        background: `linear-gradient(135deg, ${accentColor}20, transparent)`,
-        border: `1px solid ${accentColor}40`,
-      }}
-    >
-      <div
-        className="h-16 relative"
-        style={{
-          background: `linear-gradient(135deg, ${accentColor}, ${accentColor}80)`,
-        }}
-      />
-
-      <div className="p-4 -mt-8 relative">
-        <div className="relative inline-block mb-3">
-          <div className="w-16 h-16 rounded-full bg-background border-4 border-background overflow-hidden">
-            {avatar ? (
-              <img src={avatar} alt={username} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-[#5865F2] flex items-center justify-center">
-                <SiDiscord className="w-8 h-8 text-white" />
-              </div>
-            )}
-          </div>
-          <div
-            className="absolute bottom-0 right-0 w-5 h-5 rounded-full border-4 border-background"
-            style={{ backgroundColor: statusColors[status] }}
-          />
         </div>
-
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-semibold text-foreground">{username}</span>
-          <Circle
-            className="w-2 h-2"
-            fill={statusColors[status]}
-            stroke={statusColors[status]}
-          />
-        </div>
-
-        {activityName && (
-          <div className="flex items-start gap-3 mt-3 p-3 rounded-lg bg-black/30">
-            {activityLargeImage && (
-              <img
-                src={activityLargeImage}
-                alt={activityName}
-                className="w-14 h-14 rounded-lg object-cover"
-              />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                {activityType || 'Playing'}
-              </p>
-              <p className="font-medium text-foreground truncate">{activityName}</p>
-              {activityDetails && (
-                <p className="text-sm text-muted-foreground truncate">{activityDetails}</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {!activityName && (
-          <p className="text-sm text-muted-foreground">{statusLabels[status]}</p>
-        )}
       </div>
     </motion.div>
   );
