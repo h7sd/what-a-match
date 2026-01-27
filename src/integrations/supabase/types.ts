@@ -232,6 +232,10 @@ export type Database = {
           created_at: string
           custom_cursor_url: string | null
           discord_avatar_decoration: boolean | null
+          discord_badge_color: string | null
+          discord_card_opacity: number | null
+          discord_card_style: string | null
+          discord_show_badge: boolean | null
           discord_user_id: string | null
           display_name: string | null
           effects_config: Json | null
@@ -275,6 +279,10 @@ export type Database = {
           created_at?: string
           custom_cursor_url?: string | null
           discord_avatar_decoration?: boolean | null
+          discord_badge_color?: string | null
+          discord_card_opacity?: number | null
+          discord_card_style?: string | null
+          discord_show_badge?: boolean | null
           discord_user_id?: string | null
           display_name?: string | null
           effects_config?: Json | null
@@ -318,6 +326,10 @@ export type Database = {
           created_at?: string
           custom_cursor_url?: string | null
           discord_avatar_decoration?: boolean | null
+          discord_badge_color?: string | null
+          discord_card_opacity?: number | null
+          discord_card_style?: string | null
+          discord_show_badge?: boolean | null
           discord_user_id?: string | null
           display_name?: string | null
           effects_config?: Json | null

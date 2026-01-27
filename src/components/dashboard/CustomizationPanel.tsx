@@ -84,6 +84,16 @@ interface CustomizationPanelProps {
   glowBadges: boolean;
   setGlowBadges: (value: boolean) => void;
   
+  // Discord card customization
+  discordCardStyle?: string;
+  setDiscordCardStyle?: (style: string) => void;
+  discordCardOpacity?: number;
+  setDiscordCardOpacity?: (opacity: number) => void;
+  discordShowBadge?: boolean;
+  setDiscordShowBadge?: (show: boolean) => void;
+  discordBadgeColor?: string;
+  setDiscordBadgeColor?: (color: string) => void;
+  
   backgroundEffect?: string;
   setBackgroundEffect?: (effect: string) => void;
   audioVolume?: number;
@@ -297,6 +307,72 @@ export function CustomizationPanel(props: CustomizationPanelProps) {
                         </Button>
                       )}
                     </div>
+                    
+                    {/* Discord Card Customization */}
+                    {props.discordUserId && (
+                      <div className="space-y-4 pt-4 border-t border-border">
+                        <h4 className="text-sm font-medium">Card Appearance</h4>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-xs">Card Style</Label>
+                          <Select 
+                            value={props.discordCardStyle || 'glass'} 
+                            onValueChange={(v) => props.setDiscordCardStyle?.(v)}
+                          >
+                            <SelectTrigger className="bg-secondary/30">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="glass">Glass (Frosted)</SelectItem>
+                              <SelectItem value="solid">Solid Dark</SelectItem>
+                              <SelectItem value="outlined">Outlined</SelectItem>
+                              <SelectItem value="minimal">Minimal</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-xs">Card Opacity ({props.discordCardOpacity || 100}%)</Label>
+                          <Slider
+                            value={[props.discordCardOpacity || 100]}
+                            onValueChange={([v]) => props.setDiscordCardOpacity?.(v)}
+                            min={30}
+                            max={100}
+                            step={5}
+                            className="py-2"
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-xs">Show UV Badge</Label>
+                            <p className="text-[10px] text-muted-foreground">Display badge next to username</p>
+                          </div>
+                          <Switch
+                            checked={props.discordShowBadge ?? true}
+                            onCheckedChange={(checked) => props.setDiscordShowBadge?.(checked)}
+                          />
+                        </div>
+                        
+                        {(props.discordShowBadge ?? true) && (
+                          <div className="space-y-2">
+                            <Label className="text-xs">Badge Color</Label>
+                            <div className="flex gap-2">
+                              {['#ec4899', '#8b5cf6', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444'].map((color) => (
+                                <button
+                                  key={color}
+                                  onClick={() => props.setDiscordBadgeColor?.(color)}
+                                  className={`w-6 h-6 rounded-full border-2 transition-all ${
+                                    props.discordBadgeColor === color ? 'border-white scale-110' : 'border-transparent'
+                                  }`}
+                                  style={{ backgroundColor: color }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </DialogContent>
               </Dialog>

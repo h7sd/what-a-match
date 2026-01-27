@@ -150,6 +150,10 @@ export default function UserProfile() {
             <DiscordPresence
               discordUserId={(profile as any).discord_user_id}
               accentColor={accentColor}
+              cardStyle={(profile as any).discord_card_style || 'glass'}
+              cardOpacity={(profile as any).discord_card_opacity ?? 100}
+              showBadge={(profile as any).discord_show_badge ?? true}
+              badgeColor={(profile as any).discord_badge_color || '#ec4899'}
             />
           )}
 
