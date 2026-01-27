@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import { useState, useRef } from 'react';
 import { Eye, MapPin, Briefcase } from 'lucide-react';
 import type { Profile } from '@/hooks/useProfile';
-import { TypewriterText } from './TypewriterText';
 import { SparkleEffect } from './SparkleEffect';
 import { GlitchText } from './GlitchText';
 import { OrbitingAvatar } from './OrbitingAvatar';
@@ -22,18 +21,8 @@ interface ProfileCardProps {
 export function ProfileCard({ profile, badges = [] }: ProfileCardProps) {
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
-  const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const handleCopyUuid = async () => {
-    try {
-      await navigator.clipboard.writeText(profile.user_id);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy UUID:', err);
-    }
-  };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current || !profile.effects_config?.tilt) return;
@@ -168,29 +157,10 @@ export function ProfileCard({ profile, badges = [] }: ProfileCardProps) {
             )}
           </h1>
 
-          {/* Username with UUID tooltip */}
-          <TooltipProvider delayDuration={100}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <p 
-                  className="text-muted-foreground text-sm mb-3 cursor-pointer hover:text-foreground transition-colors"
-                  onClick={handleCopyUuid}
-                >
-                  @{profile.username}
-                </p>
-              </TooltipTrigger>
-              <TooltipContent 
-                side="bottom" 
-                className="bg-black/90 backdrop-blur-md border border-white/20 text-white text-xs font-mono px-3 py-2 rounded-lg shadow-xl"
-              >
-                {copied ? (
-                  <span className="text-green-400">Copied!</span>
-                ) : (
-                  <span className="text-muted-foreground">{profile.user_id}</span>
-                )}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {/* Username with UID */}
+          <p className="text-muted-foreground text-sm mb-3">
+            @{(profile as any).uid_number || '1'}
+          </p>
 
           {/* Badges - Icon only with hover tooltip like feds.lol */}
           {badges.length > 0 && (
@@ -280,35 +250,16 @@ export function ProfileCard({ profile, badges = [] }: ProfileCardProps) {
             )}
           </div>
 
-          {/* Stats - UID and Views */}
-          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-            {/* UID */}
-            {(profile as any).uid_number && (
-              <div className="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-md">
-                <span className="font-medium text-foreground/70">UID</span>
-                <span className="font-mono">{(profile as any).uid_number.toLocaleString()}</span>
-              </div>
-            )}
-            
-            {/* Views */}
-            <div className="flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" />
-              <motion.span
-                key={profile.views_count}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                {profile.views_count.toLocaleString()} views
-              </motion.span>
-              <motion.span
-                className="ml-1"
-                animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1, 0.8] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                style={{ color: accentColor }}
-              >
-                ✦
-              </motion.span>
-            </div>
+          {/* Views */}
+          <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+            <Eye className="w-3.5 h-3.5" />
+            <motion.span
+              key={profile.views_count}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {profile.views_count.toLocaleString()} views
+            </motion.span>
           </div>
         </div>
       </div>
