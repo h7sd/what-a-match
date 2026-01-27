@@ -155,38 +155,32 @@ export function ProfileCard({ profile, badges = [] }: ProfileCardProps) {
           {/* Username */}
           <p className="text-muted-foreground text-sm mb-3">@{profile.username}</p>
 
-          {/* Badges */}
+          {/* Badges - Icon only like feds.lol */}
           {badges.length > 0 && (
-            <div className="w-full mb-4">
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 justify-center">
-                {badges.map((badge) => {
-                  const Icon = getBadgeIcon(badge.name);
-                  const badgeColor = badge.color || accentColor;
+            <div className="flex items-center justify-center gap-1.5 mb-3 flex-wrap">
+              {badges.map((badge) => {
+                const Icon = getBadgeIcon(badge.name);
+                const badgeColor = badge.color || accentColor;
 
-                  return (
-                    <Badge
-                      key={badge.id}
-                      variant="outline"
-                      className="shrink-0 bg-secondary/20 border-border/60 text-xs whitespace-nowrap"
-                      style={{ borderColor: badgeColor }}
-                    >
-                      <span className="inline-flex items-center gap-1.5">
-                        {badge.icon_url ? (
-                          <img
-                            src={badge.icon_url}
-                            alt={badge.name}
-                            className="w-3.5 h-3.5"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <Icon className="w-3.5 h-3.5" style={{ color: badgeColor }} />
-                        )}
-                        <span>{badge.name}</span>
-                      </span>
-                    </Badge>
-                  );
-                })}
-              </div>
+                return (
+                  <div
+                    key={badge.id}
+                    className="w-5 h-5 flex items-center justify-center"
+                    title={badge.name}
+                  >
+                    {badge.icon_url ? (
+                      <img
+                        src={badge.icon_url}
+                        alt={badge.name}
+                        className="w-5 h-5"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <Icon className="w-5 h-5" style={{ color: badgeColor }} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
