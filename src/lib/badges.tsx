@@ -5,9 +5,10 @@ import { FaDiscord, FaBug, FaGift, FaSnowflake, FaEgg, FaDollarSign } from 'reac
 // Import custom badge images
 import staffBadge from '@/assets/badges/staff.png';
 import uservaultBadge from '@/assets/badges/uservault.png';
-import boosterBadge from '@/assets/badges/booster.png';
-import developerBadge from '@/assets/badges/developer.png';
+import devBadge from '@/assets/badges/dev.png';
 import earlyBadge from '@/assets/badges/early.png';
+import donorBadge from '@/assets/badges/donor.png';
+import moderatorBadge from '@/assets/badges/moderator.png';
 
 export type BadgeIconComponent = ComponentType<{ className?: string; style?: React.CSSProperties }>;
 
@@ -33,9 +34,10 @@ export const VerifiedBadgeIcon: BadgeIconComponent = ({ className, style }) => (
 export const badgeImages: Record<string, string> = {
   staff: staffBadge,
   'uservault.cc': uservaultBadge,
-  'server booster': boosterBadge,
-  dev: developerBadge,
+  dev: devBadge,
   early: earlyBadge,
+  donor: donorBadge,
+  moderator: moderatorBadge,
 };
 
 // Central mapping so dashboard + profile render the same icons (fallback if no image).
