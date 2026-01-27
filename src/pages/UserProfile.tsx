@@ -98,6 +98,7 @@ export default function UserProfile() {
   }
 
   const showCursorTrail = profile.effects_config?.sparkles;
+  const customCursorUrl = (profile as any).custom_cursor_url;
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -114,9 +115,13 @@ export default function UserProfile() {
         <audio ref={audioRef} src={profile.music_url} loop />
       )}
 
-      {/* Custom cursor with trail */}
-      {showCursorTrail && hasInteracted && (
-        <CustomCursor color={accentColor} showTrail={true} />
+      {/* Custom cursor with trail or custom image */}
+      {(showCursorTrail || customCursorUrl) && hasInteracted && (
+        <CustomCursor 
+          color={accentColor} 
+          showTrail={showCursorTrail} 
+          cursorUrl={customCursorUrl}
+        />
       )}
 
       {/* Glitch overlay effect */}

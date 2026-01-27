@@ -15,9 +15,10 @@ interface Trail {
 interface CustomCursorProps {
   color?: string;
   showTrail?: boolean;
+  cursorUrl?: string;
 }
 
-export function CustomCursor({ color = '#8b5cf6', showTrail = true }: CustomCursorProps) {
+export function CustomCursor({ color = '#8b5cf6', showTrail = true, cursorUrl }: CustomCursorProps) {
   const [position, setPosition] = useState<CursorPosition>({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(false);
   const [trails, setTrails] = useState<Trail[]>([]);
@@ -70,7 +71,7 @@ export function CustomCursor({ color = '#8b5cf6', showTrail = true }: CustomCurs
       
       {/* Trail */}
       <AnimatePresence>
-        {showTrail && trails.map((trail, index) => (
+        {showTrail && trails.map((trail) => (
           <motion.div
             key={trail.id}
             initial={{ opacity: 0.6, scale: 1 }}
@@ -94,37 +95,55 @@ export function CustomCursor({ color = '#8b5cf6', showTrail = true }: CustomCurs
       {/* Main cursor */}
       {isVisible && (
         <>
-          {/* Outer ring */}
-          <motion.div
-            className="fixed pointer-events-none z-[9999] rounded-full border-2"
-            style={{
-              borderColor: color,
-              width: 32,
-              height: 32,
-              left: position.x - 16,
-              top: position.y - 16,
-            }}
-            animate={{
-              scale: [1, 1.1, 1],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          />
-          {/* Inner dot */}
-          <motion.div
-            className="fixed pointer-events-none z-[9999] rounded-full"
-            style={{
-              backgroundColor: color,
-              width: 6,
-              height: 6,
-              left: position.x - 3,
-              top: position.y - 3,
-              boxShadow: `0 0 10px ${color}, 0 0 20px ${color}`,
-            }}
-          />
+          {cursorUrl ? (
+            // Custom image cursor
+            <motion.img
+              src={cursorUrl}
+              alt="cursor"
+              className="fixed pointer-events-none z-[9999]"
+              style={{
+                left: position.x - 16,
+                top: position.y - 16,
+                width: 32,
+                height: 32,
+                objectFit: 'contain',
+              }}
+            />
+          ) : (
+            <>
+              {/* Outer ring */}
+              <motion.div
+                className="fixed pointer-events-none z-[9999] rounded-full border-2"
+                style={{
+                  borderColor: color,
+                  width: 32,
+                  height: 32,
+                  left: position.x - 16,
+                  top: position.y - 16,
+                }}
+                animate={{
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+              {/* Inner dot */}
+              <motion.div
+                className="fixed pointer-events-none z-[9999] rounded-full"
+                style={{
+                  backgroundColor: color,
+                  width: 6,
+                  height: 6,
+                  left: position.x - 3,
+                  top: position.y - 3,
+                  boxShadow: `0 0 10px ${color}, 0 0 20px ${color}`,
+                }}
+              />
+            </>
+          )}
         </>
       )}
     </>

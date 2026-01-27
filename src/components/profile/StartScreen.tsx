@@ -54,18 +54,6 @@ export function StartScreen({ onStart, message = "Click anywhere to enter" }: St
             transition={{ duration: 0.5 }}
             className="text-center"
           >
-            <motion.h1
-              className="text-4xl md:text-6xl font-bold mb-8"
-              style={{
-                background: 'linear-gradient(to right, hsl(var(--primary)), #ec4899)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textShadow: '0 0 30px rgba(139, 92, 246, 0.5)',
-              }}
-            >
-              UserVault
-            </motion.h1>
-            
             <p className="text-xl text-muted-foreground font-mono">
               {displayedText}
               <span className={cursorVisible ? 'opacity-100' : 'opacity-0'}>|</span>

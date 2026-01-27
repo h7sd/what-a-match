@@ -849,26 +849,43 @@ export default function Dashboard() {
             {activeTab === 'badges' && (
               <div className="space-y-6">
                 {/* My Badges - Toggle Section */}
-                <div className="glass-card p-6">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Award className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold">My Badges</h3>
+                {userBadges.filter((ub: any) => ub.is_enabled !== false).length > 0 && (
+                  <div className="glass-card p-6">
+                    <div className="flex items-center gap-2 mb-6">
+                      <Award className="w-5 h-5 text-primary" />
+                      <h3 className="font-semibold">Active Badges</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      These badges are visible on your profile. Toggle them off to hide.
+                    </p>
+                    <UserBadgesList 
+                      userBadges={(userBadges as any).filter((ub: any) => ub.is_enabled !== false)} 
+                      userId={user?.id || ''} 
+                    />
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Toggle badges on/off to show or hide them on your profile.
-                  </p>
-                  <UserBadgesList 
-                    userBadges={userBadges as any} 
-                    userId={user?.id || ''} 
-                  />
-                </div>
+                )}
 
-                {/* All Badges - Regular Claim */}
+                {/* Available Badges - includes disabled user badges + unclaimed global badges */}
                 <div className="glass-card p-6">
                   <div className="flex items-center gap-2 mb-6">
-                    <Award className="w-5 h-5 text-primary" />
+                    <Award className="w-5 h-5 text-muted-foreground" />
                     <h3 className="font-semibold">Available Badges</h3>
                   </div>
+                  
+                  {/* Disabled user badges */}
+                  {userBadges.filter((ub: any) => ub.is_enabled === false).length > 0 && (
+                    <div className="mb-6">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Hidden badges - toggle them on to show on your profile.
+                      </p>
+                      <UserBadgesList 
+                        userBadges={(userBadges as any).filter((ub: any) => ub.is_enabled === false)} 
+                        userId={user?.id || ''} 
+                      />
+                    </div>
+                  )}
+
+                  {/* Claimable badges (non-limited, not owned) */}
                   <BadgesGrid
                     globalBadges={globalBadges.filter(b => !b.is_limited)}
                     userBadgeIds={userBadges.map(ub => ub.badge_id)}
