@@ -32,6 +32,7 @@ import {
   Settings,
   Menu,
   X,
+  Volume2,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -49,6 +50,7 @@ import { EarlyBadgeCountdown } from '@/components/dashboard/EarlyBadgeCountdown'
 import { ProfileVisitorsChart } from '@/components/dashboard/ProfileVisitorsChart';
 import { TopLinksChart } from '@/components/dashboard/TopLinksChart';
 import { StartScreenSettings } from '@/components/dashboard/StartScreenSettings';
+import { VolumeControlSettings } from '@/components/dashboard/VolumeControlSettings';
 import { AdminBadgeManager } from '@/components/admin/AdminBadgeManager';
 import { AdminUserManager } from '@/components/admin/AdminUserManager';
 import { BadgesGrid } from '@/components/dashboard/BadgesGrid';
@@ -165,6 +167,9 @@ export default function Dashboard() {
   const [startScreenColor, setStartScreenColor] = useState('#a855f7');
   const [startScreenBgColor, setStartScreenBgColor] = useState('#000000');
 
+  // Volume control settings
+  const [showVolumeControl, setShowVolumeControl] = useState(true);
+
   // Mobile menu state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -225,6 +230,7 @@ export default function Dashboard() {
       setStartScreenFont((profile as any).start_screen_font || 'Inter');
       setStartScreenColor((profile as any).start_screen_color || '#a855f7');
       setStartScreenBgColor((profile as any).start_screen_bg_color || '#000000');
+      setShowVolumeControl((profile as any).show_volume_control ?? true);
       const config = profile.effects_config || {};
       setEffects({
         sparkles: config.sparkles ?? false,
@@ -327,6 +333,7 @@ export default function Dashboard() {
         start_screen_font: startScreenFont,
         start_screen_color: startScreenColor,
         start_screen_bg_color: startScreenBgColor,
+        show_volume_control: showVolumeControl,
       } as any);
       toast({ title: 'Profile saved!' });
     } catch (error) {
@@ -766,6 +773,18 @@ export default function Dashboard() {
                     onTextColorChange={setStartScreenColor}
                     bgColor={startScreenBgColor}
                     onBgColorChange={setStartScreenBgColor}
+                  />
+                </div>
+
+                {/* Volume Control Settings */}
+                <div className="glass-card p-6 mt-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Volume2 className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">Volume Control</h3>
+                  </div>
+                  <VolumeControlSettings
+                    enabled={showVolumeControl}
+                    onEnabledChange={setShowVolumeControl}
                   />
                 </div>
               </div>

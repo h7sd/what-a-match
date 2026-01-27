@@ -11,6 +11,7 @@ import { CustomCursor } from '@/components/profile/CustomCursor';
 import { DiscordPresence } from '@/components/profile/DiscordPresence';
 import { StartScreen } from '@/components/profile/StartScreen';
 import { ControlsBar } from '@/components/profile/ControlsBar';
+import { SimpleVolumeBar } from '@/components/profile/SimpleVolumeBar';
 import { GlitchOverlay } from '@/components/profile/GlitchOverlay';
 
 export default function UserProfile() {
@@ -177,14 +178,11 @@ export default function UserProfile() {
 
       </div>
 
-      {/* Controls Bar */}
-      {!showStartScreen && profile.music_url && (
-        <ControlsBar
+      {/* Controls Bar - Only show if profile has music and volume control is enabled */}
+      {!showStartScreen && profile.music_url && (profile as any).show_volume_control !== false && (
+        <SimpleVolumeBar
           volume={volume}
           onVolumeChange={setVolume}
-          transparency={transparency}
-          onTransparencyChange={setTransparency}
-          accentColor={accentColor}
         />
       )}
     </div>
