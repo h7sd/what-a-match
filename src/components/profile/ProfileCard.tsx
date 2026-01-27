@@ -6,7 +6,7 @@ import { TypewriterText } from './TypewriterText';
 import { SparkleEffect } from './SparkleEffect';
 import { GlitchText } from './GlitchText';
 import { OrbitingAvatar } from './OrbitingAvatar';
-import { getBadgeIcon } from '@/lib/badges';
+import { getBadgeIcon, getBadgeImage } from '@/lib/badges';
 import {
   Tooltip,
   TooltipContent,
@@ -167,6 +167,7 @@ export function ProfileCard({ profile, badges = [] }: ProfileCardProps) {
                 {badges.map((badge) => {
                   const Icon = getBadgeIcon(badge.name);
                   const badgeColor = badge.color || accentColor;
+                  const customImage = getBadgeImage(badge.name);
 
                   return (
                     <Tooltip key={badge.id}>
@@ -183,6 +184,13 @@ export function ProfileCard({ profile, badges = [] }: ProfileCardProps) {
                           {badge.icon_url ? (
                             <img
                               src={badge.icon_url}
+                              alt={badge.name}
+                              className="w-6 h-6 object-contain"
+                              loading="lazy"
+                            />
+                          ) : customImage ? (
+                            <img
+                              src={customImage}
                               alt={badge.name}
                               className="w-6 h-6 object-contain"
                               loading="lazy"
