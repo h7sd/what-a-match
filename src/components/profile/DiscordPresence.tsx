@@ -6,6 +6,10 @@ import { useDiscordPresence, getActivityAssetUrl, LanyardActivity } from '@/hook
 interface DiscordPresenceProps {
   discordUserId: string;
   accentColor?: string;
+  cardStyle?: 'glass' | 'solid' | 'outlined' | 'minimal';
+  cardOpacity?: number;
+  showBadge?: boolean;
+  badgeColor?: string;
 }
 
 const statusColors = {
@@ -30,15 +34,42 @@ const activityTypeLabels: Record<number, string> = {
   5: 'Competing in',
 };
 
-export function DiscordPresence({ discordUserId, accentColor = '#8b5cf6' }: DiscordPresenceProps) {
+const getCardStyles = (style: string, opacity: number) => {
+  const opacityValue = opacity / 100;
+  
+  switch (style) {
+    case 'solid':
+      return `bg-black/80 border border-white/10`;
+    case 'outlined':
+      return `bg-transparent border-2 border-white/20`;
+    case 'minimal':
+      return `bg-black/40 border-0`;
+    case 'glass':
+    default:
+      return `bg-white/10 backdrop-blur-xl border border-white/10`;
+  }
+};
+
+export function DiscordPresence({ 
+  discordUserId, 
+  accentColor = '#8b5cf6',
+  cardStyle = 'glass',
+  cardOpacity = 100,
+  showBadge = true,
+  badgeColor = '#ec4899',
+}: DiscordPresenceProps) {
   const { data, isLoading, error } = useDiscordPresence(discordUserId);
+
+  const cardClasses = getCardStyles(cardStyle, cardOpacity);
+  const opacityStyle = { opacity: cardOpacity / 100 };
 
   if (isLoading) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="w-full max-w-sm overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 p-4 flex items-center justify-center"
+        className={`w-full max-w-sm overflow-hidden rounded-2xl ${cardClasses} p-4 flex items-center justify-center`}
+        style={opacityStyle}
       >
         <Loader2 className="w-5 h-5 animate-spin text-white/50" />
       </motion.div>
@@ -52,13 +83,24 @@ export function DiscordPresence({ discordUserId, accentColor = '#8b5cf6' }: Disc
   const mainActivity = data.activities[0];
   const activityImage = mainActivity ? getActivityAssetUrl(mainActivity) : null;
 
+  const Badge = showBadge ? (
+    <span 
+      className="text-[10px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"
+      style={{ backgroundColor: badgeColor, color: 'white' }}
+    >
+      <Heart className="w-2 h-2 fill-current" />
+      UV
+    </span>
+  ) : null;
+
   // Spotify takes priority if listening
   if (data.isListeningToSpotify && data.spotify) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10"
+        className={`w-full max-w-sm overflow-hidden rounded-2xl ${cardClasses}`}
+        style={opacityStyle}
       >
         <div className="p-3 sm:p-4 flex items-center gap-3">
           {/* Avatar with status indicator */}
@@ -87,13 +129,7 @@ export function DiscordPresence({ discordUserId, accentColor = '#8b5cf6' }: Disc
               <span className="font-semibold text-white text-sm">
                 {data.globalName || data.username}
               </span>
-              <span 
-                className="text-[10px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"
-                style={{ backgroundColor: '#ec4899', color: 'white' }}
-              >
-                <Heart className="w-2 h-2 fill-current" />
-                UV
-              </span>
+              {Badge}
             </div>
             <div className="flex items-center gap-1.5 text-[#1DB954] text-xs mt-0.5">
               <SiSpotify className="w-3 h-3" />
@@ -120,7 +156,8 @@ export function DiscordPresence({ discordUserId, accentColor = '#8b5cf6' }: Disc
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10"
+        className={`w-full max-w-sm overflow-hidden rounded-2xl ${cardClasses}`}
+        style={opacityStyle}
       >
         <div className="p-3 sm:p-4 flex items-center gap-3">
           {/* Avatar with status indicator */}
@@ -149,13 +186,7 @@ export function DiscordPresence({ discordUserId, accentColor = '#8b5cf6' }: Disc
               <span className="font-semibold text-white text-sm">
                 {data.globalName || data.username}
               </span>
-              <span 
-                className="text-[10px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"
-                style={{ backgroundColor: '#ec4899', color: 'white' }}
-              >
-                <Heart className="w-2 h-2 fill-current" />
-                UV
-              </span>
+              {Badge}
             </div>
             <p className="text-white/80 text-xs mt-0.5">
               <span className="text-primary font-medium">{activityTypeLabels[mainActivity.type] || 'Playing'}</span>
@@ -187,7 +218,8 @@ export function DiscordPresence({ discordUserId, accentColor = '#8b5cf6' }: Disc
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-sm overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10"
+      className={`w-full max-w-sm overflow-hidden rounded-2xl ${cardClasses}`}
+      style={opacityStyle}
     >
       <div className="p-3 sm:p-4 flex items-center gap-3">
         {/* Avatar with status indicator */}
@@ -216,13 +248,7 @@ export function DiscordPresence({ discordUserId, accentColor = '#8b5cf6' }: Disc
             <span className="font-semibold text-white text-sm">
               {data.globalName || data.username}
             </span>
-            <span 
-              className="text-[10px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"
-              style={{ backgroundColor: '#ec4899', color: 'white' }}
-            >
-              <Heart className="w-2 h-2 fill-current" />
-              UV
-            </span>
+            {Badge}
           </div>
           <p className="text-white/50 text-xs capitalize mt-0.5">{data.status}</p>
         </div>

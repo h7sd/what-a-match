@@ -150,6 +150,12 @@ export default function Dashboard() {
   const [glowSocials, setGlowSocials] = useState(false);
   const [glowBadges, setGlowBadges] = useState(false);
 
+  // Discord Card customization
+  const [discordCardStyle, setDiscordCardStyle] = useState('glass');
+  const [discordCardOpacity, setDiscordCardOpacity] = useState(100);
+  const [discordShowBadge, setDiscordShowBadge] = useState(true);
+  const [discordBadgeColor, setDiscordBadgeColor] = useState('#ec4899');
+
   // Mobile menu state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -199,6 +205,10 @@ export default function Dashboard() {
       setGlowUsername((profile as any).glow_username ?? false);
       setGlowSocials((profile as any).glow_socials ?? false);
       setGlowBadges((profile as any).glow_badges ?? false);
+      setDiscordCardStyle((profile as any).discord_card_style || 'glass');
+      setDiscordCardOpacity((profile as any).discord_card_opacity ?? 100);
+      setDiscordShowBadge((profile as any).discord_show_badge ?? true);
+      setDiscordBadgeColor((profile as any).discord_badge_color || '#ec4899');
       setBackgroundEffect((profile as any).background_effect || 'particles');
       setAudioVolume((profile as any).audio_volume ?? 0.5);
       const config = profile.effects_config || {};
@@ -292,6 +302,10 @@ export default function Dashboard() {
         glow_username: glowUsername,
         glow_socials: glowSocials,
         glow_badges: glowBadges,
+        discord_card_style: discordCardStyle,
+        discord_card_opacity: discordCardOpacity,
+        discord_show_badge: discordShowBadge,
+        discord_badge_color: discordBadgeColor,
         background_effect: backgroundEffect,
         audio_volume: audioVolume,
       } as any);
@@ -702,6 +716,14 @@ export default function Dashboard() {
                   setGlowSocials={setGlowSocials}
                   glowBadges={glowBadges}
                   setGlowBadges={setGlowBadges}
+                  discordCardStyle={discordCardStyle}
+                  setDiscordCardStyle={setDiscordCardStyle}
+                  discordCardOpacity={discordCardOpacity}
+                  setDiscordCardOpacity={setDiscordCardOpacity}
+                  discordShowBadge={discordShowBadge}
+                  setDiscordShowBadge={setDiscordShowBadge}
+                  discordBadgeColor={discordBadgeColor}
+                  setDiscordBadgeColor={setDiscordBadgeColor}
                   backgroundEffect={backgroundEffect}
                   setBackgroundEffect={setBackgroundEffect}
                   audioVolume={audioVolume}
