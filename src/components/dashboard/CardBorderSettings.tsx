@@ -28,17 +28,17 @@ export function CardBorderSettings({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-2">Card Border</h3>
+        <h3 className="text-lg font-semibold mb-2">Profile Card</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Customize or remove the border around your profile card.
+          Toggle the profile card visibility. When disabled, only your content will show without the card background, and Discord presence will also be hidden.
         </p>
       </div>
 
       <div className="space-y-4">
-        {/* Border Enabled Toggle */}
+        {/* Card Visibility Toggle */}
         <div className="flex items-center justify-between py-3 px-4 rounded-lg border border-border/50 bg-secondary/20">
           <Label htmlFor="border-enabled" className="text-sm font-medium cursor-pointer">
-            Show Border
+            Show Card & Discord
           </Label>
           <Switch
             id="border-enabled"
@@ -94,16 +94,20 @@ export function CardBorderSettings({
       <div className="mt-4 p-4 rounded-lg bg-black/40">
         <p className="text-xs text-muted-foreground mb-3">Preview</p>
         <div className="flex justify-center">
-          <div
-            className="w-32 h-20 rounded-2xl bg-secondary/50 flex items-center justify-center"
-            style={{
-              border: borderEnabled
-                ? `${borderWidth}px solid ${effectiveBorderColor}30`
-                : 'none',
-            }}
-          >
-            <span className="text-xs text-muted-foreground">Card</span>
-          </div>
+          {borderEnabled ? (
+            <div
+              className="w-32 h-20 rounded-2xl bg-secondary/50 flex items-center justify-center"
+              style={{
+                border: `${borderWidth}px solid ${effectiveBorderColor}30`,
+              }}
+            >
+              <span className="text-xs text-muted-foreground">Card</span>
+            </div>
+          ) : (
+            <div className="w-32 h-20 rounded-2xl flex items-center justify-center border border-dashed border-muted-foreground/30">
+              <span className="text-xs text-muted-foreground">Transparent</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
