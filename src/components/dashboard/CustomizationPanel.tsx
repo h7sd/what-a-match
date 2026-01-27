@@ -205,7 +205,7 @@ export function CustomizationPanel(props: CustomizationPanelProps) {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Discord Presence</Label>
+              <Label>Discord & Spotify Presence</Label>
               <Dialog open={discordDialogOpen} onOpenChange={setDiscordDialogOpen}>
                 <DialogTrigger asChild>
                   <button 
@@ -213,28 +213,51 @@ export function CustomizationPanel(props: CustomizationPanelProps) {
                     onClick={() => setTempDiscordId(props.discordUserId)}
                   >
                     {props.discordUserId ? (
-                      <p className="text-xs text-muted-foreground">
-                        <span className="text-green-500">●</span> Connected: {props.discordUserId}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-500">●</span>
+                        <div>
+                          <p className="text-sm font-medium">Connected</p>
+                          <p className="text-xs text-muted-foreground">ID: {props.discordUserId}</p>
+                        </div>
+                      </div>
                     ) : (
-                      <p className="text-xs text-muted-foreground">
-                        <span className="text-green-500">●</span> Click here to connect your{' '}
-                        <span className="text-primary">Discord</span> and unlock this feature.
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-yellow-500">●</span>
+                        <div>
+                          <p className="text-sm">Connect Discord</p>
+                          <p className="text-xs text-muted-foreground">
+                            Show your status & Spotify activity
+                          </p>
+                        </div>
+                      </div>
                     )}
                   </button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                      <MessageSquare className="w-5 h-5 text-primary" />
-                      Connect Discord
+                      <MessageSquare className="w-5 h-5 text-[#5865F2]" />
+                      Discord & Spotify Integration
                     </DialogTitle>
                     <DialogDescription>
-                      Enter your Discord User ID to show your presence on your profile.
+                      Connect your Discord to show your live status, current activity, and what you're listening to on Spotify.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
+                    <div className="p-3 rounded-lg bg-[#1DB954]/10 border border-[#1DB954]/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 bg-[#1DB954] rounded-full flex items-center justify-center">
+                          <svg viewBox="0 0 24 24" className="w-4 h-4 text-black" fill="currentColor">
+                            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-[#1DB954]">Spotify Integration</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        When you're listening to Spotify on Discord, it will automatically show on your profile!
+                      </p>
+                    </div>
+                    
                     <div className="space-y-2">
                       <Label>Discord User ID</Label>
                       <Input
@@ -247,9 +270,20 @@ export function CustomizationPanel(props: CustomizationPanelProps) {
                         Enable Developer Mode in Discord (Settings → Advanced), then right-click your profile and select "Copy User ID"
                       </p>
                     </div>
+                    
+                    <div className="p-3 rounded-lg bg-secondary/30 border border-border">
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Note:</strong> Your Discord must be connected to{' '}
+                        <a href="https://lanyard.rest" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          Lanyard
+                        </a>
+                        {' '}for real-time presence. Join their Discord server to set it up.
+                      </p>
+                    </div>
+                    
                     <div className="flex gap-2">
                       <Button onClick={handleDiscordConnect} className="flex-1">
-                        Connect
+                        {props.discordUserId ? 'Update' : 'Connect'}
                       </Button>
                       {props.discordUserId && (
                         <Button 
