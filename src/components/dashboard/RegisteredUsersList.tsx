@@ -23,8 +23,7 @@ export function RegisteredUsersList() {
         const { data, error } = await supabase
           .from('profiles')
           .select('id, username, display_name, avatar_url, uid_number, created_at')
-          .order('uid_number', { ascending: true })
-          .limit(20);
+          .order('uid_number', { ascending: true });
 
         if (error) throw error;
         setUsers(data || []);
