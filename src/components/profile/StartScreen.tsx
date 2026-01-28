@@ -60,13 +60,20 @@ function AnimatedText({
       return <ASCIIText text={text} style={style} className="text-xl" />;
     case 'ascii-3d':
       return (
-        <div className="w-[400px] h-[150px] relative">
+        <div 
+          className="relative flex items-center justify-center"
+          style={{ 
+            width: 'min(90vw, 500px)', 
+            height: 'min(40vh, 200px)',
+          }}
+        >
           <ASCIITextEffect 
             text={text}
             textColor={color}
             enableWaves={asciiWaves}
             asciiFontSize={asciiSize}
             textFontSize={asciiSize * 15}
+            planeBaseHeight={8}
           />
         </div>
       );

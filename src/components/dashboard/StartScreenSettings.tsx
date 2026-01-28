@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -11,11 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { motion } from 'framer-motion';
-import { ShuffleText, FuzzyText, DecryptedText, ASCIIText, TextAnimationType } from '@/components/profile/TextAnimations';
-import ASCIITextEffect from '@/components/profile/ASCIITextEffect';
-import DecryptedTextEffect from '@/components/profile/DecryptedTextEffect';
-import FuzzyTextEffect from '@/components/profile/FuzzyTextEffect';
-import ShuffleTextEffect from '@/components/profile/ShuffleTextEffect';
+import { StartScreenPreview } from './StartScreenPreview';
 
 const FONTS = [
   'Inter',
@@ -91,102 +86,6 @@ interface StartScreenSettingsProps {
   onAsciiWavesChange?: (enabled: boolean) => void;
 }
 
-function AnimatedPreviewText({ 
-  text, 
-  animation, 
-  font, 
-  color,
-  bgColor,
-  asciiSize = 8,
-  asciiWaves = true
-}: { 
-  text: string; 
-  animation: string; 
-  font: string; 
-  color: string;
-  bgColor: string;
-  asciiSize?: number;
-  asciiWaves?: boolean;
-}) {
-  const style = { fontFamily: font, color };
-  const displayText = text || 'Click anywhere to enter';
-  
-  switch (animation) {
-    case 'shuffle':
-      return <ShuffleText text={displayText} style={style} className="text-lg" />;
-    case 'shuffle-gsap':
-      return (
-        <ShuffleTextEffect
-          text={displayText}
-          style={{ ...style, fontSize: '1.25rem' }}
-          shuffleDirection="right"
-          duration={0.35}
-          animationMode="evenodd"
-          shuffleTimes={1}
-          stagger={0.03}
-          triggerOnHover={true}
-          autoPlay={true}
-          loop={false}
-        />
-      );
-    case 'fuzzy':
-      return <FuzzyText text={displayText} style={style} className="text-lg" />;
-    case 'decrypted':
-      return <DecryptedText text={displayText} style={style} className="text-lg" />;
-    case 'ascii':
-      return <ASCIIText text={displayText} style={style} className="text-lg" />;
-    case 'ascii-3d':
-      return (
-        <div className="w-full h-32 relative">
-          <ASCIITextEffect 
-            text={displayText}
-            textColor={color}
-            enableWaves={asciiWaves}
-            asciiFontSize={asciiSize}
-            textFontSize={asciiSize * 10}
-          />
-        </div>
-      );
-    case 'decrypted-advanced':
-      return (
-        <DecryptedTextEffect 
-          text={displayText}
-          speed={50}
-          sequential={true}
-          revealDirection="start"
-          animateOn="view"
-          className="text-lg"
-          style={style}
-        />
-      );
-    case 'fuzzy-canvas':
-      return (
-        <div className="flex items-center justify-center">
-          <FuzzyTextEffect
-            fontSize="1.5rem"
-            fontWeight={600}
-            color={color}
-            baseIntensity={0.2}
-            hoverIntensity={0.5}
-            enableHover={true}
-            glitchMode={true}
-            glitchInterval={3000}
-            glitchDuration={200}
-          >
-            {displayText}
-          </FuzzyTextEffect>
-        </div>
-      );
-    default:
-      return (
-        <span className="text-lg" style={style}>
-          {displayText}
-          <span className="animate-pulse">|</span>
-        </span>
-      );
-  }
-}
-
 export function StartScreenSettings({
   enabled,
   onEnabledChange,
@@ -225,20 +124,15 @@ export function StartScreenSettings({
           className="space-y-4 pt-2"
         >
           {/* Live Preview */}
-          <div 
-            className="rounded-lg p-8 text-center border border-border/50 min-h-[100px] flex items-center justify-center"
-            style={{ backgroundColor: bgColor }}
-          >
-            <AnimatedPreviewText 
-              text={text}
-              animation={textAnimation}
-              font={font}
-              color={textColor}
-              bgColor={bgColor}
-              asciiSize={asciiSize}
-              asciiWaves={asciiWaves}
-            />
-          </div>
+          <StartScreenPreview
+            text={text}
+            animation={textAnimation}
+            font={font}
+            textColor={textColor}
+            bgColor={bgColor}
+            asciiSize={asciiSize}
+            asciiWaves={asciiWaves}
+          />
 
           {/* Text */}
           <div className="space-y-2">
@@ -256,7 +150,7 @@ export function StartScreenSettings({
             <Label>Text Animation</Label>
             <Select 
               value={textAnimation} 
-              onValueChange={(v) => onTextAnimationChange?.(v as TextAnimationType)}
+              onValueChange={(v) => onTextAnimationChange?.(v as AdvancedTextAnimationType)}
             >
               <SelectTrigger className="bg-card border-border">
                 <SelectValue />
