@@ -36,34 +36,35 @@ function useRandomProfiles() {
 function ProfileCard({ profile, index }: { profile: Profile; index: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.4 }}
+      transition={{ delay: index * 0.05, duration: 0.3 }}
+      className="flex-shrink-0"
     >
       <Link 
         to={`/${profile.username}`}
-        className="flex flex-col items-center gap-2 group"
+        className="flex items-center gap-3 group"
       >
         <motion.div
           className="relative"
-          whileHover={{ scale: 1.1 }}
+          whileHover={{ scale: 1.05 }}
           transition={{ type: 'spring', stiffness: 300 }}
         >
           {profile.avatar_url ? (
             <img
               src={profile.avatar_url}
               alt={profile.display_name || profile.username}
-              className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover border-2 border-border/50 group-hover:border-primary/50 transition-colors"
+              className="w-12 h-12 rounded-full object-cover border border-border/30 group-hover:border-primary/50 transition-colors"
             />
           ) : (
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-card/60 border-2 border-border/50 group-hover:border-primary/50 transition-colors flex items-center justify-center">
-              <User className="w-8 h-8 text-muted-foreground" />
+            <div className="w-12 h-12 rounded-full bg-card/60 border border-border/30 group-hover:border-primary/50 transition-colors flex items-center justify-center">
+              <User className="w-5 h-5 text-muted-foreground" />
             </div>
           )}
         </motion.div>
         
-        <div className="text-center">
-          <p className="text-foreground font-medium text-sm group-hover:text-primary transition-colors">
+        <div className="text-left">
+          <p className="text-foreground font-medium text-sm group-hover:text-primary transition-colors leading-tight">
             {profile.display_name || profile.username}
           </p>
           <p className="text-muted-foreground text-xs">
@@ -84,17 +85,19 @@ export function FeaturedProfiles() {
 
   return (
     <FadeIn delay={0.4}>
-      <section className="py-16">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
+      <section className="py-12">
+        <div className="text-center mb-8">
+          <h2 className="text-xl md:text-2xl font-bold text-foreground">
             trust <span className="text-primary">uservault.cc</span>
           </h2>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-6 md:gap-10">
-          {profiles.map((profile, index) => (
-            <ProfileCard key={profile.id} profile={profile} index={index} />
-          ))}
+        <div className="overflow-x-auto no-scrollbar">
+          <div className="flex items-center justify-center gap-8 md:gap-12 px-4 min-w-max mx-auto">
+            {profiles.map((profile, index) => (
+              <ProfileCard key={profile.id} profile={profile} index={index} />
+            ))}
+          </div>
         </div>
       </section>
     </FadeIn>
