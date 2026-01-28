@@ -74,20 +74,6 @@ export function StartScreen({
               {displayedText}
               <span className={cursorVisible ? 'opacity-100' : 'opacity-0'}>|</span>
             </p>
-
-            <motion.div
-              className="mt-12 w-16 h-16 mx-auto rounded-full border-2"
-              style={{ borderColor: `${textColor}80` }}
-              animate={{ 
-                scale: [1, 1.2, 1],
-                opacity: [0.5, 1, 0.5],
-              }}
-              transition={{ 
-                duration: 2, 
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
           </motion.div>
         </motion.div>
       )}

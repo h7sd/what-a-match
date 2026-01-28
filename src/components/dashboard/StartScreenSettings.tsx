@@ -19,6 +19,36 @@ const FONTS = [
   'Sora',
   'Poppins',
   'Manrope',
+  'Orbitron',
+  'Press Start 2P',
+  'VT323',
+  'Fira Code',
+  'IBM Plex Mono',
+  'Source Code Pro',
+  'Roboto Mono',
+  'Ubuntu Mono',
+  'Inconsolata',
+  'Playfair Display',
+  'Crimson Text',
+  'Lora',
+  'Merriweather',
+  'DM Serif Display',
+  'Abril Fatface',
+  'Bebas Neue',
+  'Oswald',
+  'Montserrat',
+  'Raleway',
+  'Quicksand',
+  'Comfortaa',
+  'Righteous',
+  'Audiowide',
+  'Russo One',
+  'Bungee',
+  'Permanent Marker',
+  'Pacifico',
+  'Dancing Script',
+  'Caveat',
+  'Shadows Into Light',
 ];
 
 interface StartScreenSettingsProps {
@@ -77,10 +107,6 @@ export function StartScreenSettings({
               {text || 'Click anywhere to enter'}
               <span className="animate-pulse">|</span>
             </p>
-            <div 
-              className="mt-4 w-10 h-10 mx-auto rounded-full border-2 opacity-60"
-              style={{ borderColor: textColor }}
-            />
           </div>
 
           {/* Text */}
