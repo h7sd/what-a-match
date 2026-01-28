@@ -17,6 +17,7 @@ interface ProfileCardProps {
   profile: Profile;
   badges?: Array<{ id: string; name: string; color: string | null; icon_url?: string | null }>;
   showUsername?: boolean;
+  showDisplayName?: boolean;
   showBadges?: boolean;
   showViews?: boolean;
   showAvatar?: boolean;
@@ -30,6 +31,7 @@ export function ProfileCard({
   profile, 
   badges = [], 
   showUsername = true, 
+  showDisplayName = true,
   showBadges = true, 
   showViews = true,
   showAvatar = true,
@@ -109,39 +111,33 @@ export function ProfileCard({
               </div>
             )}
 
-            {/* Display Name with glitch effect */}
-            <h1 
-              className="text-2xl font-bold mb-1"
-              style={{ 
-                fontFamily: (profile as any).name_font || 'Inter',
-                color: 'white',
-                textShadow: `0 0 10px ${accentColor}40`,
-              }}
-            >
-              {profile.effects_config?.typewriter ? (
-                <GlitchText 
-                  text={profile.display_name || profile.username} 
-                  typewriter 
-                  loop
-                  glitchIntensity={0.05}
-                />
-              ) : (
-                <GlitchText 
-                  text={profile.display_name || profile.username}
-                  glitchIntensity={0.03}
-                />
-              )}
-            </h1>
-
-            {/* Username with UID tooltip */}
-            {showUsername && (
+            {/* Display Name with glitch effect and UID tooltip */}
+            {showDisplayName && (
               <TooltipProvider delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <p className="text-muted-foreground text-sm mb-3 cursor-default flex items-center gap-0.5 hover:text-foreground/70 transition-colors">
-                      <AtSign className="w-3.5 h-3.5" />
-                      {profile.username}
-                    </p>
+                    <h1 
+                      className="text-2xl font-bold mb-1 cursor-default hover:opacity-80 transition-opacity"
+                      style={{ 
+                        fontFamily: (profile as any).name_font || 'Inter',
+                        color: 'white',
+                        textShadow: `0 0 10px ${accentColor}40`,
+                      }}
+                    >
+                      {profile.effects_config?.typewriter ? (
+                        <GlitchText 
+                          text={profile.display_name || profile.username} 
+                          typewriter 
+                          loop
+                          glitchIntensity={0.05}
+                        />
+                      ) : (
+                        <GlitchText 
+                          text={profile.display_name || profile.username}
+                          glitchIntensity={0.03}
+                        />
+                      )}
+                    </h1>
                   </TooltipTrigger>
                   <TooltipContent 
                     side="top" 
@@ -151,6 +147,14 @@ export function ProfileCard({
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+            )}
+
+            {/* Username */}
+            {showUsername && (
+              <p className="text-muted-foreground text-sm mb-3 flex items-center gap-0.5">
+                <AtSign className="w-3.5 h-3.5" />
+                {profile.username}
+              </p>
             )}
 
             {/* Badges */}
@@ -322,39 +326,33 @@ export function ProfileCard({
             </div>
           )}
 
-          {/* Display Name with glitch effect */}
-          <h1 
-            className="text-2xl font-bold mb-1"
-            style={{ 
-              fontFamily: (profile as any).name_font || 'Inter',
-              color: 'white',
-              textShadow: `0 0 10px ${accentColor}40`,
-            }}
-          >
-            {profile.effects_config?.typewriter ? (
-              <GlitchText 
-                text={profile.display_name || profile.username} 
-                typewriter 
-                loop
-                glitchIntensity={0.05}
-              />
-            ) : (
-              <GlitchText 
-                text={profile.display_name || profile.username}
-                glitchIntensity={0.03}
-              />
-            )}
-          </h1>
-
-          {/* Username with UID tooltip */}
-          {showUsername && (
+          {/* Display Name with glitch effect and UID tooltip */}
+          {showDisplayName && (
             <TooltipProvider delayDuration={100}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <p className="text-muted-foreground text-sm mb-3 cursor-default flex items-center gap-0.5 hover:text-foreground/70 transition-colors">
-                    <AtSign className="w-3.5 h-3.5" />
-                    {profile.username}
-                  </p>
+                  <h1 
+                    className="text-2xl font-bold mb-1 cursor-default hover:opacity-80 transition-opacity"
+                    style={{ 
+                      fontFamily: (profile as any).name_font || 'Inter',
+                      color: 'white',
+                      textShadow: `0 0 10px ${accentColor}40`,
+                    }}
+                  >
+                    {profile.effects_config?.typewriter ? (
+                      <GlitchText 
+                        text={profile.display_name || profile.username} 
+                        typewriter 
+                        loop
+                        glitchIntensity={0.05}
+                      />
+                    ) : (
+                      <GlitchText 
+                        text={profile.display_name || profile.username}
+                        glitchIntensity={0.03}
+                      />
+                    )}
+                  </h1>
                 </TooltipTrigger>
                 <TooltipContent 
                   side="top" 
@@ -364,6 +362,14 @@ export function ProfileCard({
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+          )}
+
+          {/* Username */}
+          {showUsername && (
+            <p className="text-muted-foreground text-sm mb-3 flex items-center gap-0.5">
+              <AtSign className="w-3.5 h-3.5" />
+              {profile.username}
+            </p>
           )}
 
           {/* Badges - Icon only with hover tooltip like feds.lol */}

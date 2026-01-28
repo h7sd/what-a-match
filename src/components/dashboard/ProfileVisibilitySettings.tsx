@@ -4,12 +4,14 @@ import { forwardRef } from 'react';
 
 interface ProfileVisibilitySettingsProps {
   showUsername: boolean;
+  showDisplayName: boolean;
   showBadges: boolean;
   showViews: boolean;
   showAvatar: boolean;
   showLinks: boolean;
   showDescription: boolean;
   onShowUsernameChange: (value: boolean) => void;
+  onShowDisplayNameChange: (value: boolean) => void;
   onShowBadgesChange: (value: boolean) => void;
   onShowViewsChange: (value: boolean) => void;
   onShowAvatarChange: (value: boolean) => void;
@@ -19,12 +21,14 @@ interface ProfileVisibilitySettingsProps {
 
 export const ProfileVisibilitySettings = forwardRef<HTMLDivElement, ProfileVisibilitySettingsProps>(function ProfileVisibilitySettings({
   showUsername,
+  showDisplayName,
   showBadges,
   showViews,
   showAvatar,
   showLinks,
   showDescription,
   onShowUsernameChange,
+  onShowDisplayNameChange,
   onShowBadgesChange,
   onShowViewsChange,
   onShowAvatarChange,
@@ -53,10 +57,22 @@ export const ProfileVisibilitySettings = forwardRef<HTMLDivElement, ProfileVisib
           />
         </div>
 
+        {/* Show Display Name Toggle */}
+        <div className="flex items-center justify-between py-3 px-4 rounded-lg border border-border/50 bg-secondary/20">
+          <Label htmlFor="show-display-name" className="text-sm font-medium cursor-pointer">
+            Show Display Name
+          </Label>
+          <Switch
+            id="show-display-name"
+            checked={showDisplayName}
+            onCheckedChange={onShowDisplayNameChange}
+          />
+        </div>
+
         {/* Show Username Toggle */}
         <div className="flex items-center justify-between py-3 px-4 rounded-lg border border-border/50 bg-secondary/20">
           <Label htmlFor="show-username" className="text-sm font-medium cursor-pointer">
-            Show Username
+            Show Username (@)
           </Label>
           <Switch
             id="show-username"
