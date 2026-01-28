@@ -1,14 +1,22 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+
+interface MfaChallenge {
+  factorId: string;
+  needsMfa: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  mfaChallenge: MfaChallenge | null;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null; needsMfa?: boolean; factorId?: string }>;
   signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null; data?: { user: User | null } }>;
   signOut: () => Promise<void>;
+  verifyMfa: (factorId: string, code: string) => Promise<{ error: Error | null }>;
+  clearMfaChallenge: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mfaChallenge, setMfaChallenge] = useState<MfaChallenge | null>(null);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -39,11 +48,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    return { error };
+
+    if (error) return { error };
+
+    // Check if user has MFA enabled
+    const { data: factorsData } = await supabase.auth.mfa.listFactors();
+    
+    if (factorsData) {
+      const verifiedFactors = factorsData.totp.filter(f => f.status === 'verified');
+      
+      if (verifiedFactors.length > 0) {
+        // User has MFA enabled, need to verify
+        const factor = verifiedFactors[0];
+        setMfaChallenge({ factorId: factor.id, needsMfa: true });
+        return { error: null, needsMfa: true, factorId: factor.id };
+      }
+    }
+
+    return { error: null };
+  };
+
+  const verifyMfa = async (factorId: string, code: string) => {
+    try {
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId
+      });
+
+      if (challengeError) throw challengeError;
+
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challengeData.id,
+        code
+      });
+
+      if (verifyError) throw verifyError;
+
+      setMfaChallenge(null);
+      return { error: null };
+    } catch (error: any) {
+      return { error };
+    }
+  };
+
+  const clearMfaChallenge = () => {
+    setMfaChallenge(null);
   };
 
   const signUp = async (email: string, password: string, username: string) => {
@@ -92,11 +145,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    setMfaChallenge(null);
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      mfaChallenge,
+      signIn, 
+      signUp, 
+      signOut,
+      verifyMfa,
+      clearMfaChallenge
+    }}>
       {children}
     </AuthContext.Provider>
   );

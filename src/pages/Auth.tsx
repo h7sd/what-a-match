@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Mail, CheckCircle2, Shield } from 'lucide-react';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
@@ -24,7 +24,7 @@ const signupSchema = loginSchema.extend({
     .regex(/^[a-zA-Z0-9_]+$/, 'Username darf nur Buchstaben, Zahlen und Unterstriche enthalten'),
 });
 
-type AuthStep = 'login' | 'signup' | 'verify' | 'forgot-password' | 'reset-password';
+type AuthStep = 'login' | 'signup' | 'verify' | 'forgot-password' | 'reset-password' | 'mfa-verify';
 
 function generateCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -38,20 +38,25 @@ export default function Auth() {
   const [newPassword, setNewPassword] = useState('');
   const [username, setUsername] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, verifyMfa } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   // Handle password reset from email link
   useEffect(() => {
-    const accessToken = searchParams.get('access_token');
     const type = searchParams.get('type');
+    const emailParam = searchParams.get('email');
+    const codeParam = searchParams.get('code');
     
-    if (type === 'recovery' && accessToken) {
+    if (type === 'recovery' && emailParam && codeParam) {
+      setEmail(emailParam);
+      setVerificationCode(codeParam);
       setStep('reset-password');
     }
   }, [searchParams]);
@@ -69,12 +74,35 @@ export default function Auth() {
   };
 
   const sendPasswordResetEmail = async (targetEmail: string) => {
-    // Use Supabase's built-in password reset which sends an email with a recovery link
-    const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
-      redirectTo: `${window.location.origin}/auth?type=recovery`,
+    // Generate a password reset token/code
+    const code = generateCode();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+    
+    // Store the reset code in database
+    const { error: codeError } = await supabase
+      .from('verification_codes')
+      .insert({
+        email: targetEmail.toLowerCase(),
+        code,
+        type: 'password_reset',
+        expires_at: expiresAt,
+      });
+
+    if (codeError) {
+      throw new Error('Fehler beim Erstellen des Reset-Codes');
+    }
+
+    // Build the reset URL with the code
+    const resetUrl = `${window.location.origin}/auth?type=recovery&email=${encodeURIComponent(targetEmail)}&code=${code}`;
+    
+    // Send email via our Resend edge function
+    const response = await supabase.functions.invoke('send-password-reset', {
+      body: { email: targetEmail, resetUrl },
     });
     
-    if (error) throw error;
+    if (response.error) {
+      throw new Error(response.error.message || 'Fehler beim Senden der E-Mail');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,7 +125,7 @@ export default function Auth() {
           return;
         }
 
-        const { error } = await signIn(email, password);
+        const { error, needsMfa, factorId } = await signIn(email, password);
         if (error) {
           toast({
             title: 'Fehler beim Anmelden',
@@ -106,6 +134,11 @@ export default function Auth() {
               : error.message,
             variant: 'destructive',
           });
+        } else if (needsMfa && factorId) {
+          // User has 2FA enabled, need to verify
+          setMfaFactorId(factorId);
+          setStep('mfa-verify');
+          toast({ title: '2FA erforderlich', description: 'Bitte gib deinen Authenticator-Code ein.' });
         } else {
           toast({ title: 'Willkommen zurück!' });
           navigate('/dashboard');
@@ -174,12 +207,34 @@ export default function Auth() {
           return;
         }
 
-        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        // Get code and email from URL
+        const codeParam = searchParams.get('code');
+        const emailParam = searchParams.get('email');
         
-        if (error) {
+        if (!codeParam || !emailParam) {
           toast({
-            title: 'Fehler',
-            description: error.message,
+            title: 'Ungültiger Link',
+            description: 'Bitte fordere einen neuen Passwort-Reset an.',
+            variant: 'destructive',
+          });
+          setStep('forgot-password');
+          setLoading(false);
+          return;
+        }
+
+        // Call edge function to reset password
+        const response = await supabase.functions.invoke('reset-password', {
+          body: { 
+            email: emailParam, 
+            code: codeParam, 
+            newPassword 
+          },
+        });
+
+        if (response.error || response.data?.error) {
+          toast({
+            title: 'Fehler beim Zurücksetzen',
+            description: response.data?.error || response.error?.message || 'Bitte versuche es erneut.',
             variant: 'destructive',
           });
         } else {
@@ -304,6 +359,37 @@ export default function Auth() {
     }
   };
 
+  const handleMfaVerify = async () => {
+    if (mfaCode.length !== 6 || !mfaFactorId) {
+      toast({ title: 'Bitte gib den 6-stelligen Code ein', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await verifyMfa(mfaFactorId, mfaCode);
+      
+      if (error) {
+        toast({
+          title: 'Ungültiger Code',
+          description: 'Bitte überprüfe deinen Authenticator-Code.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: 'Erfolgreich angemeldet!' });
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Fehler bei der Verifizierung',
+        description: err.message || 'Bitte versuche es erneut.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderTitle = () => {
     switch (step) {
       case 'login': return 'Willkommen zurück';
@@ -311,6 +397,7 @@ export default function Auth() {
       case 'verify': return 'E-Mail verifizieren';
       case 'forgot-password': return 'Passwort vergessen';
       case 'reset-password': return 'Neues Passwort';
+      case 'mfa-verify': return 'Zwei-Faktor-Authentifizierung';
       default: return 'Auth';
     }
   };
@@ -322,6 +409,7 @@ export default function Auth() {
       case 'verify': return `Wir haben einen 6-stelligen Code an ${email} gesendet`;
       case 'forgot-password': return 'Gib deine E-Mail ein, um dein Passwort zurückzusetzen';
       case 'reset-password': return 'Wähle ein neues, sicheres Passwort';
+      case 'mfa-verify': return 'Gib den 6-stelligen Code aus deiner Authenticator-App ein';
       default: return '';
     }
   };
@@ -574,6 +662,55 @@ export default function Auth() {
                 Passwort speichern
               </Button>
             </form>
+          )}
+
+          {/* MFA Verification Form */}
+          {step === 'mfa-verify' && (
+            <div className="space-y-6">
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-8 h-8 text-primary" />
+              </div>
+              
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={6}
+                  value={mfaCode}
+                  onChange={setMfaCode}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              <Button
+                onClick={handleMfaVerify}
+                disabled={loading || mfaCode.length !== 6}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Verifizieren
+              </Button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('login');
+                    setMfaCode('');
+                    setMfaFactorId(null);
+                  }}
+                  className="text-sm text-muted-foreground hover:text-white transition-colors"
+                >
+                  ← Zurück zum Login
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Toggle between login and signup */}
