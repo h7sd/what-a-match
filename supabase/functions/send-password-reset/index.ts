@@ -63,10 +63,14 @@ const handler = async (req: Request): Promise<Response> => {
                 <!-- Logo -->
                 <tr>
                   <td align="center" style="padding-bottom: 30px;">
-                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #8b5cf6, #a855f7); border-radius: 16px; display: inline-flex; align-items: center; justify-content: center;">
-                      <span style="color: white; font-weight: bold; font-size: 24px;">UV</span>
-                    </div>
-                    <h1 style="color: #ffffff; margin: 20px 0 0 0; font-size: 28px; font-weight: 700;">UserVault</h1>
+                    <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+                      <tr>
+                        <td align="center" style="width: 60px; height: 60px; background: linear-gradient(135deg, #8b5cf6, #a855f7); border-radius: 16px;">
+                          <span style="color: white; font-weight: bold; font-size: 24px; line-height: 60px;">UV</span>
+                        </td>
+                      </tr>
+                    </table>
+                    <h1 style="color: #ffffff; margin: 20px 0 0 0; font-size: 28px; font-weight: 700; text-align: center;">UserVault</h1>
                   </td>
                 </tr>
                 
