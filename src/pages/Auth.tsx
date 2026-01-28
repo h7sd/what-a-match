@@ -1,38 +1,81 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Ungültige E-Mail-Adresse'),
+  password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen haben'),
 });
 
 const signupSchema = loginSchema.extend({
   username: z
     .string()
-    .min(1, 'Username must be at least 1 character')
-    .max(20, 'Username must be at most 20 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+    .min(1, 'Username muss mindestens 1 Zeichen haben')
+    .max(20, 'Username darf maximal 20 Zeichen haben')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username darf nur Buchstaben, Zahlen und Unterstriche enthalten'),
 });
 
+type AuthStep = 'login' | 'signup' | 'verify' | 'forgot-password' | 'reset-password';
+
+function generateCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams] = useSearchParams();
+  const [step, setStep] = useState<AuthStep>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Handle password reset from email link
+  useEffect(() => {
+    const accessToken = searchParams.get('access_token');
+    const type = searchParams.get('type');
+    
+    if (type === 'recovery' && accessToken) {
+      setStep('reset-password');
+    }
+  }, [searchParams]);
+
+  const sendVerificationEmail = async (targetEmail: string, code: string, type: 'signup' | 'email_change') => {
+    const response = await supabase.functions.invoke('send-verification-email', {
+      body: { email: targetEmail, code, type },
+    });
+    
+    if (response.error) {
+      throw new Error(response.error.message || 'Fehler beim Senden der E-Mail');
+    }
+    
+    return response.data;
+  };
+
+  const sendPasswordResetEmail = async (targetEmail: string) => {
+    // Use Supabase's built-in password reset which sends an email with a recovery link
+    const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+      redirectTo: `${window.location.origin}/auth?type=recovery`,
+    });
+    
+    if (error) throw error;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +83,7 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      if (isLogin) {
+      if (step === 'login') {
         const result = loginSchema.safeParse({ email, password });
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
@@ -57,15 +100,17 @@ export default function Auth() {
         const { error } = await signIn(email, password);
         if (error) {
           toast({
-            title: 'Error signing in',
-            description: error.message,
+            title: 'Fehler beim Anmelden',
+            description: error.message === 'Invalid login credentials' 
+              ? 'E-Mail oder Passwort falsch'
+              : error.message,
             variant: 'destructive',
           });
         } else {
-          toast({ title: 'Welcome back!' });
+          toast({ title: 'Willkommen zurück!' });
           navigate('/dashboard');
         }
-      } else {
+      } else if (step === 'signup') {
         const result = signupSchema.safeParse({ email, password, username });
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
@@ -79,26 +124,205 @@ export default function Auth() {
           return;
         }
 
-        const { error } = await signUp(email, password, username);
+        // Generate verification code
+        const code = generateCode();
+        
+        // Store verification code in database
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
+        const { error: codeError } = await supabase
+          .from('verification_codes')
+          .insert({
+            email: email.toLowerCase(),
+            code,
+            type: 'signup',
+            expires_at: expiresAt,
+          });
+
+        if (codeError) {
+          throw new Error('Fehler beim Erstellen des Codes');
+        }
+
+        // Send verification email
+        await sendVerificationEmail(email, code, 'signup');
+        
+        toast({ 
+          title: 'Verifizierungscode gesendet!', 
+          description: 'Prüfe deine E-Mails und gib den 6-stelligen Code ein.' 
+        });
+        
+        setStep('verify');
+      } else if (step === 'forgot-password') {
+        const emailResult = z.string().email('Ungültige E-Mail-Adresse').safeParse(email);
+        if (!emailResult.success) {
+          setErrors({ email: emailResult.error.errors[0].message });
+          setLoading(false);
+          return;
+        }
+
+        await sendPasswordResetEmail(email);
+        
+        toast({ 
+          title: 'E-Mail gesendet!', 
+          description: 'Falls ein Account existiert, erhältst du einen Link zum Zurücksetzen.' 
+        });
+        
+        setStep('login');
+      } else if (step === 'reset-password') {
+        if (newPassword.length < 6) {
+          setErrors({ newPassword: 'Passwort muss mindestens 6 Zeichen haben' });
+          setLoading(false);
+          return;
+        }
+
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        
         if (error) {
           toast({
-            title: 'Error signing up',
+            title: 'Fehler',
             description: error.message,
             variant: 'destructive',
           });
         } else {
-          toast({ title: 'Account created!', description: 'Welcome to your new bio page.' });
-          navigate('/dashboard');
+          toast({ title: 'Passwort geändert!', description: 'Du kannst dich jetzt einloggen.' });
+          setStep('login');
+          navigate('/auth');
         }
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Auth error:', err);
       toast({
-        title: 'An error occurred',
-        description: 'Please try again later.',
+        title: 'Ein Fehler ist aufgetreten',
+        description: err.message || 'Bitte versuche es später erneut.',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (verificationCode.length !== 6) {
+      toast({ title: 'Bitte gib den 6-stelligen Code ein', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Check code in database
+      const { data: codes, error: fetchError } = await supabase
+        .from('verification_codes')
+        .select('*')
+        .eq('email', email.toLowerCase())
+        .eq('code', verificationCode)
+        .eq('type', 'signup')
+        .is('used_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (fetchError || !codes || codes.length === 0) {
+        toast({ 
+          title: 'Ungültiger oder abgelaufener Code', 
+          description: 'Bitte fordere einen neuen Code an.',
+          variant: 'destructive' 
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Mark code as used
+      await supabase
+        .from('verification_codes')
+        .update({ used_at: new Date().toISOString() })
+        .eq('id', codes[0].id);
+
+      // Now create the actual account
+      const { data: signUpData, error: signUpError } = await signUp(email, password, username);
+      
+      if (signUpError) {
+        toast({
+          title: 'Fehler beim Erstellen des Accounts',
+          description: signUpError.message,
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Mark email as verified in profile
+      if (signUpData?.user) {
+        // Wait a moment for the profile to be created
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        await supabase
+          .from('profiles')
+          .update({ email_verified: true })
+          .eq('user_id', signUpData.user.id);
+      }
+
+      toast({ title: 'Account erstellt!', description: 'Willkommen bei UserVault!' });
+      navigate('/dashboard');
+    } catch (err: any) {
+      console.error('Verification error:', err);
+      toast({
+        title: 'Fehler bei der Verifizierung',
+        description: err.message || 'Bitte versuche es erneut.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setLoading(true);
+    try {
+      const code = generateCode();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+      
+      await supabase
+        .from('verification_codes')
+        .insert({
+          email: email.toLowerCase(),
+          code,
+          type: 'signup',
+          expires_at: expiresAt,
+        });
+
+      await sendVerificationEmail(email, code, 'signup');
+      
+      toast({ title: 'Neuer Code gesendet!', description: 'Prüfe deine E-Mails.' });
+    } catch (err: any) {
+      toast({
+        title: 'Fehler beim Senden',
+        description: err.message || 'Bitte versuche es erneut.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderTitle = () => {
+    switch (step) {
+      case 'login': return 'Willkommen zurück';
+      case 'signup': return 'Account erstellen';
+      case 'verify': return 'E-Mail verifizieren';
+      case 'forgot-password': return 'Passwort vergessen';
+      case 'reset-password': return 'Neues Passwort';
+      default: return 'Auth';
+    }
+  };
+
+  const renderDescription = () => {
+    switch (step) {
+      case 'login': return 'Melde dich an, um deine Bio-Page zu verwalten';
+      case 'signup': return 'Erstelle deine eigene personalisierte Bio-Page';
+      case 'verify': return `Wir haben einen 6-stelligen Code an ${email} gesendet`;
+      case 'forgot-password': return 'Gib deine E-Mail ein, um dein Passwort zurückzusetzen';
+      case 'reset-password': return 'Wähle ein neues, sicheres Passwort';
+      default: return '';
     }
   };
 
@@ -114,23 +338,80 @@ export default function Auth() {
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-white transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to home
+          Zurück zur Startseite
         </Link>
 
         <div className="glass-card p-8">
           <div className="text-center mb-8">
+            {step === 'verify' && (
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-8 h-8 text-primary" />
+              </div>
+            )}
             <h1 className="text-2xl font-bold gradient-text mb-2">
-              {isLogin ? 'Welcome Back' : 'Create Account'}
+              {renderTitle()}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {isLogin
-                ? 'Sign in to manage your bio page'
-                : 'Get your own personalized bio page'}
+              {renderDescription()}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
+          {/* Login Form */}
+          {step === 'login' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-Mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="du@beispiel.de"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-secondary/50 border-border"
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Passwort</Label>
+                  <button
+                    type="button"
+                    onClick={() => setStep('forgot-password')}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Vergessen?
+                  </button>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-secondary/50 border-border"
+                />
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Anmelden
+              </Button>
+            </form>
+          )}
+
+          {/* Signup Form */}
+          {step === 'signup' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
@@ -145,62 +426,188 @@ export default function Auth() {
                   <p className="text-sm text-destructive">{errors.username}</p>
                 )}
               </div>
-            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-secondary/50 border-border"
-              />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="email">E-Mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="du@beispiel.de"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-secondary/50 border-border"
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Passwort</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-secondary/50 border-border"
+                />
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Weiter
+              </Button>
+            </form>
+          )}
+
+          {/* Verification Form */}
+          {step === 'verify' && (
+            <div className="space-y-6">
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={6}
+                  value={verificationCode}
+                  onChange={setVerificationCode}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              <Button
+                onClick={handleVerifyCode}
+                disabled={loading || verificationCode.length !== 6}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Verifizieren
+              </Button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={loading}
+                  className="text-sm text-muted-foreground hover:text-white transition-colors"
+                >
+                  Keinen Code erhalten? Erneut senden
+                </button>
+              </div>
             </div>
+          )}
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-secondary/50 border-border"
-              />
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
-              )}
+          {/* Forgot Password Form */}
+          {step === 'forgot-password' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-Mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="du@beispiel.de"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-secondary/50 border-border"
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Link senden
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => setStep('login')}
+                className="w-full text-sm text-muted-foreground hover:text-white transition-colors"
+              >
+                Zurück zum Login
+              </button>
+            </form>
+          )}
+
+          {/* Reset Password Form */}
+          {step === 'reset-password' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">Neues Passwort</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="bg-secondary/50 border-border"
+                />
+                {errors.newPassword && (
+                  <p className="text-sm text-destructive">{errors.newPassword}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Passwort speichern
+              </Button>
+            </form>
+          )}
+
+          {/* Toggle between login and signup */}
+          {(step === 'login' || step === 'signup') && (
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setStep(step === 'login' ? 'signup' : 'login');
+                  setErrors({});
+                }}
+                className="text-sm text-muted-foreground hover:text-white transition-colors"
+              >
+                {step === 'login'
+                  ? 'Noch kein Account? Registrieren'
+                  : 'Bereits einen Account? Anmelden'}
+              </button>
             </div>
+          )}
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90"
-            >
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {isLogin ? 'Sign In' : 'Create Account'}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setErrors({});
-              }}
-              className="text-sm text-muted-foreground hover:text-white transition-colors"
-            >
-              {isLogin
-                ? "Don't have an account? Sign up"
-                : 'Already have an account? Sign in'}
-            </button>
-          </div>
+          {step === 'verify' && (
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('signup');
+                  setVerificationCode('');
+                }}
+                className="text-sm text-muted-foreground hover:text-white transition-colors"
+              >
+                ← Zurück zur Registrierung
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
