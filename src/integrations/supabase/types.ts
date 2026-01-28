@@ -259,6 +259,7 @@ export type Database = {
           show_avatar: boolean | null
           show_badges: boolean | null
           show_description: boolean | null
+          show_display_name: boolean | null
           show_links: boolean | null
           show_username: boolean | null
           show_views: boolean | null
@@ -321,6 +322,7 @@ export type Database = {
           show_avatar?: boolean | null
           show_badges?: boolean | null
           show_description?: boolean | null
+          show_display_name?: boolean | null
           show_links?: boolean | null
           show_username?: boolean | null
           show_views?: boolean | null
@@ -383,6 +385,7 @@ export type Database = {
           show_avatar?: boolean | null
           show_badges?: boolean | null
           show_description?: boolean | null
+          show_display_name?: boolean | null
           show_links?: boolean | null
           show_username?: boolean | null
           show_views?: boolean | null

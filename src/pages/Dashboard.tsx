@@ -176,6 +176,7 @@ export default function Dashboard() {
 
   // Profile visibility settings
   const [showUsername, setShowUsername] = useState(true);
+  const [showDisplayName, setShowDisplayName] = useState(true);
   const [showBadges, setShowBadges] = useState(true);
   const [showViews, setShowViews] = useState(true);
   const [showAvatar, setShowAvatar] = useState(true);
@@ -249,6 +250,7 @@ export default function Dashboard() {
       setStartScreenBgColor((profile as any).start_screen_bg_color || '#000000');
       setShowVolumeControl((profile as any).show_volume_control ?? true);
       setShowUsername((profile as any).show_username ?? true);
+      setShowDisplayName((profile as any).show_display_name ?? true);
       setShowBadges((profile as any).show_badges ?? true);
       setShowViews((profile as any).show_views ?? true);
       setShowAvatar((profile as any).show_avatar ?? true);
@@ -361,6 +363,7 @@ export default function Dashboard() {
         start_screen_bg_color: startScreenBgColor,
         show_volume_control: showVolumeControl,
         show_username: showUsername,
+        show_display_name: showDisplayName,
         show_badges: showBadges,
         show_views: showViews,
         show_avatar: showAvatar,
@@ -866,12 +869,14 @@ export default function Dashboard() {
                 <div className="glass-card p-6 mt-6">
                   <ProfileVisibilitySettings
                     showUsername={showUsername}
+                    showDisplayName={showDisplayName}
                     showBadges={showBadges}
                     showViews={showViews}
                     showAvatar={showAvatar}
                     showLinks={showLinks}
                     showDescription={showDescription}
                     onShowUsernameChange={setShowUsername}
+                    onShowDisplayNameChange={setShowDisplayName}
                     onShowBadgesChange={setShowBadges}
                     onShowViewsChange={setShowViews}
                     onShowAvatarChange={setShowAvatar}

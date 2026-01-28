@@ -22,6 +22,11 @@ export function OrbitingAvatar({
     square: 'rounded-lg',
   };
 
+  // Don't render anything if no avatar URL
+  if (!avatarUrl) {
+    return null;
+  }
+
   return (
     <div 
       className="relative"
@@ -70,22 +75,11 @@ export function OrbitingAvatar({
         whileHover={{ scale: 1.05 }}
         transition={{ type: 'spring', stiffness: 300 }}
       >
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={displayName}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div 
-            className="w-full h-full flex items-center justify-center text-4xl font-bold"
-            style={{ 
-              background: `linear-gradient(135deg, ${accentColor}40, ${accentColor}20)`,
-            }}
-          >
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <img
+          src={avatarUrl}
+          alt={displayName}
+          className="w-full h-full object-cover"
+        />
       </motion.div>
 
       {/* Inner glow */}

@@ -154,6 +154,7 @@ export default function UserProfile() {
               icon_url: b.icon_url,
             }))}
             showUsername={(profile as any).show_username ?? true}
+            showDisplayName={(profile as any).show_display_name ?? true}
             showBadges={(profile as any).show_badges ?? true}
             showViews={(profile as any).show_views ?? true}
             showAvatar={(profile as any).show_avatar ?? true}
@@ -190,7 +191,7 @@ export default function UserProfile() {
       </div>
 
       {/* Controls Bar - Only show if profile has music and volume control is enabled */}
-      {!showStartScreen && profile.music_url && (profile as any).show_volume_control !== false && (
+      {!showStartScreen && profile.music_url && ((profile as any).show_volume_control ?? true) && (
         <SimpleVolumeBar
           volume={volume}
           onVolumeChange={setVolume}
