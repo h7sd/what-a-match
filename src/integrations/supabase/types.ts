@@ -244,6 +244,7 @@ export type Database = {
           discord_user_id: string | null
           display_name: string | null
           effects_config: Json | null
+          email_verified: boolean | null
           enable_profile_gradient: boolean | null
           glow_badges: boolean | null
           glow_socials: boolean | null
@@ -312,6 +313,7 @@ export type Database = {
           discord_user_id?: string | null
           display_name?: string | null
           effects_config?: Json | null
+          email_verified?: boolean | null
           enable_profile_gradient?: boolean | null
           glow_badges?: boolean | null
           glow_socials?: boolean | null
@@ -380,6 +382,7 @@ export type Database = {
           discord_user_id?: string | null
           display_name?: string | null
           effects_config?: Json | null
+          email_verified?: boolean | null
           enable_profile_gradient?: boolean | null
           glow_badges?: boolean | null
           glow_socials?: boolean | null
@@ -558,11 +561,42 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_codes: {
+        Row: {
+          code: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          type: string
+          used_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          type: string
+          used_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          type?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
