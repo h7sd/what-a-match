@@ -28,40 +28,40 @@ function useAllProfiles() {
   });
 }
 
-function FloatingProfileLink({ 
-  username, 
-  index, 
-  total,
-  row 
+function FloatingRow({ 
+  profiles, 
+  direction 
 }: { 
-  username: string; 
-  index: number; 
-  total: number;
-  row: 'top' | 'bottom';
+  profiles: Profile[]; 
+  direction: 'left' | 'right';
 }) {
-  const baseDelay = row === 'top' ? 0 : 0.5;
-  const duration = 25 + (index % 3) * 5;
-  const startX = row === 'top' ? '100%' : '-100%';
-  const endX = row === 'top' ? '-100%' : '100%';
+  // Duplicate profiles for seamless loop
+  const duplicatedProfiles = [...profiles, ...profiles];
   
   return (
-    <motion.a
-      href={`/${username}`}
-      className="text-muted-foreground/40 hover:text-primary/80 transition-colors whitespace-nowrap text-sm md:text-base px-4"
-      initial={{ x: startX, opacity: 0 }}
-      animate={{ 
-        x: [startX, endX],
-        opacity: [0, 0.6, 0.6, 0]
-      }}
-      transition={{
-        duration,
-        repeat: Infinity,
-        delay: baseDelay + (index * 2),
-        ease: 'linear',
+    <div 
+      className="flex overflow-hidden pointer-events-none"
+      style={{
+        maskImage: 'linear-gradient(to right, transparent, white 10%, white 90%, transparent)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent, white 10%, white 90%, transparent)',
       }}
     >
-      uservault.cc/@{username}
-    </motion.a>
+      <ul 
+        className="flex shrink-0 gap-8 py-2 animate-scroll-links"
+        style={{
+          animationDirection: direction === 'left' ? 'normal' : 'reverse',
+          animationDuration: '80s',
+        }}
+      >
+        {duplicatedProfiles.map((profile, i) => (
+          <li key={`${profile.id}-${i}`} className="shrink-0">
+            <span className="text-muted-foreground/40 whitespace-nowrap text-sm">
+              uservault.cc/@{profile.username}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -102,29 +102,13 @@ export function ProfileSearch() {
     <FadeIn delay={0.3}>
       <section className="py-16 relative overflow-hidden">
         {/* Floating profile links - top row */}
-        <div className="absolute top-4 left-0 right-0 flex items-center overflow-hidden pointer-events-none">
-          {topRowProfiles.map((profile, i) => (
-            <FloatingProfileLink 
-              key={`top-${profile.id}`} 
-              username={profile.username} 
-              index={i} 
-              total={topRowProfiles.length}
-              row="top"
-            />
-          ))}
+        <div className="absolute top-4 left-0 right-0">
+          <FloatingRow profiles={topRowProfiles} direction="left" />
         </div>
 
         {/* Floating profile links - bottom row */}
-        <div className="absolute bottom-4 left-0 right-0 flex items-center overflow-hidden pointer-events-none">
-          {bottomRowProfiles.map((profile, i) => (
-            <FloatingProfileLink 
-              key={`bottom-${profile.id}`} 
-              username={profile.username} 
-              index={i} 
-              total={bottomRowProfiles.length}
-              row="bottom"
-            />
-          ))}
+        <div className="absolute bottom-4 left-0 right-0">
+          <FloatingRow profiles={bottomRowProfiles} direction="right" />
         </div>
 
         {/* Search bar */}

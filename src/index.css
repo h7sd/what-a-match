@@ -373,4 +373,18 @@
   .animate-scroll {
     animation: scroll linear infinite;
   }
+
+  /* Links scroll animation */
+  @keyframes scroll-links {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-scroll-links {
+    animation: scroll-links linear infinite;
+  }
 }
