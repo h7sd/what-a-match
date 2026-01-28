@@ -170,6 +170,7 @@ export default function Dashboard() {
   const [startScreenFont, setStartScreenFont] = useState('Inter');
   const [startScreenColor, setStartScreenColor] = useState('#a855f7');
   const [startScreenBgColor, setStartScreenBgColor] = useState('#000000');
+  const [startScreenAnimation, setStartScreenAnimation] = useState<string>('none');
 
   // Volume control settings
   const [showVolumeControl, setShowVolumeControl] = useState(true);
@@ -248,6 +249,7 @@ export default function Dashboard() {
       setStartScreenFont((profile as any).start_screen_font || 'Inter');
       setStartScreenColor((profile as any).start_screen_color || '#a855f7');
       setStartScreenBgColor((profile as any).start_screen_bg_color || '#000000');
+      setStartScreenAnimation((profile as any).start_screen_animation || 'none');
       setShowVolumeControl((profile as any).show_volume_control ?? true);
       setShowUsername((profile as any).show_username ?? true);
       setShowDisplayName((profile as any).show_display_name ?? true);
@@ -361,6 +363,7 @@ export default function Dashboard() {
         start_screen_font: startScreenFont,
         start_screen_color: startScreenColor,
         start_screen_bg_color: startScreenBgColor,
+        start_screen_animation: startScreenAnimation,
         show_volume_control: showVolumeControl,
         show_username: showUsername,
         show_display_name: showDisplayName,
@@ -854,6 +857,8 @@ export default function Dashboard() {
                     onTextColorChange={setStartScreenColor}
                     bgColor={startScreenBgColor}
                     onBgColorChange={setStartScreenBgColor}
+                    textAnimation={startScreenAnimation}
+                    onTextAnimationChange={setStartScreenAnimation}
                   />
                 </div>
 

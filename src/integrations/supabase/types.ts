@@ -264,6 +264,7 @@ export type Database = {
           show_username: boolean | null
           show_views: boolean | null
           show_volume_control: boolean | null
+          start_screen_animation: string | null
           start_screen_bg_color: string | null
           start_screen_color: string | null
           start_screen_enabled: boolean | null
@@ -327,6 +328,7 @@ export type Database = {
           show_username?: boolean | null
           show_views?: boolean | null
           show_volume_control?: boolean | null
+          start_screen_animation?: string | null
           start_screen_bg_color?: string | null
           start_screen_color?: string | null
           start_screen_enabled?: boolean | null
@@ -390,6 +392,7 @@ export type Database = {
           show_username?: boolean | null
           show_views?: boolean | null
           show_volume_control?: boolean | null
+          start_screen_animation?: string | null
           start_screen_bg_color?: string | null
           start_screen_color?: string | null
           start_screen_enabled?: boolean | null

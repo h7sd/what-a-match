@@ -100,6 +100,7 @@ export default function UserProfile() {
           font={(profile as any).start_screen_font || "Inter"}
           textColor={(profile as any).start_screen_color || accentColor}
           bgColor={(profile as any).start_screen_bg_color || "#000000"}
+          textAnimation={(profile as any).start_screen_animation || "none"}
         />
       )}
       

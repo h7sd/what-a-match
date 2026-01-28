@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { motion } from 'framer-motion';
+import { ShuffleText, FuzzyText, DecryptedText, ASCIIText, TextAnimationType } from '@/components/profile/TextAnimations';
 
 const FONTS = [
   'Inter',
@@ -51,6 +52,14 @@ const FONTS = [
   'Shadows Into Light',
 ];
 
+const TEXT_ANIMATIONS: { value: TextAnimationType; label: string; description: string }[] = [
+  { value: 'none', label: 'None', description: 'Static text with typewriter cursor' },
+  { value: 'shuffle', label: 'Shuffle', description: 'Characters shuffle into place' },
+  { value: 'fuzzy', label: 'Fuzzy', description: 'Glitchy chromatic aberration effect' },
+  { value: 'decrypted', label: 'Decrypted', description: 'Matrix-style decrypt animation' },
+  { value: 'ascii', label: 'ASCII', description: 'ASCII art glitch on hover' },
+];
+
 interface StartScreenSettingsProps {
   enabled: boolean;
   onEnabledChange: (enabled: boolean) => void;
@@ -62,6 +71,41 @@ interface StartScreenSettingsProps {
   onTextColorChange: (color: string) => void;
   bgColor: string;
   onBgColorChange: (color: string) => void;
+  textAnimation?: string;
+  onTextAnimationChange?: (animation: string) => void;
+}
+
+function AnimatedPreviewText({ 
+  text, 
+  animation, 
+  font, 
+  color 
+}: { 
+  text: string; 
+  animation: string; 
+  font: string; 
+  color: string;
+}) {
+  const style = { fontFamily: font, color };
+  const displayText = text || 'Click anywhere to enter';
+  
+  switch (animation) {
+    case 'shuffle':
+      return <ShuffleText text={displayText} style={style} className="text-lg" />;
+    case 'fuzzy':
+      return <FuzzyText text={displayText} style={style} className="text-lg" />;
+    case 'decrypted':
+      return <DecryptedText text={displayText} style={style} className="text-lg" />;
+    case 'ascii':
+      return <ASCIIText text={displayText} style={style} className="text-lg" />;
+    default:
+      return (
+        <span className="text-lg" style={style}>
+          {displayText}
+          <span className="animate-pulse">|</span>
+        </span>
+      );
+  }
 }
 
 export function StartScreenSettings({
@@ -75,6 +119,8 @@ export function StartScreenSettings({
   onTextColorChange,
   bgColor,
   onBgColorChange,
+  textAnimation = 'none',
+  onTextAnimationChange,
 }: StartScreenSettingsProps) {
   return (
     <div className="space-y-6">
@@ -95,18 +141,17 @@ export function StartScreenSettings({
           exit={{ opacity: 0, height: 0 }}
           className="space-y-4 pt-2"
         >
-          {/* Preview */}
+          {/* Live Preview */}
           <div 
-            className="rounded-lg p-6 text-center border border-border/50"
+            className="rounded-lg p-8 text-center border border-border/50 min-h-[100px] flex items-center justify-center"
             style={{ backgroundColor: bgColor }}
           >
-            <p 
-              className="text-lg"
-              style={{ fontFamily: font, color: textColor }}
-            >
-              {text || 'Click anywhere to enter'}
-              <span className="animate-pulse">|</span>
-            </p>
+            <AnimatedPreviewText 
+              text={text}
+              animation={textAnimation}
+              font={font}
+              color={textColor}
+            />
           </div>
 
           {/* Text */}
@@ -120,6 +165,29 @@ export function StartScreenSettings({
             />
           </div>
 
+          {/* Text Animation */}
+          <div className="space-y-2">
+            <Label>Text Animation</Label>
+            <Select 
+              value={textAnimation} 
+              onValueChange={(v) => onTextAnimationChange?.(v as TextAnimationType)}
+            >
+              <SelectTrigger className="bg-card border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TEXT_ANIMATIONS.map((anim) => (
+                  <SelectItem key={anim.value} value={anim.value}>
+                    <div className="flex flex-col">
+                      <span>{anim.label}</span>
+                      <span className="text-xs text-muted-foreground">{anim.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Font */}
           <div className="space-y-2">
             <Label>Font</Label>
@@ -127,7 +195,7 @@ export function StartScreenSettings({
               <SelectTrigger className="bg-card border-border">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-60">
                 {FONTS.map((f) => (
                   <SelectItem key={f} value={f} style={{ fontFamily: f }}>
                     {f}
