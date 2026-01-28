@@ -785,195 +785,202 @@ export default function Dashboard() {
 
             {/* Appearance Tab */}
             {activeTab === 'appearance' && (
-              <div className="space-y-6">
-                <CustomizationPanel
-                  backgroundUrl={backgroundUrl}
-                  setBackgroundUrl={setBackgroundUrl}
-                  backgroundVideoUrl={backgroundVideoUrl}
-                  setBackgroundVideoUrl={setBackgroundVideoUrl}
-                  musicUrl={musicUrl}
-                  setMusicUrl={setMusicUrl}
-                  avatarUrl={avatarUrl}
-                  setAvatarUrl={setAvatarUrl}
-                  customCursorUrl={customCursorUrl}
-                  setCustomCursorUrl={setCustomCursorUrl}
-                  bio={bio}
-                  setBio={setBio}
-                  location={location_}
-                  setLocation={setLocation_}
-                  discordUserId={discordUserId}
-                  setDiscordUserId={setDiscordUserId}
-                  profileOpacity={profileOpacity}
-                  setProfileOpacity={setProfileOpacity}
-                  profileBlur={profileBlur}
-                  setProfileBlur={setProfileBlur}
-                  accentColor={accentColor}
-                  setAccentColor={setAccentColor}
-                  textColor={textColor}
-                  setTextColor={setTextColor}
-                  backgroundColor={backgroundColor}
-                  setBackgroundColor={setBackgroundColor}
-                  iconColor={iconColor}
-                  setIconColor={setIconColor}
-                  effects={effects}
-                  setEffects={setEffects}
-                  monochromeIcons={monochromeIcons}
-                  setMonochromeIcons={setMonochromeIcons}
-                  animatedTitle={animatedTitle}
-                  setAnimatedTitle={setAnimatedTitle}
-                  swapBioColors={swapBioColors}
-                  setSwapBioColors={setSwapBioColors}
-                  useDiscordAvatar={useDiscordAvatar}
-                  setUseDiscordAvatar={setUseDiscordAvatar}
-                  discordAvatarDecoration={discordAvatarDecoration}
-                  setDiscordAvatarDecoration={setDiscordAvatarDecoration}
-                  enableProfileGradient={enableProfileGradient}
-                  setEnableProfileGradient={setEnableProfileGradient}
-                  glowUsername={glowUsername}
-                  setGlowUsername={setGlowUsername}
-                  glowSocials={glowSocials}
-                  setGlowSocials={setGlowSocials}
-                  glowBadges={glowBadges}
-                  setGlowBadges={setGlowBadges}
-                  iconOnlyLinks={iconOnlyLinks}
-                  setIconOnlyLinks={setIconOnlyLinks}
-                  iconLinksOpacity={iconLinksOpacity}
-                  setIconLinksOpacity={setIconLinksOpacity}
-                  discordCardStyle={discordCardStyle}
-                  setDiscordCardStyle={setDiscordCardStyle}
-                  discordCardOpacity={discordCardOpacity}
-                  setDiscordCardOpacity={setDiscordCardOpacity}
-                  discordShowBadge={discordShowBadge}
-                  setDiscordShowBadge={setDiscordShowBadge}
-                  discordBadgeColor={discordBadgeColor}
-                  setDiscordBadgeColor={setDiscordBadgeColor}
-                  backgroundEffect={backgroundEffect}
-                  setBackgroundEffect={setBackgroundEffect}
-                  audioVolume={audioVolume}
-                  setAudioVolume={setAudioVolume}
-                  nameFont={nameFont}
-                  setNameFont={setNameFont}
-                  textFont={textFont}
-                  setTextFont={setTextFont}
-                />
-
-                {/* Live Profile Preview - Below Asset Uploader */}
-                <LiveProfilePreview
-                  username={username}
-                  displayName={displayName}
-                  bio={bio}
-                  avatarUrl={avatarUrl}
-                  avatarShape={avatarShape}
-                  backgroundColor={backgroundColor}
-                  accentColor={accentColor}
-                  textColor={textColor}
-                  backgroundUrl={backgroundUrl}
-                  backgroundVideoUrl={backgroundVideoUrl}
-                  backgroundEffect={backgroundEffect as any}
-                  showUsername={showUsername}
-                  showDisplayName={showDisplayName}
-                  showBadges={showBadges}
-                  showViews={showViews}
-                  showAvatar={showAvatar}
-                  showDescription={showDescription}
-                  showLinks={showLinks}
-                  viewsCount={profile?.views_count || 0}
-                  badges={userBadges.filter(ub => ub.is_enabled).map(ub => {
-                    const badge = globalBadges.find(gb => gb.id === ub.badge_id);
-                    return badge ? {
-                      id: badge.id,
-                      name: badge.name,
-                      color: badge.color || null,
-                      icon_url: badge.icon_url,
-                    } : null;
-                  }).filter(Boolean) as any[]}
-                  socialLinks={socialLinks}
-                  cardBorderEnabled={cardBorderEnabled}
-                  cardBorderColor={cardBorderColor}
-                  cardBorderWidth={cardBorderWidth}
-                  nameFont={nameFont}
-                  textFont={textFont}
-                  iconColor={iconColor}
-                  monochromeIcons={monochromeIcons}
-                  cardColor={undefined}
-                  effects={effects}
-                  occupation={occupation}
-                  location={location_}
-                  uidNumber={(profile as any)?.uid_number || 1}
-                  glowSocials={glowSocials}
-                  iconOnlyLinks={iconOnlyLinks}
-                  iconLinksOpacity={iconLinksOpacity}
-                />
-
-                {/* Start Screen Settings */}
-                <div className="glass-card p-6 mt-6">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold">Start Screen</h3>
-                  </div>
-                  <StartScreenSettings
-                    enabled={startScreenEnabled}
-                    onEnabledChange={setStartScreenEnabled}
-                    text={startScreenText}
-                    onTextChange={setStartScreenText}
-                    font={startScreenFont}
-                    onFontChange={setStartScreenFont}
-                    textColor={startScreenColor}
-                    onTextColorChange={setStartScreenColor}
-                    bgColor={startScreenBgColor}
-                    onBgColorChange={setStartScreenBgColor}
-                    textAnimation={startScreenAnimation}
-                    onTextAnimationChange={setStartScreenAnimation}
-                    asciiSize={asciiSize}
-                    onAsciiSizeChange={setAsciiSize}
-                    asciiWaves={asciiWaves}
-                    onAsciiWavesChange={setAsciiWaves}
-                  />
-                </div>
-
-                {/* Volume Control Settings */}
-                <div className="glass-card p-6 mt-6">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Volume2 className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold">Volume Control</h3>
-                  </div>
-                  <VolumeControlSettings
-                    enabled={showVolumeControl}
-                    onEnabledChange={setShowVolumeControl}
-                  />
-                </div>
-
-                {/* Profile Visibility Settings */}
-                <div className="glass-card p-6 mt-6">
-                  <ProfileVisibilitySettings
-                    showUsername={showUsername}
-                    showDisplayName={showDisplayName}
-                    showBadges={showBadges}
-                    showViews={showViews}
-                    showAvatar={showAvatar}
-                    showLinks={showLinks}
-                    showDescription={showDescription}
-                    onShowUsernameChange={setShowUsername}
-                    onShowDisplayNameChange={setShowDisplayName}
-                    onShowBadgesChange={setShowBadges}
-                    onShowViewsChange={setShowViews}
-                    onShowAvatarChange={setShowAvatar}
-                    onShowLinksChange={setShowLinks}
-                    onShowDescriptionChange={setShowDescription}
-                  />
-                </div>
-
-                {/* Card Border Settings */}
-                <div className="glass-card p-6 mt-6">
-                  <CardBorderSettings
-                    borderEnabled={cardBorderEnabled}
-                    borderColor={cardBorderColor}
-                    borderWidth={cardBorderWidth}
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Settings Column - Scrollable */}
+                <div className="flex-1 space-y-6 min-w-0">
+                  <CustomizationPanel
+                    backgroundUrl={backgroundUrl}
+                    setBackgroundUrl={setBackgroundUrl}
+                    backgroundVideoUrl={backgroundVideoUrl}
+                    setBackgroundVideoUrl={setBackgroundVideoUrl}
+                    musicUrl={musicUrl}
+                    setMusicUrl={setMusicUrl}
+                    avatarUrl={avatarUrl}
+                    setAvatarUrl={setAvatarUrl}
+                    customCursorUrl={customCursorUrl}
+                    setCustomCursorUrl={setCustomCursorUrl}
+                    bio={bio}
+                    setBio={setBio}
+                    location={location_}
+                    setLocation={setLocation_}
+                    discordUserId={discordUserId}
+                    setDiscordUserId={setDiscordUserId}
+                    profileOpacity={profileOpacity}
+                    setProfileOpacity={setProfileOpacity}
+                    profileBlur={profileBlur}
+                    setProfileBlur={setProfileBlur}
                     accentColor={accentColor}
-                    onBorderEnabledChange={setCardBorderEnabled}
-                    onBorderColorChange={setCardBorderColor}
-                    onBorderWidthChange={setCardBorderWidth}
+                    setAccentColor={setAccentColor}
+                    textColor={textColor}
+                    setTextColor={setTextColor}
+                    backgroundColor={backgroundColor}
+                    setBackgroundColor={setBackgroundColor}
+                    iconColor={iconColor}
+                    setIconColor={setIconColor}
+                    effects={effects}
+                    setEffects={setEffects}
+                    monochromeIcons={monochromeIcons}
+                    setMonochromeIcons={setMonochromeIcons}
+                    animatedTitle={animatedTitle}
+                    setAnimatedTitle={setAnimatedTitle}
+                    swapBioColors={swapBioColors}
+                    setSwapBioColors={setSwapBioColors}
+                    useDiscordAvatar={useDiscordAvatar}
+                    setUseDiscordAvatar={setUseDiscordAvatar}
+                    discordAvatarDecoration={discordAvatarDecoration}
+                    setDiscordAvatarDecoration={setDiscordAvatarDecoration}
+                    enableProfileGradient={enableProfileGradient}
+                    setEnableProfileGradient={setEnableProfileGradient}
+                    glowUsername={glowUsername}
+                    setGlowUsername={setGlowUsername}
+                    glowSocials={glowSocials}
+                    setGlowSocials={setGlowSocials}
+                    glowBadges={glowBadges}
+                    setGlowBadges={setGlowBadges}
+                    iconOnlyLinks={iconOnlyLinks}
+                    setIconOnlyLinks={setIconOnlyLinks}
+                    iconLinksOpacity={iconLinksOpacity}
+                    setIconLinksOpacity={setIconLinksOpacity}
+                    discordCardStyle={discordCardStyle}
+                    setDiscordCardStyle={setDiscordCardStyle}
+                    discordCardOpacity={discordCardOpacity}
+                    setDiscordCardOpacity={setDiscordCardOpacity}
+                    discordShowBadge={discordShowBadge}
+                    setDiscordShowBadge={setDiscordShowBadge}
+                    discordBadgeColor={discordBadgeColor}
+                    setDiscordBadgeColor={setDiscordBadgeColor}
+                    backgroundEffect={backgroundEffect}
+                    setBackgroundEffect={setBackgroundEffect}
+                    audioVolume={audioVolume}
+                    setAudioVolume={setAudioVolume}
+                    nameFont={nameFont}
+                    setNameFont={setNameFont}
+                    textFont={textFont}
+                    setTextFont={setTextFont}
                   />
+
+                  {/* Start Screen Settings */}
+                  <div className="glass-card p-6">
+                    <div className="flex items-center gap-2 mb-6">
+                      <Sparkles className="w-5 h-5 text-primary" />
+                      <h3 className="font-semibold">Start Screen</h3>
+                    </div>
+                    <StartScreenSettings
+                      enabled={startScreenEnabled}
+                      onEnabledChange={setStartScreenEnabled}
+                      text={startScreenText}
+                      onTextChange={setStartScreenText}
+                      font={startScreenFont}
+                      onFontChange={setStartScreenFont}
+                      textColor={startScreenColor}
+                      onTextColorChange={setStartScreenColor}
+                      bgColor={startScreenBgColor}
+                      onBgColorChange={setStartScreenBgColor}
+                      textAnimation={startScreenAnimation}
+                      onTextAnimationChange={setStartScreenAnimation}
+                      asciiSize={asciiSize}
+                      onAsciiSizeChange={setAsciiSize}
+                      asciiWaves={asciiWaves}
+                      onAsciiWavesChange={setAsciiWaves}
+                    />
+                  </div>
+
+                  {/* Volume Control Settings */}
+                  <div className="glass-card p-6">
+                    <div className="flex items-center gap-2 mb-6">
+                      <Volume2 className="w-5 h-5 text-primary" />
+                      <h3 className="font-semibold">Volume Control</h3>
+                    </div>
+                    <VolumeControlSettings
+                      enabled={showVolumeControl}
+                      onEnabledChange={setShowVolumeControl}
+                    />
+                  </div>
+
+                  {/* Profile Visibility Settings */}
+                  <div className="glass-card p-6">
+                    <ProfileVisibilitySettings
+                      showUsername={showUsername}
+                      showDisplayName={showDisplayName}
+                      showBadges={showBadges}
+                      showViews={showViews}
+                      showAvatar={showAvatar}
+                      showLinks={showLinks}
+                      showDescription={showDescription}
+                      onShowUsernameChange={setShowUsername}
+                      onShowDisplayNameChange={setShowDisplayName}
+                      onShowBadgesChange={setShowBadges}
+                      onShowViewsChange={setShowViews}
+                      onShowAvatarChange={setShowAvatar}
+                      onShowLinksChange={setShowLinks}
+                      onShowDescriptionChange={setShowDescription}
+                    />
+                  </div>
+
+                  {/* Card Border Settings */}
+                  <div className="glass-card p-6">
+                    <CardBorderSettings
+                      borderEnabled={cardBorderEnabled}
+                      borderColor={cardBorderColor}
+                      borderWidth={cardBorderWidth}
+                      accentColor={accentColor}
+                      onBorderEnabledChange={setCardBorderEnabled}
+                      onBorderColorChange={setCardBorderColor}
+                      onBorderWidthChange={setCardBorderWidth}
+                    />
+                  </div>
+                </div>
+
+                {/* Preview Column - Sticky on Desktop */}
+                <div className="lg:w-[400px] xl:w-[450px] flex-shrink-0">
+                  <div className="lg:sticky lg:top-4">
+                    <LiveProfilePreview
+                      username={username}
+                      displayName={displayName}
+                      bio={bio}
+                      avatarUrl={avatarUrl}
+                      avatarShape={avatarShape}
+                      backgroundColor={backgroundColor}
+                      accentColor={accentColor}
+                      textColor={textColor}
+                      backgroundUrl={backgroundUrl}
+                      backgroundVideoUrl={backgroundVideoUrl}
+                      backgroundEffect={backgroundEffect as any}
+                      showUsername={showUsername}
+                      showDisplayName={showDisplayName}
+                      showBadges={showBadges}
+                      showViews={showViews}
+                      showAvatar={showAvatar}
+                      showDescription={showDescription}
+                      showLinks={showLinks}
+                      viewsCount={profile?.views_count || 0}
+                      badges={userBadges.filter(ub => ub.is_enabled).map(ub => {
+                        const badge = globalBadges.find(gb => gb.id === ub.badge_id);
+                        return badge ? {
+                          id: badge.id,
+                          name: badge.name,
+                          color: badge.color || null,
+                          icon_url: badge.icon_url,
+                        } : null;
+                      }).filter(Boolean) as any[]}
+                      socialLinks={socialLinks}
+                      cardBorderEnabled={cardBorderEnabled}
+                      cardBorderColor={cardBorderColor}
+                      cardBorderWidth={cardBorderWidth}
+                      nameFont={nameFont}
+                      textFont={textFont}
+                      iconColor={iconColor}
+                      monochromeIcons={monochromeIcons}
+                      cardColor={undefined}
+                      effects={effects}
+                      occupation={occupation}
+                      location={location_}
+                      uidNumber={(profile as any)?.uid_number || 1}
+                      glowSocials={glowSocials}
+                      iconOnlyLinks={iconOnlyLinks}
+                      iconLinksOpacity={iconLinksOpacity}
+                    />
+                  </div>
                 </div>
               </div>
             )}
