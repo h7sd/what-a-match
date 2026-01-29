@@ -19,7 +19,8 @@ import {
   RefreshCw,
   Lock,
   Unlock,
-  Ban
+  Ban,
+  Edit
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { getBadgeIcon } from '@/lib/badges';
 import { Link } from 'react-router-dom';
+import { AdminUserDashboard } from './AdminUserDashboard';
 
 interface UserProfile {
   id: string;
@@ -95,6 +97,7 @@ export function AdminAccountLookup() {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [updatingBadgeId, setUpdatingBadgeId] = useState<string | null>(null);
   const [lockingBadgeId, setLockingBadgeId] = useState<string | null>(null);
+  const [showUserDashboard, setShowUserDashboard] = useState(false);
 
   // Live search with debounce
   useEffect(() => {
@@ -356,6 +359,15 @@ export function AdminAccountLookup() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={() => setShowUserDashboard(true)}
+                className="gap-1"
+              >
+                <Edit className="w-4 h-4" />
+                Edit Dashboard
+              </Button>
               <Link to={`/${selectedUser.username}`} target="_blank">
                 <Button variant="ghost" size="icon">
                   <ExternalLink className="w-4 h-4" />
@@ -686,6 +698,18 @@ export function AdminAccountLookup() {
             </Tabs>
           )}
         </motion.div>
+      )}
+
+      {/* Admin User Dashboard Modal */}
+      {selectedUser && (
+        <AdminUserDashboard
+          user={selectedUser as any}
+          open={showUserDashboard}
+          onClose={() => {
+            setShowUserDashboard(false);
+            refreshUserDetails();
+          }}
+        />
       )}
     </div>
   );
