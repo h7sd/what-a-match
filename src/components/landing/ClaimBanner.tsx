@@ -1,32 +1,30 @@
-import { useState, useCallback, memo } from 'react';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { FadeIn } from './FadeIn';
 
-export const ClaimBanner = memo(function ClaimBanner() {
+export function ClaimBanner() {
   const [username, setUsername] = useState('');
   const navigate = useNavigate();
 
-  const handleClaim = useCallback(() => {
+  const handleClaim = () => {
     navigate('/auth', { state: { suggestedUsername: username } });
-  }, [navigate, username]);
+  };
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && username.trim()) {
       handleClaim();
     }
-  }, [handleClaim, username]);
-
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''));
-  }, []);
+  };
 
   return (
-    <FadeIn delay={0.15}>
+    <FadeIn delay={0.2}>
       <section className="py-12">
-        <div 
-          className="bg-card/60 backdrop-blur-md rounded-2xl border border-border/50 p-6 md:p-8 transition-colors duration-200 hover:border-primary/30"
-          style={{ transform: 'translateZ(0)' }}
+        <motion.div 
+          className="bg-card/60 backdrop-blur-md rounded-2xl border border-border/50 p-6 md:p-8"
+          whileHover={{ borderColor: 'hsl(var(--primary) / 0.3)' }}
+          transition={{ duration: 0.3 }}
         >
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
@@ -44,7 +42,7 @@ export const ClaimBanner = memo(function ClaimBanner() {
                 <input
                   type="text"
                   value={username}
-                  onChange={handleChange}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
                   onKeyDown={handleKeyDown}
                   placeholder="username"
                   className="bg-transparent border-none outline-none text-foreground w-24 md:w-32 text-sm"
@@ -52,20 +50,18 @@ export const ClaimBanner = memo(function ClaimBanner() {
                 />
               </div>
               
-              <button
+              <motion.button
                 onClick={handleClaim}
-                className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium text-sm whitespace-nowrap hover:bg-primary/90 transition-colors duration-150 active:scale-[0.98]"
-                style={{
-                  willChange: 'transform',
-                  transform: 'translateZ(0)',
-                }}
+                className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium text-sm whitespace-nowrap hover:bg-primary/90 transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 Claim Now
-              </button>
+              </motion.button>
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
     </FadeIn>
   );
-});
+}

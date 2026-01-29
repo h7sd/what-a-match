@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
 
@@ -12,38 +11,37 @@ interface FadeInProps {
   scale?: boolean;
 }
 
-// Optimized direction offsets - smaller values for smoother animation
-const directionOffset = {
-  up: { y: 16, x: 0 },
-  down: { y: -16, x: 0 },
-  left: { y: 0, x: 16 },
-  right: { y: 0, x: -16 },
-  none: { y: 0, x: 0 },
-};
-
-export const FadeIn = memo(function FadeIn({ 
+export function FadeIn({ 
   children, 
   className = '', 
   delay = 0, 
-  duration = 0.4,
+  duration = 0.5,
   direction = 'up',
-  blur = false,
+  blur = true,
   scale = false
 }: FadeInProps) {
-  const offset = directionOffset[direction];
+  const directionOffset = {
+    up: { y: 24, x: 0 },
+    down: { y: -24, x: 0 },
+    left: { y: 0, x: 24 },
+    right: { y: 0, x: -24 },
+    none: { y: 0, x: 0 },
+  };
 
   return (
     <motion.div
       initial={{ 
         opacity: 0,
-        y: offset.y,
-        x: offset.x,
-        scale: scale ? 0.98 : 1,
+        y: directionOffset[direction].y,
+        x: directionOffset[direction].x,
+        filter: blur ? 'blur(10px)' : 'blur(0px)',
+        scale: scale ? 0.95 : 1,
       }}
       animate={{ 
         opacity: 1, 
         y: 0,
         x: 0,
+        filter: 'blur(0px)',
         scale: 1,
       }}
       transition={{ 
@@ -52,15 +50,11 @@ export const FadeIn = memo(function FadeIn({
         ease: [0.25, 0.46, 0.45, 0.94]
       }}
       className={className}
-      style={{
-        willChange: 'transform, opacity',
-        transform: 'translateZ(0)',
-      }}
     >
       {children}
     </motion.div>
   );
-});
+}
 
 interface StaggerContainerProps {
   children: ReactNode;
@@ -69,10 +63,10 @@ interface StaggerContainerProps {
   initialDelay?: number;
 }
 
-export const StaggerContainer = memo(function StaggerContainer({ 
+export function StaggerContainer({ 
   children, 
   className = '',
-  staggerDelay = 0.08,
+  staggerDelay = 0.1,
   initialDelay = 0
 }: StaggerContainerProps) {
   return (
@@ -90,42 +84,39 @@ export const StaggerContainer = memo(function StaggerContainer({
         },
       }}
       className={className}
-      style={{ willChange: 'opacity' }}
     >
       {children}
     </motion.div>
   );
-});
+}
 
 interface StaggerItemProps {
   children: ReactNode;
   className?: string;
 }
 
-export const StaggerItem = memo(function StaggerItem({ children, className = '' }: StaggerItemProps) {
+export function StaggerItem({ children, className = '' }: StaggerItemProps) {
   return (
     <motion.div
       variants={{
         hidden: { 
           opacity: 0, 
-          y: 12,
+          y: 20,
+          filter: 'blur(10px)',
         },
         visible: { 
           opacity: 1, 
           y: 0,
+          filter: 'blur(0px)',
           transition: {
-            duration: 0.35,
+            duration: 0.5,
             ease: [0.25, 0.46, 0.45, 0.94],
           },
         },
       }}
       className={className}
-      style={{
-        willChange: 'transform, opacity',
-        transform: 'translateZ(0)',
-      }}
     >
       {children}
     </motion.div>
   );
-});
+}
