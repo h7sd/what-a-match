@@ -62,7 +62,6 @@ import { AdminBadgeRemover } from '@/components/admin/AdminBadgeRemover';
 import { AllBadgeAssigner } from '@/components/admin/AllBadgeAssigner';
 import { UserBanManager } from '@/components/admin/UserBanManager';
 import { AdminAccountLookup } from '@/components/admin/AdminAccountLookup';
-import { AdminImpersonate } from '@/components/admin/AdminImpersonate';
 import { SocialLinksGrid } from '@/components/dashboard/SocialLinksGrid';
 import { CustomizationPanel } from '@/components/dashboard/CustomizationPanel';
 import { AccountSettings } from '@/components/dashboard/AccountSettings';
@@ -1273,11 +1272,6 @@ export default function Dashboard() {
             {/* Admin Tab */}
             {activeTab === 'admin' && isAdmin && (
               <div className="space-y-6 max-w-4xl">
-                {/* Admin Test Login Button - Top Right */}
-                <div className="flex justify-end">
-                  <AdminImpersonate />
-                </div>
-
                 {/* Account Lookup - Full Width Top */}
                 <div className="glass-card p-6">
                   <AdminAccountLookup />
