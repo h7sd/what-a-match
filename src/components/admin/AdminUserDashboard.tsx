@@ -144,6 +144,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [previewExpanded, setPreviewExpanded] = useState(true);
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'badges' | 'links' | 'visibility'>('profile');
   
   // Complete profile form state
   const [formData, setFormData] = useState({
@@ -197,6 +198,8 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
   // Load user data when opened
   useEffect(() => {
     if (open && user) {
+      // Reset editor tab only when opening a (new) user editor, not on every keystroke
+      setActiveTab('profile');
       setFormData({
         display_name: user.display_name || '',
         bio: user.bio || '',
@@ -623,7 +626,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
 
       {/* Tabs */}
       <div className="flex-1 overflow-hidden">
-        <Tabs defaultValue="profile" className="h-full flex flex-col">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-5 mx-4 mt-4 flex-shrink-0" style={{ width: 'calc(100% - 2rem)' }}>
             <TabsTrigger value="profile" className="text-xs px-1 min-h-[36px]">
               <User className="w-3 h-3 mr-1 hidden sm:inline" />Profile
