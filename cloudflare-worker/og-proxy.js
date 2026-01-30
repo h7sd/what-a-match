@@ -1,15 +1,8 @@
 /**
  * Cloudflare Worker für UserVault Open Graph Embeds
  * 
- * Dieser Worker erkennt Bot-Requests (Discord, Twitter, etc.) und leitet sie
- * zur Supabase Edge Function weiter, die dynamische OG-Meta-Tags generiert.
- * 
- * SETUP:
- * 1. Gehe zu cloudflare.com → Workers & Pages → Create Worker
- * 2. Füge diesen Code ein
- * 3. Gehe zu Settings → Triggers → Add Route
- * 4. Route: uservault.cc/* (oder www.uservault.cc/*)
- * 5. Stelle sicher dass DNS-Records auf "Proxied" (orangene Wolke) stehen
+ * ERSETZE den "biolink" Worker mit diesem Code!
+ * Oder ändere die Routes zu diesem Worker.
  */
 
 // Bot User-Agent patterns
@@ -27,149 +20,154 @@ const BOT_PATTERNS = [
   /bingbot/i,
   /yandex/i,
   /baiduspider/i,
-  /ia_archiver/i,
-  /archive\.org_bot/i,
   /embedly/i,
-  /quora link preview/i,
-  /showyoubot/i,
-  /outbrain/i,
   /pinterest/i,
   /redditbot/i,
   /viber/i,
   /tumblr/i,
   /skypeuripreview/i,
-  /nuzzel/i,
-  /pocket/i,
-  /flipboard/i,
-  /bitlybot/i,
   /vkshare/i,
-  /w3c_validator/i,
-  /curl/i,
-  /wget/i,
 ];
 
-// Supabase Edge Function URL
-const SUPABASE_PROJECT_REF = "cjulgfbmcnmrkvnzkpym";
-const SHARE_FUNCTION_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/share`;
+// Supabase Config
+const SUPABASE_URL = "https://cjulgfbmcnmrkvnzkpym.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqdWxnZmJtY25tcmt2bnprcHltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxOTU5MTUsImV4cCI6MjA4NDc3MTkxNX0.FDQnngSKGd9dx7ZQHn0wCghph7pViIAYuZc8jMjWBhE";
 
-/**
- * Erkennt ob ein Request von einem Bot kommt
- */
 function isBot(request) {
   const ua = request.headers.get("User-Agent") || "";
-  
-  // Debug mode: ?__bot=1 erzwingt Bot-Verhalten
   const url = new URL(request.url);
-  if (url.searchParams.has("__bot")) {
-    return true;
-  }
   
-  // Check User-Agent gegen Bot-Patterns
+  // Debug: ?__bot=1 forces bot behavior
+  if (url.searchParams.has("__bot")) return true;
+  
   for (const pattern of BOT_PATTERNS) {
-    if (pattern.test(ua)) {
-      return true;
-    }
+    if (pattern.test(ua)) return true;
   }
-  
-  // Zusätzlicher Check: Bots senden normalerweise kein sec-ch-ua Header
-  // (das ist ein Browser-only Header)
-  const secChUa = request.headers.get("sec-ch-ua");
-  if (!secChUa && BOT_PATTERNS.some(p => p.test(ua))) {
-    return true;
-  }
-  
   return false;
 }
 
-/**
- * Extrahiert den Username aus der URL
- * Unterstützt: /username, /1 (uid), /@username
- */
 function extractUsername(url) {
   const path = url.pathname;
   
-  // Ignoriere statische Pfade
-  const ignorePaths = [
-    "/",
-    "/auth",
-    "/dashboard",
-    "/privacy",
-    "/terms",
-    "/imprint",
-    "/assets",
-    "/favicon.ico",
-    "/robots.txt",
-    "/sitemap.xml",
-  ];
-  
-  // Check ob Pfad mit ignorierten Pfaden beginnt
+  const ignorePaths = ["/", "/auth", "/dashboard", "/privacy", "/terms", "/imprint", "/assets", "/favicon.ico", "/robots.txt"];
   for (const ignore of ignorePaths) {
     if (path === ignore || path.startsWith(ignore + "/") || path.startsWith("/assets/")) {
       return null;
     }
   }
   
-  // Extrahiere Username (entferne leading slash und optional @)
-  let username = path.replace(/^\/+/, "").replace(/^@/, "");
+  let username = path.replace(/^\/+/, "").replace(/^@/, "").replace(/\/+$/, "");
+  if (!username || !/^[a-zA-Z0-9_.]+$/.test(username)) return null;
+  return username;
+}
+
+async function fetchProfile(username) {
+  // Try by username first
+  let query = `username=eq.${username}`;
   
-  // Entferne trailing slashes
-  username = username.replace(/\/+$/, "");
-  
-  // Nur alphanumerische + underscore + dot erlaubt (oder nur Zahlen für UID)
-  if (!username || !/^[a-zA-Z0-9_.]+$/.test(username)) {
-    return null;
+  // If numeric, also try uid_number
+  if (/^\d+$/.test(username)) {
+    query = `uid_number=eq.${username}`;
   }
   
-  return username;
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/profiles?${query}&select=username,display_name,bio,avatar_url,og_title,og_description,og_image_url,og_icon_url`,
+    {
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+    }
+  );
+  
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data?.[0] || null;
+}
+
+function generateOGHtml(profile, originalUrl) {
+  const title = profile.og_title || profile.display_name || profile.username || "UserVault";
+  const description = profile.og_description || profile.bio || `Check out ${profile.username}'s profile on UserVault`;
+  const image = profile.og_image_url || profile.avatar_url || "https://uservault.cc/og-image.png";
+  const icon = profile.og_icon_url || "https://uservault.cc/favicon.ico";
+  const url = originalUrl || `https://uservault.cc/${profile.username}`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
+  
+  <!-- Open Graph -->
+  <meta property="og:type" content="profile">
+  <meta property="og:site_name" content="UserVault">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:image" content="${escapeHtml(image)}">
+  <meta property="og:url" content="${escapeHtml(url)}">
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
+  <meta name="twitter:image" content="${escapeHtml(image)}">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="${escapeHtml(icon)}">
+  
+  <!-- Redirect real users -->
+  <meta http-equiv="refresh" content="0;url=${escapeHtml(url)}">
+</head>
+<body>
+  <p>Redirecting to <a href="${escapeHtml(url)}">${escapeHtml(title)}</a>...</p>
+</body>
+</html>`;
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    
-    // Extrahiere Username
     const username = extractUsername(url);
     
-    // Wenn kein Username oder kein Bot, weiter zur Origin
+    // Not a profile page or not a bot -> pass through to origin
     if (!username || !isBot(request)) {
       return fetch(request);
     }
     
-    // Bot erkannt! Leite zur Share Edge Function weiter
-    console.log(`[OG-PROXY] Bot detected for: ${username}`);
+    console.log(`[OG] Bot detected for: ${username}`);
     
     try {
-      const shareUrl = new URL(SHARE_FUNCTION_URL);
-      shareUrl.searchParams.set("u", username);
-      shareUrl.searchParams.set("src", request.url); // Original URL für og:url
+      const profile = await fetchProfile(username);
       
-      const response = await fetch(shareUrl.toString(), {
-        method: "GET",
-        headers: {
-          "User-Agent": request.headers.get("User-Agent") || "Cloudflare-Worker",
-        },
-      });
-      
-      // Bei Fehler (404, 500, etc.) zur Origin weiterleiten
-      if (!response.ok) {
-        console.log(`[OG-PROXY] Share function returned ${response.status}, falling back to origin`);
+      if (!profile) {
+        console.log(`[OG] Profile not found: ${username}`);
         return fetch(request);
       }
       
-      // HTML-Response mit korrekten Headers zurückgeben
-      const html = await response.text();
+      const html = generateOGHtml(profile, request.url);
       
       return new Response(html, {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          "X-Robots-Tag": "noindex", // Bots sollen diese Seite nicht indexieren
+          "Cache-Control": "public, max-age=300",
+          "X-Robots-Tag": "noindex",
         },
       });
     } catch (error) {
-      console.error(`[OG-PROXY] Error:`, error);
-      // Bei Fehler zur Origin weiterleiten
+      console.error(`[OG] Error:`, error);
       return fetch(request);
     }
   },
