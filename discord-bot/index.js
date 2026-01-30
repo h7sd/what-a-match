@@ -16,8 +16,17 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'https://cjulgfbmcnmrkvnzkpym.s
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqdWxnZmJtY25tcmt2bnprcHltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxOTU5MTUsImV4cCI6MjA4NDc3MTkxNX0.FDQnngSKGd9dx7ZQHn0wCghph7pViIAYuZc8jMjWBhE';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Prefer service role for bot polling (bypasses RLS + allows admin user email lookup)
-const SUPABASE_API_KEY = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+// CRITICAL: Badge request polling REQUIRES service role to bypass RLS
+if (!SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('');
+  console.error('❌ CRITICAL: SUPABASE_SERVICE_ROLE_KEY is required for badge request polling!');
+  console.error('❌ The bot cannot fetch pending badge requests without it (RLS blocks ANON key).');
+  console.error('❌ Get your service role key from Lovable Cloud and add it to your .env file.');
+  console.error('');
+  process.exit(1);
+}
+
+const SUPABASE_API_KEY = SUPABASE_SERVICE_ROLE_KEY;
 
 function supabaseHeaders() {
   return {
@@ -283,6 +292,8 @@ client.on('interactionCreate', async (interaction) => {
 // ============================================
 async function checkForNewBadgeRequests() {
   try {
+    console.log('🔍 Checking for new badge requests...');
+    
     // Fetch pending badge requests.
     // IMPORTANT: Don't use embedded selects/foreign-key hints here (those caused 400 Bad Request).
     const response = await fetch(
@@ -297,12 +308,17 @@ async function checkForNewBadgeRequests() {
     }
 
     const requests = await response.json();
+    console.log(`📦 Found ${requests.length} pending badge request(s)`);
+    
     const channel = client.channels.cache.get(BADGE_REQUEST_CHANNEL_ID);
     
     if (!channel) {
-      console.error('❌ Badge request channel not found:', BADGE_REQUEST_CHANNEL_ID);
+      console.error(`❌ Badge request channel not found: ${BADGE_REQUEST_CHANNEL_ID}`);
+      console.error('❌ Make sure the bot has access to this channel and the channel ID is correct!');
       return;
     }
+    
+    console.log(`✅ Channel found: #${channel.name}`);
 
     // Build a quick lookup for usernames/uids (best-effort)
     const profileByUserId = new Map();
@@ -395,8 +411,13 @@ async function checkForNewBadgeRequests() {
       // Mark as notified
       notifiedRequests.add(request.id);
     }
+    
+    if (requests.length === 0) {
+      console.log('✅ No new badge requests to process');
+    }
   } catch (err) {
     console.error('❌ Error checking badge requests:', err.message);
+    console.error('Stack trace:', err.stack);
   }
 }
 
@@ -413,6 +434,7 @@ client.once('ready', async () => {
   console.log('╚════════════════════════════════════════════╝');
   console.log('');
   console.log('📋 Badge Request Management: ENABLED');
+  console.log(`🔑 Using Service Role Key: ${SUPABASE_SERVICE_ROLE_KEY ? 'YES (can bypass RLS + fetch emails)' : 'NO (polling will fail!)'}`);
   console.log(`📢 Badge Request Channel: ${BADGE_REQUEST_CHANNEL_ID}`);
   console.log(`👮 Admin Users: ${ADMIN_USER_IDS.length > 0 ? ADMIN_USER_IDS.join(', ') : 'Not configured'}`);
   console.log('');
