@@ -77,19 +77,6 @@ export function AdminUIDManager() {
     setIsUpdating(true);
 
     try {
-      // Check if UID is already taken
-      const { data: existing } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .eq('uid_number', uidNumber)
-        .neq('id', foundUser.id)
-        .maybeSingle();
-
-      if (existing) {
-        toast.error(`UID ${uidNumber} is already assigned to @${existing.username}`);
-        setIsUpdating(false);
-        return;
-      }
 
       // Use edge function to bypass RLS trigger restriction
       const { error } = await supabase.functions.invoke('admin-update-profile', {
@@ -192,10 +179,10 @@ export function AdminUIDManager() {
             </div>
           </div>
 
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-            <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-yellow-400">
-              Changing a user's UID affects their profile display. Make sure the new UID isn't already in use.
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+            <AlertCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-primary">
+              UIDs can be duplicated. Multiple users may have the same UID number.
             </p>
           </div>
         </motion.div>
