@@ -81,8 +81,9 @@ export function AdminUIDManager() {
       // Use edge function to bypass RLS trigger restriction
       const { error } = await supabase.functions.invoke('admin-update-profile', {
         body: {
+          action: 'update_profile',
           profileId: foundUser.id,
-          updates: { uid_number: uidNumber },
+          data: { uid_number: uidNumber },
         },
       });
 
