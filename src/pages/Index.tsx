@@ -74,23 +74,60 @@ export default function Index() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="p-6 flex justify-between items-center max-w-6xl mx-auto"
+          className="p-4 md:p-6 flex justify-center"
         >
-          <div className="flex items-center gap-4">
-            <Link to="/" className="text-xl font-bold text-primary">
-              UserVault
-            </Link>
-            <ReportUserDialog />
-          </div>
-          <div className="flex gap-3">
-            {user ? (
-              <NavButton to="/dashboard">Dashboard</NavButton>
-            ) : (
-              <>
-                <NavButton to="/auth" variant="ghost">Sign In</NavButton>
-                <NavButton to="/auth">Get Started</NavButton>
-              </>
-            )}
+          <div className="w-full max-w-4xl bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl px-4 md:px-6 py-3 flex items-center justify-between">
+            {/* Left - Brand + Nav Links */}
+            <div className="flex items-center gap-4 md:gap-8">
+              <Link to="/" className="text-sm md:text-base font-semibold text-primary hover:text-primary/80 transition-colors">
+                UserVault.cc
+              </Link>
+              <nav className="hidden md:flex items-center gap-6">
+                <a 
+                  href="#features" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Premium
+                </a>
+                <a 
+                  href="#" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Partners
+                </a>
+                <a 
+                  href="https://discord.gg/uservault" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Discord
+                </a>
+              </nav>
+            </div>
+
+            {/* Right - Auth Buttons */}
+            <div className="flex items-center gap-2 md:gap-3">
+              <ReportUserDialog />
+              {user ? (
+                <NavButton to="/dashboard">Dashboard</NavButton>
+              ) : (
+                <>
+                  <Link 
+                    to="/auth" 
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
+                  >
+                    Login
+                  </Link>
+                  <Link 
+                    to="/auth" 
+                    className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-1.5 rounded-full transition-colors font-medium"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </motion.header>
 
