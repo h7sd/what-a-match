@@ -14,6 +14,17 @@ const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS || '').split(',').filter(Bool
 const BADGE_REQUEST_CHANNEL_ID = process.env.BADGE_REQUEST_CHANNEL_ID || '1466581321169240076';
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://cjulgfbmcnmrkvnzkpym.supabase.co';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqdWxnZmJtY25tcmt2bnprcHltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxOTU5MTUsImV4cCI6MjA4NDc3MTkxNX0.FDQnngSKGd9dx7ZQHn0wCghph7pViIAYuZc8jMjWBhE';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Prefer service role for bot polling (bypasses RLS + allows admin user email lookup)
+const SUPABASE_API_KEY = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+
+function supabaseHeaders() {
+  return {
+    apikey: SUPABASE_API_KEY,
+    Authorization: `Bearer ${SUPABASE_API_KEY}`,
+  };
+}
 
 // Track already notified requests to avoid duplicates
 const notifiedRequests = new Set();
@@ -272,19 +283,16 @@ client.on('interactionCreate', async (interaction) => {
 // ============================================
 async function checkForNewBadgeRequests() {
   try {
-    // Fetch pending badge requests from Supabase
+    // Fetch pending badge requests.
+    // IMPORTANT: Don't use embedded selects/foreign-key hints here (those caused 400 Bad Request).
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/badge_requests?status=eq.pending&select=*,profiles!badge_requests_user_id_fkey(username,uid_number)`,
-      {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-      }
+      `${SUPABASE_URL}/rest/v1/badge_requests?status=eq.pending&select=id,user_id,badge_name,badge_description,badge_color,badge_icon_url,created_at&order=created_at.asc`,
+      { headers: supabaseHeaders() }
     );
 
     if (!response.ok) {
-      console.error('❌ Failed to fetch badge requests:', response.statusText);
+      const body = await response.text().catch(() => '');
+      console.error(`❌ Failed to fetch badge requests: ${response.status} ${response.statusText}${body ? `\n${body}` : ''}`);
       return;
     }
 
@@ -296,13 +304,49 @@ async function checkForNewBadgeRequests() {
       return;
     }
 
+    // Build a quick lookup for usernames/uids (best-effort)
+    const profileByUserId = new Map();
+    if (SUPABASE_SERVICE_ROLE_KEY && requests.length > 0) {
+      const ids = [...new Set(requests.map(r => r.user_id).filter(Boolean))];
+      // PostgREST in() filter supports comma-separated values; keep it simple for UUIDs.
+      // Encode each UUID, but do NOT encode the commas/parentheses.
+      const inList = ids.map(encodeURIComponent).join(',');
+
+      const profileRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?select=user_id,username,uid_number&user_id=in.(${inList})`,
+        { headers: supabaseHeaders() }
+      );
+
+      if (profileRes.ok) {
+        const profiles = await profileRes.json();
+        for (const p of profiles) profileByUserId.set(p.user_id, p);
+      }
+    }
+
     for (const request of requests) {
       // Skip if already notified
       if (notifiedRequests.has(request.id)) continue;
 
-      // Get user email from auth (we'll include what we have)
-      const username = request.profiles?.username || 'Unknown';
-      const uid = request.profiles?.uid_number || 'N/A';
+      const profile = profileByUserId.get(request.user_id);
+      const username = profile?.username || 'Unknown';
+      const uid = profile?.uid_number ?? 'N/A';
+
+      // Email is only available via admin auth API (requires service role)
+      let email = 'N/A';
+      if (SUPABASE_SERVICE_ROLE_KEY && request.user_id) {
+        try {
+          const userRes = await fetch(
+            `${SUPABASE_URL}/auth/v1/admin/users/${request.user_id}`,
+            { headers: supabaseHeaders() }
+          );
+          if (userRes.ok) {
+            const userJson = await userRes.json();
+            email = userJson?.user?.email || userJson?.email || 'N/A';
+          }
+        } catch (_) {
+          // ignore
+        }
+      }
       
       // Build embed
       const embed = new EmbedBuilder()
@@ -311,7 +355,7 @@ async function checkForNewBadgeRequests() {
         .addFields(
           { name: '👤 Username', value: `@${username}`, inline: true },
           { name: '🆔 UID', value: `#${uid}`, inline: true },
-          { name: '📧 User ID', value: request.user_id.substring(0, 8) + '...', inline: true },
+          { name: '📧 Email', value: email, inline: true },
           { name: '🏷️ Badge Name', value: request.badge_name, inline: false },
           { name: '📝 Description', value: request.badge_description || 'No description', inline: false },
           { name: '🎨 Color', value: request.badge_color, inline: true },
