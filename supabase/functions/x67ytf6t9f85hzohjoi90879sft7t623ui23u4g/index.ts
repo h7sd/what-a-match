@@ -98,10 +98,10 @@ serve(async (req) => {
 
     console.log(`[EDIT-APPROVE] Processing request: ${requestId}`);
 
-    // Get the request
+    // Get the request (NO join: badge_requests has no FK to profiles)
     const { data: request, error: fetchError } = await supabase
       .from("badge_requests")
-      .select("*, profiles!inner(username)")
+      .select("*")
       .eq("id", requestId)
       .single();
 
@@ -113,7 +113,15 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[EDIT-APPROVE] Found request for user: ${request.user_id}`);
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("user_id", request.user_id)
+      .maybeSingle();
+
+    console.log(
+      `[EDIT-APPROVE] Found request for user: ${request.user_id}${profile?.username ? ` (@${profile.username})` : ""}`
+    );
 
     // Get user email
     const { data: userData } = await supabase.auth.admin.getUserById(request.user_id);
