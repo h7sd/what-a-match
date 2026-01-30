@@ -1,8 +1,7 @@
 /**
  * Cloudflare Worker für UserVault Open Graph Embeds
  * 
- * ERSETZE den "biolink" Worker mit diesem Code!
- * Oder ändere die Routes zu diesem Worker.
+ * Ruft die Edge Function auf um OG-HTML für Discord/Twitter zu generieren
  */
 
 // Bot User-Agent patterns
@@ -29,9 +28,8 @@ const BOT_PATTERNS = [
   /vkshare/i,
 ];
 
-// Supabase Config
-const SUPABASE_URL = "https://cjulgfbmcnmrkvnzkpym.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqdWxnZmJtY25tcmt2bnprcHltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxOTU5MTUsImV4cCI6MjA4NDc3MTkxNX0.FDQnngSKGd9dx7ZQHn0wCghph7pViIAYuZc8jMjWBhE";
+// Edge Function URL for OG HTML generation
+const OG_FUNCTION_URL = "https://cjulgfbmcnmrkvnzkpym.supabase.co/functions/v1/og-html";
 
 function isBot(request) {
   const ua = request.headers.get("User-Agent") || "";
@@ -61,79 +59,15 @@ function extractUsername(url) {
   return username;
 }
 
-async function fetchProfile(username) {
-  // Try by username first
-  let query = `username=eq.${username}`;
+async function fetchOGHtml(username) {
+  const res = await fetch(`${OG_FUNCTION_URL}?username=${encodeURIComponent(username)}`);
   
-  // If numeric, also try uid_number
-  if (/^\d+$/.test(username)) {
-    query = `uid_number=eq.${username}`;
+  if (!res.ok) {
+    console.log(`[OG] Edge function returned ${res.status} for: ${username}`);
+    return null;
   }
   
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?${query}&select=username,display_name,bio,avatar_url,og_title,og_description,og_image_url,og_icon_url`,
-    {
-      headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-    }
-  );
-  
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data?.[0] || null;
-}
-
-function generateOGHtml(profile, originalUrl) {
-  const title = profile.og_title || profile.display_name || profile.username || "UserVault";
-  const description = profile.og_description || profile.bio || `Check out ${profile.username}'s profile on UserVault`;
-  const image = profile.og_image_url || profile.avatar_url || "https://uservault.cc/og-image.png";
-  const icon = profile.og_icon_url || "https://uservault.cc/favicon.ico";
-  const url = originalUrl || `https://uservault.cc/${profile.username}`;
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)}</title>
-  <meta name="description" content="${escapeHtml(description)}">
-  
-  <!-- Open Graph -->
-  <meta property="og:type" content="profile">
-  <meta property="og:site_name" content="UserVault">
-  <meta property="og:title" content="${escapeHtml(title)}">
-  <meta property="og:description" content="${escapeHtml(description)}">
-  <meta property="og:image" content="${escapeHtml(image)}">
-  <meta property="og:url" content="${escapeHtml(url)}">
-  
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${escapeHtml(title)}">
-  <meta name="twitter:description" content="${escapeHtml(description)}">
-  <meta name="twitter:image" content="${escapeHtml(image)}">
-  
-  <!-- Favicon -->
-  <link rel="icon" href="${escapeHtml(icon)}">
-  
-  <!-- Redirect real users -->
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(url)}">
-</head>
-<body>
-  <p>Redirecting to <a href="${escapeHtml(url)}">${escapeHtml(title)}</a>...</p>
-</body>
-</html>`;
-}
-
-function escapeHtml(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  return await res.text();
 }
 
 export default {
@@ -152,7 +86,6 @@ export default {
     // Not a profile page or not a bot -> pass through to origin
     if (!username || !botDetected) {
       const response = await fetch(request);
-      // Add debug headers to passthrough response
       const newResponse = new Response(response.body, response);
       Object.entries(debugHeaders).forEach(([k, v]) => newResponse.headers.set(k, v));
       return newResponse;
@@ -161,17 +94,15 @@ export default {
     console.log(`[OG] Bot detected for: ${username}`);
     
     try {
-      const profile = await fetchProfile(username);
+      const html = await fetchOGHtml(username);
       
-      if (!profile) {
-        console.log(`[OG] Profile not found: ${username}`);
+      if (!html) {
+        console.log(`[OG] No HTML returned for: ${username}`);
         const response = await fetch(request);
         const newResponse = new Response(response.body, response);
         newResponse.headers.set("X-OG-Worker", "active-no-profile");
         return newResponse;
       }
-      
-      const html = generateOGHtml(profile, request.url);
       
       return new Response(html, {
         status: 200,
@@ -180,7 +111,6 @@ export default {
           "Cache-Control": "public, max-age=300",
           "X-Robots-Tag": "noindex",
           "X-OG-Worker": "active-generated",
-          "X-OG-Profile": profile.username,
         },
       });
     } catch (error) {
