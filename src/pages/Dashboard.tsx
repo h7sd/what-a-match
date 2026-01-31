@@ -69,6 +69,7 @@ import { UserBanManager } from '@/components/admin/UserBanManager';
 import { AdminAccountLookup } from '@/components/admin/AdminAccountLookup';
 import { AdminUIDManager } from '@/components/admin/AdminUIDManager';
 import { AdminPurchaseHistory } from '@/components/admin/AdminPurchaseHistory';
+import { AdminPromoCodeManager } from '@/components/admin/AdminPromoCodeManager';
 import { SocialLinksGrid } from '@/components/dashboard/SocialLinksGrid';
 import { BadgeRequestForm } from '@/components/dashboard/BadgeRequestForm';
 import { CustomizationPanel } from '@/components/dashboard/CustomizationPanel';
@@ -1295,6 +1296,11 @@ export default function Dashboard() {
                   <div className="glass-card p-5">
                     <AdminBadgeRemover />
                   </div>
+                </div>
+
+                {/* Promo Codes Manager - Full Width */}
+                <div className="glass-card p-6">
+                  <AdminPromoCodeManager />
                 </div>
 
                 {/* Purchase History - Full Width */}

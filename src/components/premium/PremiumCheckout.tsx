@@ -2,15 +2,17 @@ import { PayPalButtons, usePayPalScriptReducer } from "@paypal/react-paypal-js";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Crown, Check, Sparkles, Palette, Globe } from "lucide-react";
+import { Loader2, Crown, Check, Sparkles, Palette, Globe, Tag } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface PremiumCheckoutProps {
   onSuccess?: () => void;
-  price?: string;
 }
 
-const PREMIUM_PRICE = "3.00";
+const PREMIUM_PRICE = 3.50;
+const CURRENCY = "USD";
 
 const PREMIUM_FEATURES = [
   { icon: Palette, text: "Advanced Themes & Animations" },
@@ -19,10 +21,126 @@ const PREMIUM_FEATURES = [
   { icon: Crown, text: "Premium Badge on your Profile" },
 ];
 
-export function PremiumCheckout({ onSuccess, price = PREMIUM_PRICE }: PremiumCheckoutProps) {
+export function PremiumCheckout({ onSuccess }: PremiumCheckoutProps) {
   const [{ isPending, isResolved }] = usePayPalScriptReducer();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string;
+    discount: number;
+    type: string;
+  } | null>(null);
+  const [isValidatingCode, setIsValidatingCode] = useState(false);
   const { toast } = useToast();
+
+  const finalPrice = appliedPromo 
+    ? Math.max(0, PREMIUM_PRICE * (1 - appliedPromo.discount / 100))
+    : PREMIUM_PRICE;
+  
+  const isFreeWithCode = appliedPromo?.discount === 100;
+
+  const validatePromoCode = async () => {
+    if (!promoCode.trim()) return;
+    
+    setIsValidatingCode(true);
+    try {
+      const { data: codes, error } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .eq('code', promoCode.trim().toUpperCase())
+        .eq('is_active', true)
+        .single();
+
+      if (error || !codes) {
+        toast({
+          title: "Invalid Code",
+          description: "This promo code is not valid or has expired.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if expired
+      if (codes.expires_at && new Date(codes.expires_at) < new Date()) {
+        toast({
+          title: "Code Expired",
+          description: "This promo code has expired.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if max uses reached
+      if (codes.max_uses && codes.uses_count >= codes.max_uses) {
+        toast({
+          title: "Code Exhausted",
+          description: "This promo code has reached its maximum uses.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setAppliedPromo({
+        code: codes.code,
+        discount: codes.discount_percentage,
+        type: codes.type,
+      });
+
+      toast({
+        title: codes.type === 'gift' ? "🎁 Gift Code Applied!" : "💰 Discount Applied!",
+        description: codes.discount_percentage === 100 
+          ? "You get Premium for FREE!" 
+          : `${codes.discount_percentage}% discount applied!`,
+      });
+    } catch (err) {
+      console.error("Error validating promo code:", err);
+    } finally {
+      setIsValidatingCode(false);
+    }
+  };
+
+  const removePromoCode = () => {
+    setAppliedPromo(null);
+    setPromoCode("");
+  };
+
+  const handleFreeActivation = async () => {
+    if (!appliedPromo || appliedPromo.discount !== 100) return;
+    
+    setIsProcessing(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke('verify-paypal-payment', {
+        body: { 
+          orderId: `PROMO-${Date.now()}`,
+          promoCode: appliedPromo.code,
+          isFreePromo: true
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Activation failed');
+      }
+
+      if (result?.success) {
+        toast({
+          title: "🎉 Premium Activated!",
+          description: "Welcome to UserVault Premium! All features are now unlocked.",
+        });
+        onSuccess?.();
+      } else {
+        throw new Error(result?.error || 'Unknown error');
+      }
+    } catch (error: any) {
+      console.error("Free activation error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Activation failed. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleApprove = async (data: { orderID: string }) => {
     setIsProcessing(true);
@@ -31,7 +149,10 @@ export function PremiumCheckout({ onSuccess, price = PREMIUM_PRICE }: PremiumChe
       console.log("Payment approved, verifying order:", data.orderID);
       
       const { data: result, error } = await supabase.functions.invoke('verify-paypal-payment', {
-        body: { orderId: data.orderID }
+        body: { 
+          orderId: data.orderID,
+          promoCode: appliedPromo?.code || null
+        }
       });
 
       if (error) {
@@ -86,9 +207,54 @@ export function PremiumCheckout({ onSuccess, price = PREMIUM_PRICE }: PremiumChe
       <CardContent className="space-y-6">
         {/* Price */}
         <div className="text-center">
-          <span className="text-4xl font-bold text-foreground">€{price}</span>
-          <span className="text-muted-foreground ml-2">one-time</span>
+          {appliedPromo ? (
+            <div className="space-y-1">
+              <span className="text-2xl text-muted-foreground line-through">${PREMIUM_PRICE.toFixed(2)}</span>
+              <span className="text-4xl font-bold text-primary ml-2">
+                {isFreeWithCode ? "FREE" : `$${finalPrice.toFixed(2)}`}
+              </span>
+              <div className="flex items-center justify-center gap-2 mt-2">
+                <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                  {appliedPromo.type === 'gift' ? '🎁 Gift Code' : `${appliedPromo.discount}% OFF`}
+                </span>
+                <button 
+                  onClick={removePromoCode}
+                  className="text-xs text-muted-foreground hover:text-destructive"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <span className="text-4xl font-bold text-foreground">${PREMIUM_PRICE.toFixed(2)}</span>
+              <span className="text-muted-foreground ml-2">one-time</span>
+            </>
+          )}
         </div>
+
+        {/* Promo Code Input */}
+        {!appliedPromo && (
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Promo code"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                className="pl-9"
+                onKeyDown={(e) => e.key === 'Enter' && validatePromoCode()}
+              />
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={validatePromoCode}
+              disabled={isValidatingCode || !promoCode.trim()}
+            >
+              {isValidatingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+            </Button>
+          </div>
+        )}
 
         {/* Features */}
         <ul className="space-y-3">
@@ -102,7 +268,7 @@ export function PremiumCheckout({ onSuccess, price = PREMIUM_PRICE }: PremiumChe
           ))}
         </ul>
 
-        {/* PayPal Button */}
+        {/* Payment Button */}
         <div className="pt-4">
           {isPending && (
             <div className="flex items-center justify-center py-8">
@@ -114,11 +280,22 @@ export function PremiumCheckout({ onSuccess, price = PREMIUM_PRICE }: PremiumChe
           {isProcessing && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              <span className="ml-2 text-muted-foreground">Processing payment...</span>
+              <span className="ml-2 text-muted-foreground">Processing...</span>
             </div>
           )}
 
-          {isResolved && !isProcessing && (
+          {/* Free activation with 100% code */}
+          {isFreeWithCode && !isProcessing && (
+            <Button 
+              className="w-full h-12 text-lg bg-gradient-to-r from-primary to-purple-600 hover:opacity-90"
+              onClick={handleFreeActivation}
+            >
+              🎁 Activate Premium for FREE
+            </Button>
+          )}
+
+          {/* PayPal for paid orders */}
+          {isResolved && !isProcessing && !isFreeWithCode && (
             <PayPalButtons
               style={{
                 layout: "vertical",
@@ -133,16 +310,17 @@ export function PremiumCheckout({ onSuccess, price = PREMIUM_PRICE }: PremiumChe
                   purchase_units: [
                     {
                       amount: {
-                        currency_code: "EUR",
-                        value: price,
+                        currency_code: CURRENCY,
+                        value: finalPrice.toFixed(2),
                       },
-                      description: "UserVault Premium - Lifetime Access",
+                      description: appliedPromo 
+                        ? `UserVault Premium - ${appliedPromo.discount}% OFF (Code: ${appliedPromo.code})`
+                        : "UserVault Premium - Lifetime Access",
                     },
                   ],
                 });
               }}
               onApprove={async (data, actions) => {
-                // Capture the order first
                 if (actions.order) {
                   await actions.order.capture();
                 }

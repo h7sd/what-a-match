@@ -13,7 +13,8 @@ function generateInvoiceNumber(orderId: string): string {
   return `UV-${year}${month}-${shortId}`;
 }
 
-const PREMIUM_PRICE = '3.00';
+const PREMIUM_PRICE = 3.50;
+const CURRENCY = 'USD';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { orderId } = await req.json()
+    const { orderId, promoCode, isFreePromo } = await req.json()
     
     if (!orderId) {
       console.error('Missing orderId in request')
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log('Verifying PayPal order:', orderId)
+    console.log('Verifying order:', orderId, 'Promo:', promoCode || 'none', 'Free:', isFreePromo || false)
 
     // Get auth header to identify user
     const authHeader = req.headers.get('Authorization')
@@ -66,32 +67,90 @@ Deno.serve(async (req) => {
 
     console.log('User authenticated:', user.id)
 
-    // Get PayPal Client ID for verification
-    const paypalClientId = Deno.env.get('PAYPAL_CLIENT_ID')
-    if (!paypalClientId) {
-      console.error('PAYPAL_CLIENT_ID not configured')
-      return new Response(
-        JSON.stringify({ error: 'PayPal not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     // Update user's premium status using service role
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
     
-    // Check if order was already processed
-    const { data: existingOrder } = await supabaseAdmin
-      .from('purchases')
-      .select('id')
-      .eq('order_id', orderId)
-      .maybeSingle()
+    // Validate promo code if provided
+    let promoDiscount = 0;
+    let promoCodeId: string | null = null;
+    let promoType = 'none';
     
-    if (existingOrder) {
-      console.log('Order already processed:', orderId)
+    if (promoCode) {
+      const { data: codeData, error: codeError } = await supabaseAdmin
+        .from('promo_codes')
+        .select('*')
+        .eq('code', promoCode.toUpperCase())
+        .eq('is_active', true)
+        .single()
+      
+      if (codeError || !codeData) {
+        console.error('Invalid promo code:', promoCode)
+        return new Response(
+          JSON.stringify({ error: 'Invalid promo code' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      // Check if expired
+      if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
+        return new Response(
+          JSON.stringify({ error: 'Promo code has expired' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      // Check if max uses reached
+      if (codeData.max_uses && codeData.uses_count >= codeData.max_uses) {
+        return new Response(
+          JSON.stringify({ error: 'Promo code has reached maximum uses' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      // Check if user already used this code
+      const { data: existingUse } = await supabaseAdmin
+        .from('promo_code_uses')
+        .select('id')
+        .eq('code_id', codeData.id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      
+      if (existingUse) {
+        return new Response(
+          JSON.stringify({ error: 'You have already used this promo code' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      promoDiscount = codeData.discount_percentage;
+      promoCodeId = codeData.id;
+      promoType = codeData.type;
+      console.log('Valid promo code:', promoCode, 'Discount:', promoDiscount + '%')
+    }
+    
+    // For free promo (100% discount), we need a valid 100% code
+    if (isFreePromo && promoDiscount !== 100) {
       return new Response(
-        JSON.stringify({ error: 'Order already processed', success: false }),
+        JSON.stringify({ error: 'Invalid free promo activation' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+    
+    // Check if order was already processed (for paid orders)
+    if (!isFreePromo) {
+      const { data: existingOrder } = await supabaseAdmin
+        .from('purchases')
+        .select('id')
+        .eq('order_id', orderId)
+        .maybeSingle()
+      
+      if (existingOrder) {
+        console.log('Order already processed:', orderId)
+        return new Response(
+          JSON.stringify({ error: 'Order already processed', success: false }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
     // Get user's profile for email
@@ -103,6 +162,9 @@ Deno.serve(async (req) => {
 
     const purchaseDate = new Date().toISOString()
     const invoiceNumber = generateInvoiceNumber(orderId)
+    
+    // Calculate final amount
+    const finalAmount = isFreePromo ? 0 : (PREMIUM_PRICE * (1 - promoDiscount / 100));
 
     // Update user's profile to premium
     const { error: updateError } = await supabaseAdmin
@@ -124,6 +186,33 @@ Deno.serve(async (req) => {
 
     console.log('Premium activated for user:', user.id)
 
+    // Record promo code use if applicable
+    if (promoCodeId) {
+      // Record the use
+      await supabaseAdmin
+        .from('promo_code_uses')
+        .insert({
+          code_id: promoCodeId,
+          user_id: user.id,
+        })
+      
+      // Get current uses count and increment
+      const { data: currentCode } = await supabaseAdmin
+        .from('promo_codes')
+        .select('uses_count')
+        .eq('id', promoCodeId)
+        .single()
+      
+      if (currentCode) {
+        await supabaseAdmin
+          .from('promo_codes')
+          .update({ uses_count: (currentCode.uses_count || 0) + 1 })
+          .eq('id', promoCodeId)
+      }
+      
+      console.log('Promo code use recorded for:', promoCode)
+    }
+
     // Record the purchase in the purchases table
     const { error: purchaseError } = await supabaseAdmin
       .from('purchases')
@@ -132,9 +221,9 @@ Deno.serve(async (req) => {
         username: profile?.username || 'Unknown',
         email: user.email || 'Unknown',
         order_id: orderId,
-        amount: parseFloat(PREMIUM_PRICE),
-        currency: 'EUR',
-        payment_method: 'PayPal',
+        amount: finalAmount,
+        currency: CURRENCY,
+        payment_method: isFreePromo ? 'Promo Code' : 'PayPal',
         invoice_number: invoiceNumber,
         status: 'completed'
       })
@@ -158,7 +247,7 @@ Deno.serve(async (req) => {
           email: user.email,
           username: profile?.username || 'User',
           orderId: orderId,
-          amount: PREMIUM_PRICE,
+          amount: finalAmount.toFixed(2),
           purchaseDate: purchaseDate,
         }),
       })
