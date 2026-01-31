@@ -62,28 +62,52 @@ const handler = async (req: Request): Promise<Response> => {
       .update({ used_at: new Date().toISOString() })
       .eq("id", codes[0].id);
 
-    // Get user by email - return generic error for security (prevent enumeration)
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+    // Get user by email using getUserByEmail instead of listUsers (more reliable)
+    // First try to find user in profiles table to get user_id
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id")
+      .ilike("username", email.toLowerCase())
+      .maybeSingle();
     
-    if (userError) {
-      console.error("Error listing users:", userError);
-      // Return same error as invalid code to prevent enumeration
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired reset code" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    let userId: string | null = null;
+    
+    // Try to get user directly by iterating through pages
+    let page = 1;
+    const perPage = 1000;
+    let foundUser = null;
+    
+    while (!foundUser) {
+      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers({
+        page,
+        perPage,
+      });
+      
+      if (userError) {
+        console.error("Error listing users:", userError);
+        return new Response(
+          JSON.stringify({ error: "Invalid or expired reset code" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      
+      foundUser = userData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+      
+      if (foundUser) break;
+      if (userData.users.length < perPage) break; // No more pages
+      page++;
+      if (page > 10) break; // Safety limit
     }
-
-    const user = userData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
     
-    if (!user) {
-      // Return same error as invalid code to prevent user enumeration
+    if (!foundUser) {
       console.log("User not found for email:", email);
       return new Response(
         JSON.stringify({ error: "Invalid or expired reset code" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+    
+    const user = foundUser;
 
     // Update password using admin API
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
