@@ -943,6 +943,8 @@ export default function Dashboard() {
                     glowSocials={glowSocials}
                     iconOnlyLinks={iconOnlyLinks}
                     iconLinksOpacity={iconLinksOpacity}
+                    enableRainbow={enableProfileGradient}
+                    glowUsername={glowUsername}
                   />
                 </div>
 

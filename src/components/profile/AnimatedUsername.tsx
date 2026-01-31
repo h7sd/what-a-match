@@ -38,19 +38,67 @@ export function AnimatedUsername({
   enableGlitch = false,
   enableSparkles = false,
 }: AnimatedUsernameProps) {
-  // Determine effect based on individual toggles
-  const activeEffect = useMemo(() => {
-    if (enableRainbow) return 'rainbow';
-    if (enableGlow) return 'glow-pulse';
-    if (enableTypewriter) return 'typewriter';
-    if (enableGlitch) return 'glitch';
-    if (enableSparkles) return 'sparkle';
-    return effect;
-  }, [enableRainbow, enableGlow, enableTypewriter, enableGlitch, enableSparkles, effect]);
+  // Combine effects - typewriter is the base, others layer on top
+  const hasTypewriter = enableTypewriter;
+  const hasRainbow = enableRainbow;
+  const hasGlow = enableGlow;
+  const hasGlitch = enableGlitch;
+  const hasSparkles = enableSparkles;
 
-  switch (activeEffect) {
+  // If typewriter is enabled, use combined effect
+  if (hasTypewriter) {
+    return (
+      <CombinedTypewriterEffect
+        text={text}
+        className={className}
+        fontFamily={fontFamily}
+        accentColor={accentColor}
+        enableRainbow={hasRainbow}
+        enableGlow={hasGlow}
+        enableGlitch={hasGlitch}
+        enableSparkles={hasSparkles}
+      />
+    );
+  }
+
+  // Single effects without typewriter
+  if (hasRainbow) {
+    return (
+      <RainbowText 
+        text={text} 
+        className={className} 
+        fontFamily={fontFamily}
+        enableGlow={hasGlow}
+        enableSparkles={hasSparkles}
+        accentColor={accentColor}
+      />
+    );
+  }
+
+  if (hasGlow) {
+    return (
+      <GlowPulseText 
+        text={text} 
+        accentColor={accentColor} 
+        className={className} 
+        fontFamily={fontFamily}
+        enableSparkles={hasSparkles}
+      />
+    );
+  }
+
+  if (hasGlitch) {
+    return <GlitchTextEffect text={text} className={className} fontFamily={fontFamily} />;
+  }
+
+  if (hasSparkles) {
+    return <SparkleText text={text} accentColor={accentColor} className={className} fontFamily={fontFamily} />;
+  }
+
+  // Fallback to effect prop
+  switch (effect) {
     case 'rainbow':
-      return <RainbowText text={text} className={className} fontFamily={fontFamily} />;
+      return <RainbowText text={text} className={className} fontFamily={fontFamily} accentColor={accentColor} />;
     case 'glow-pulse':
       return <GlowPulseText text={text} accentColor={accentColor} className={className} fontFamily={fontFamily} />;
     case 'wave':
@@ -68,62 +116,285 @@ export function AnimatedUsername({
     case 'gradient-shift':
       return <GradientShiftText text={text} className={className} fontFamily={fontFamily} />;
     default:
-      return <span className={className} style={{ fontFamily }}>{text}</span>;
+      return <span className={className} style={{ fontFamily, color: 'white' }}>{text}</span>;
   }
 }
 
-// Rainbow Gradient - Animierter Regenbogen
-function RainbowText({ text, className, fontFamily }: { text: string; className: string; fontFamily: string }) {
-  return (
-    <motion.span
-      className={`${className} inline-block`}
-      style={{
-        fontFamily,
+// Combined Typewriter with other effects
+function CombinedTypewriterEffect({
+  text,
+  className,
+  fontFamily,
+  accentColor,
+  enableRainbow,
+  enableGlow,
+  enableGlitch,
+  enableSparkles,
+}: {
+  text: string;
+  className: string;
+  fontFamily: string;
+  accentColor: string;
+  enableRainbow?: boolean;
+  enableGlow?: boolean;
+  enableGlitch?: boolean;
+  enableSparkles?: boolean;
+}) {
+  const [displayText, setDisplayText] = useState('');
+  const [showCursor, setShowCursor] = useState(true);
+  const [phase, setPhase] = useState<'typing' | 'waiting' | 'deleting'>('typing');
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    
+    if (phase === 'typing') {
+      if (displayText.length < text.length) {
+        timeout = setTimeout(() => {
+          setDisplayText(text.slice(0, displayText.length + 1));
+        }, 80);
+      } else {
+        timeout = setTimeout(() => setPhase('waiting'), 2500);
+      }
+    } else if (phase === 'waiting') {
+      timeout = setTimeout(() => setPhase('deleting'), 1000);
+    } else if (phase === 'deleting') {
+      if (displayText.length > 0) {
+        timeout = setTimeout(() => {
+          setDisplayText(displayText.slice(0, -1));
+        }, 40);
+      } else {
+        timeout = setTimeout(() => setPhase('typing'), 500);
+      }
+    }
+
+    return () => clearTimeout(timeout);
+  }, [displayText, text, phase]);
+
+  useEffect(() => {
+    const cursorInterval = setInterval(() => {
+      setShowCursor(prev => !prev);
+    }, 530);
+    return () => clearInterval(cursorInterval);
+  }, []);
+
+  // Build combined styles
+  const getTextStyle = (): React.CSSProperties => {
+    const style: React.CSSProperties = { fontFamily };
+
+    if (enableRainbow) {
+      return {
+        ...style,
         background: 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff, #ff0000)',
         backgroundSize: '200% 100%',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
-      }}
-      animate={{
-        backgroundPosition: ['0% 50%', '200% 50%'],
-      }}
-      transition={{
-        duration: 3,
-        repeat: Infinity,
-        ease: 'linear',
-      }}
-    >
-      {text}
-    </motion.span>
-  );
-}
+        animation: 'rainbow-scroll 3s linear infinite',
+      };
+    }
 
-// Glow Pulse - Pulsierender Glow-Effekt
-function GlowPulseText({ text, accentColor, className, fontFamily }: { text: string; accentColor: string; className: string; fontFamily: string }) {
+    if (enableGlow) {
+      return {
+        ...style,
+        color: 'white',
+        textShadow: `0 0 10px ${accentColor}80, 0 0 20px ${accentColor}40, 0 0 30px ${accentColor}20`,
+        animation: 'glow-pulse 2s ease-in-out infinite',
+      };
+    }
+
+    return { ...style, color: 'white' };
+  };
+
+  const sparkles = useMemo(() => 
+    enableSparkles ? Array.from({ length: 4 }, (_, i) => ({
+      id: i,
+      left: `${15 + Math.random() * 70}%`,
+      top: `${Math.random() * 100}%`,
+      delay: Math.random() * 2,
+    })) : [], [enableSparkles]);
+
   return (
-    <motion.span
-      className={`${className} inline-block`}
-      style={{ fontFamily, color: 'white' }}
-      animate={{
-        textShadow: [
-          `0 0 10px ${accentColor}40, 0 0 20px ${accentColor}20`,
-          `0 0 20px ${accentColor}80, 0 0 40px ${accentColor}40, 0 0 60px ${accentColor}20`,
-          `0 0 10px ${accentColor}40, 0 0 20px ${accentColor}20`,
-        ],
-      }}
-      transition={{
-        duration: 2,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
-    >
-      {text}
-    </motion.span>
+    <span className={`${className} inline-block relative`}>
+      <style>{`
+        @keyframes rainbow-scroll {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+        @keyframes glow-pulse {
+          0%, 100% { text-shadow: 0 0 10px ${accentColor}40, 0 0 20px ${accentColor}20; }
+          50% { text-shadow: 0 0 20px ${accentColor}80, 0 0 40px ${accentColor}40, 0 0 60px ${accentColor}20; }
+        }
+      `}</style>
+      
+      <motion.span
+        style={getTextStyle()}
+        animate={enableGlitch ? {
+          x: [0, -1, 1, 0],
+        } : {}}
+        transition={enableGlitch ? { duration: 0.1, repeat: Infinity, repeatDelay: 2.5 } : {}}
+      >
+        {displayText}
+      </motion.span>
+      
+      <span 
+        className="transition-opacity duration-100"
+        style={{ 
+          opacity: showCursor ? 1 : 0,
+          color: enableRainbow ? '#8b5cf6' : 'white',
+        }}
+      >
+        |
+      </span>
+
+      {sparkles.map((sparkle) => (
+        <motion.span
+          key={sparkle.id}
+          className="absolute pointer-events-none text-xs"
+          style={{
+            left: sparkle.left,
+            top: sparkle.top,
+            color: accentColor,
+          }}
+          animate={{
+            opacity: [0, 1, 0],
+            scale: [0.5, 1, 0.5],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            delay: sparkle.delay,
+          }}
+        >
+          ✦
+        </motion.span>
+      ))}
+    </span>
   );
 }
 
-// Wave Text - Buchstaben bewegen sich wellenförmig
+// Rainbow Gradient - with optional glow and sparkles
+function RainbowText({ 
+  text, 
+  className, 
+  fontFamily,
+  enableGlow,
+  enableSparkles,
+  accentColor = '#8b5cf6',
+}: { 
+  text: string; 
+  className: string; 
+  fontFamily: string;
+  enableGlow?: boolean;
+  enableSparkles?: boolean;
+  accentColor?: string;
+}) {
+  const sparkles = useMemo(() => 
+    enableSparkles ? Array.from({ length: 5 }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      delay: Math.random() * 2,
+    })) : [], [enableSparkles]);
+
+  return (
+    <span className={`${className} inline-block relative`}>
+      <motion.span
+        className="inline-block"
+        style={{
+          fontFamily,
+          background: 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff, #ff0000)',
+          backgroundSize: '200% 100%',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          filter: enableGlow ? 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.5))' : undefined,
+        }}
+        animate={{
+          backgroundPosition: ['0% 50%', '200% 50%'],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: 'linear',
+        }}
+      >
+        {text}
+      </motion.span>
+      
+      {sparkles.map((sparkle) => (
+        <motion.span
+          key={sparkle.id}
+          className="absolute pointer-events-none text-xs"
+          style={{ left: sparkle.left, top: sparkle.top, color: accentColor }}
+          animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, delay: sparkle.delay }}
+        >
+          ✦
+        </motion.span>
+      ))}
+    </span>
+  );
+}
+
+// Glow Pulse
+function GlowPulseText({ 
+  text, 
+  accentColor, 
+  className, 
+  fontFamily,
+  enableSparkles,
+}: { 
+  text: string; 
+  accentColor: string; 
+  className: string; 
+  fontFamily: string;
+  enableSparkles?: boolean;
+}) {
+  const sparkles = useMemo(() => 
+    enableSparkles ? Array.from({ length: 5 }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      delay: Math.random() * 2,
+    })) : [], [enableSparkles]);
+
+  return (
+    <span className={`${className} inline-block relative`}>
+      <motion.span
+        className="inline-block"
+        style={{ fontFamily, color: 'white' }}
+        animate={{
+          textShadow: [
+            `0 0 10px ${accentColor}40, 0 0 20px ${accentColor}20`,
+            `0 0 20px ${accentColor}80, 0 0 40px ${accentColor}40, 0 0 60px ${accentColor}20`,
+            `0 0 10px ${accentColor}40, 0 0 20px ${accentColor}20`,
+          ],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      >
+        {text}
+      </motion.span>
+      
+      {sparkles.map((sparkle) => (
+        <motion.span
+          key={sparkle.id}
+          className="absolute pointer-events-none text-xs"
+          style={{ left: sparkle.left, top: sparkle.top, color: accentColor }}
+          animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, delay: sparkle.delay }}
+        >
+          ✦
+        </motion.span>
+      ))}
+    </span>
+  );
+}
+
+// Wave Text
 function WaveText({ text, accentColor, className, fontFamily }: { text: string; accentColor: string; className: string; fontFamily: string }) {
   return (
     <span className={`${className} inline-flex`} style={{ fontFamily }}>
@@ -135,9 +406,7 @@ function WaveText({ text, accentColor, className, fontFamily }: { text: string; 
             color: 'white',
             textShadow: `0 0 10px ${accentColor}40`,
           }}
-          animate={{
-            y: [0, -8, 0],
-          }}
+          animate={{ y: [0, -8, 0] }}
           transition={{
             duration: 0.6,
             repeat: Infinity,
@@ -152,7 +421,7 @@ function WaveText({ text, accentColor, className, fontFamily }: { text: string; 
   );
 }
 
-// Shine Text - Glänzender Sweep-Effekt
+// Shine Text
 function ShineText({ text, className, fontFamily }: { text: string; className: string; fontFamily: string }) {
   return (
     <motion.span
@@ -166,9 +435,7 @@ function ShineText({ text, className, fontFamily }: { text: string; className: s
         WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
       }}
-      animate={{
-        backgroundPosition: ['-100% 0%', '200% 0%'],
-      }}
+      animate={{ backgroundPosition: ['-100% 0%', '200% 0%'] }}
       transition={{
         duration: 2,
         repeat: Infinity,
@@ -181,7 +448,7 @@ function ShineText({ text, className, fontFamily }: { text: string; className: s
   );
 }
 
-// Glitch Text Effect - Cyberpunk-Style Glitch
+// Glitch Text Effect
 function GlitchTextEffect({ text, className, fontFamily }: { text: string; className: string; fontFamily: string }) {
   const [isGlitching, setIsGlitching] = useState(false);
 
@@ -244,35 +511,44 @@ function GlitchTextEffect({ text, className, fontFamily }: { text: string; class
   );
 }
 
-// Typewriter Text - Tipp-Animation
+// Simple Typewriter (without combinations)
 function TypewriterText({ text, className, fontFamily }: { text: string; className: string; fontFamily: string }) {
   const [displayText, setDisplayText] = useState('');
   const [showCursor, setShowCursor] = useState(true);
+  const [phase, setPhase] = useState<'typing' | 'waiting' | 'deleting'>('typing');
 
   useEffect(() => {
-    let i = 0;
-    const typingInterval = setInterval(() => {
-      if (i < text.length) {
-        setDisplayText(text.slice(0, i + 1));
-        i++;
+    let timeout: NodeJS.Timeout;
+    
+    if (phase === 'typing') {
+      if (displayText.length < text.length) {
+        timeout = setTimeout(() => {
+          setDisplayText(text.slice(0, displayText.length + 1));
+        }, 80);
       } else {
-        clearInterval(typingInterval);
-        setTimeout(() => {
-          setDisplayText('');
-          i = 0;
-        }, 2000);
+        timeout = setTimeout(() => setPhase('waiting'), 2500);
       }
-    }, 100);
+    } else if (phase === 'waiting') {
+      timeout = setTimeout(() => setPhase('deleting'), 1000);
+    } else if (phase === 'deleting') {
+      if (displayText.length > 0) {
+        timeout = setTimeout(() => {
+          setDisplayText(displayText.slice(0, -1));
+        }, 40);
+      } else {
+        timeout = setTimeout(() => setPhase('typing'), 500);
+      }
+    }
 
+    return () => clearTimeout(timeout);
+  }, [displayText, text, phase]);
+
+  useEffect(() => {
     const cursorInterval = setInterval(() => {
       setShowCursor(prev => !prev);
-    }, 500);
-
-    return () => {
-      clearInterval(typingInterval);
-      clearInterval(cursorInterval);
-    };
-  }, [text]);
+    }, 530);
+    return () => clearInterval(cursorInterval);
+  }, []);
 
   return (
     <span className={`${className} inline-block`} style={{ fontFamily, color: 'white' }}>
@@ -282,7 +558,7 @@ function TypewriterText({ text, className, fontFamily }: { text: string; classNa
   );
 }
 
-// Sparkle Text - Mit funkelnden Sternen
+// Sparkle Text
 function SparkleText({ text, accentColor, className, fontFamily }: { text: string; accentColor: string; className: string; fontFamily: string }) {
   const sparkles = useMemo(() => 
     Array.from({ length: 5 }, (_, i) => ({
@@ -299,20 +575,9 @@ function SparkleText({ text, accentColor, className, fontFamily }: { text: strin
         <motion.span
           key={sparkle.id}
           className="absolute pointer-events-none text-xs"
-          style={{
-            left: sparkle.left,
-            top: sparkle.top,
-            color: accentColor,
-          }}
-          animate={{
-            opacity: [0, 1, 0],
-            scale: [0.5, 1, 0.5],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            delay: sparkle.delay,
-          }}
+          style={{ left: sparkle.left, top: sparkle.top, color: accentColor }}
+          animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, delay: sparkle.delay }}
         >
           ✦
         </motion.span>
@@ -321,7 +586,7 @@ function SparkleText({ text, accentColor, className, fontFamily }: { text: strin
   );
 }
 
-// Neon Flicker - Neon-Schild-Flackern
+// Neon Flicker
 function NeonFlickerText({ text, accentColor, className, fontFamily }: { text: string; accentColor: string; className: string; fontFamily: string }) {
   return (
     <motion.span
@@ -352,7 +617,7 @@ function NeonFlickerText({ text, accentColor, className, fontFamily }: { text: s
   );
 }
 
-// Gradient Shift - Farbverlauf der sich verschiebt
+// Gradient Shift
 function GradientShiftText({ text, className, fontFamily }: { text: string; className: string; fontFamily: string }) {
   return (
     <motion.span
@@ -365,9 +630,7 @@ function GradientShiftText({ text, className, fontFamily }: { text: string; clas
         WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
       }}
-      animate={{
-        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-      }}
+      animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
       transition={{
         duration: 5,
         repeat: Infinity,
