@@ -65,16 +65,17 @@ export default function Auth() {
   const turnstileRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
 
-  const { signIn, signUp, verifyMfa, user } = useAuth();
+  const { signIn, signUp, verifyMfa, user, mfaChallenge } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Redirect if already logged in (e.g., after OAuth callback)
+  // Redirect if already logged in AND not in MFA challenge (e.g., after OAuth callback)
   useEffect(() => {
-    if (user) {
+    // Don't redirect if we're in the middle of MFA verification
+    if (user && !mfaChallenge && step !== 'mfa-verify') {
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [user, mfaChallenge, step, navigate]);
 
   // Load Turnstile script
   useEffect(() => {
