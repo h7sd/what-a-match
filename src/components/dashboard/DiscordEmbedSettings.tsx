@@ -181,11 +181,19 @@ export function DiscordEmbedSettings({
   const handleFileUpload = async (file: File, type: 'image' | 'icon') => {
     if (!file) return;
     
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({ title: 'Not authenticated', variant: 'destructive' });
+      return;
+    }
+    
     setUploading(type);
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `og-${type}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      // Use user ID as folder prefix to satisfy RLS policy
+      const filePath = `${user.id}/og/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('profile-assets')
@@ -202,8 +210,11 @@ export function DiscordEmbedSettings({
       } else {
         onOgIconUrlChange(publicUrl);
       }
-    } catch (error) {
+      
+      toast({ title: `${type === 'icon' ? 'Icon' : 'Image'} uploaded!` });
+    } catch (error: any) {
       console.error('Upload error:', error);
+      toast({ title: error.message || 'Upload failed', variant: 'destructive' });
     } finally {
       setUploading(null);
     }
