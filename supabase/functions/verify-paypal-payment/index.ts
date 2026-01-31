@@ -88,12 +88,21 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Get user's profile for email
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('username')
+      .eq('user_id', user.id)
+      .single()
+
+    const purchaseDate = new Date().toISOString()
+
     // Update user's profile to premium
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({
         is_premium: true,
-        premium_purchased_at: new Date().toISOString(),
+        premium_purchased_at: purchaseDate,
         paypal_order_id: orderId
       })
       .eq('user_id', user.id)
@@ -107,6 +116,33 @@ Deno.serve(async (req) => {
     }
 
     console.log('Premium activated for user:', user.id)
+
+    // Send confirmation email with invoice
+    try {
+      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-premium-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          email: user.email,
+          username: profile?.username || 'User',
+          orderId: orderId,
+          amount: '0.01', // Test price
+          purchaseDate: purchaseDate,
+        }),
+      })
+
+      if (!emailResponse.ok) {
+        console.error('Failed to send premium email:', await emailResponse.text())
+      } else {
+        console.log('Premium confirmation email sent successfully')
+      }
+    } catch (emailError) {
+      console.error('Error sending premium email:', emailError)
+      // Don't fail the whole request if email fails
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: 'Premium activated!' }),
