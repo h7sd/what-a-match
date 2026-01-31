@@ -270,6 +270,38 @@ export type Database = {
         }
         Relationships: []
       }
+      link_clicks: {
+        Row: {
+          clicked_at: string
+          id: string
+          link_id: string
+          viewer_country: string | null
+          viewer_ip_hash: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          id?: string
+          link_id: string
+          viewer_country?: string | null
+          viewer_ip_hash?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          id?: string
+          link_id?: string
+          viewer_country?: string | null
+          viewer_ip_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_clicks_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "social_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_views: {
         Row: {
           id: number
@@ -538,6 +570,7 @@ export type Database = {
       }
       social_links: {
         Row: {
+          click_count: number | null
           created_at: string
           description: string | null
           display_order: number | null
@@ -551,6 +584,7 @@ export type Database = {
           url: string
         }
         Insert: {
+          click_count?: number | null
           created_at?: string
           description?: string | null
           display_order?: number | null
@@ -564,6 +598,7 @@ export type Database = {
           url: string
         }
         Update: {
+          click_count?: number | null
           created_at?: string
           description?: string | null
           display_order?: number | null
@@ -721,6 +756,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_link_click_count: {
+        Args: { p_link_id: string }
+        Returns: undefined
       }
       is_profile_owner: { Args: { profile_id: string }; Returns: boolean }
     }

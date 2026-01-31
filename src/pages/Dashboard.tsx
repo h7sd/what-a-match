@@ -83,7 +83,6 @@ const baseNavItems: { icon: React.ElementType; label: string; tab: TabType }[] =
   { icon: Palette, label: 'Appearance', tab: 'appearance' },
   { icon: LinkIcon, label: 'Links', tab: 'links' },
   { icon: Award, label: 'Badges', tab: 'badges' },
-  { icon: Puzzle, label: 'Widgets', tab: 'widgets' },
   { icon: Sparkles, label: 'Effects', tab: 'effects' },
   { icon: Settings, label: 'Settings', tab: 'settings' },
 ];
@@ -796,12 +795,15 @@ export default function Dashboard() {
                     profileId={profile.id}
                   />
                   <TopLinksChart 
-                    links={socialLinks.slice(0, 5).map((link, i) => ({
-                      name: link.title || link.platform,
-                      clicks: 0,
-                      color: ['#3B82F6', '#22C55E', '#EAB308', '#8B5CF6', '#EC4899'][i],
-                      url: link.url,
-                    }))}
+                    links={[...socialLinks]
+                      .sort((a, b) => ((b as any).click_count || 0) - ((a as any).click_count || 0))
+                      .slice(0, 5)
+                      .map((link, i) => ({
+                        name: link.title || link.platform,
+                        clicks: (link as any).click_count || 0,
+                        color: ['#3B82F6', '#22C55E', '#EAB308', '#8B5CF6', '#EC4899'][i],
+                        url: link.url,
+                      }))}
                   />
                 </div>
               </div>
@@ -1170,49 +1172,6 @@ export default function Dashboard() {
                       <p>No links yet. Click an icon above to add one!</p>
                     </div>
                   )}
-                </div>
-              </div>
-            )}
-
-            {/* Widgets Tab */}
-            {activeTab === 'widgets' && (
-              <div className="space-y-6 max-w-4xl">
-                <div className="glass-card p-6 space-y-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <MessageSquare className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold">Discord RPC</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Show your Discord presence and activity on your profile
-                  </p>
-                  <div className="space-y-2">
-                    <Label>Discord User ID</Label>
-                    <Input
-                      value={discordUserId}
-                      onChange={(e) => setDiscordUserId(e.target.value)}
-                      placeholder="Your Discord User ID"
-                      className="bg-secondary/50"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      You can find your Discord User ID in Discord Settings → Advanced → Developer Mode
-                    </p>
-                  </div>
-                </div>
-
-                <div className="glass-card p-6 space-y-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Music className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold">Profile Music</h3>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Music URL (MP3)</Label>
-                    <Input
-                      value={musicUrl}
-                      onChange={(e) => setMusicUrl(e.target.value)}
-                      placeholder="https://example.com/music.mp3"
-                      className="bg-secondary/50"
-                    />
-                  </div>
                 </div>
               </div>
             )}

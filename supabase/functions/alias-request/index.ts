@@ -122,6 +122,35 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
+      // Check 1-hour cooldown after denied request
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+      const { data: recentDeniedRequest } = await supabase
+        .from("alias_requests")
+        .select("id, responded_at")
+        .eq("requester_id", user.id)
+        .eq("status", "denied")
+        .gte("responded_at", oneHourAgo.toISOString())
+        .order("responded_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (recentDeniedRequest) {
+        const nextAllowedTime = new Date(recentDeniedRequest.responded_at);
+        nextAllowedTime.setHours(nextAllowedTime.getHours() + 1);
+        const minutesRemaining = Math.ceil((nextAllowedTime.getTime() - Date.now()) / (1000 * 60));
+        
+        return new Response(
+          JSON.stringify({ 
+            error: `Your last request was denied. You can request again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}.`,
+            nextAllowedTime: nextAllowedTime.toISOString(),
+            minutesRemaining
+          }),
+          { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
       // Check 15-day rate limit - user can only request once every 15 days
       const fifteenDaysAgo = new Date();
       fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
@@ -142,7 +171,7 @@ const handler = async (req: Request): Promise<Response> => {
         
         return new Response(
           JSON.stringify({ 
-            error: `You can only request an alias once every 15 days. Try again in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}.`,
+            error: `You can only request a username once every 15 days. Try again in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}.`,
             nextAllowedDate: nextAllowedDate.toISOString(),
             daysRemaining
           }),

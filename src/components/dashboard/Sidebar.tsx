@@ -4,7 +4,6 @@ import {
   User, 
   Palette, 
   Link2, 
-  Puzzle, 
   Sparkles,
   Settings,
   LogOut,
@@ -23,7 +22,6 @@ const navItems = [
   { icon: User, label: 'Profile', href: '/dashboard', tab: 'profile' },
   { icon: Palette, label: 'Appearance', href: '/dashboard', tab: 'appearance' },
   { icon: Link2, label: 'Links', href: '/dashboard', tab: 'links' },
-  { icon: Puzzle, label: 'Widgets', href: '/dashboard', tab: 'widgets' },
   { icon: Sparkles, label: 'Effects', href: '/dashboard', tab: 'effects' },
 ];
 
