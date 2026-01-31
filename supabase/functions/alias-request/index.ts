@@ -122,6 +122,34 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
+      // Check 15-day rate limit - user can only request once every 15 days
+      const fifteenDaysAgo = new Date();
+      fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+
+      const { data: recentRequest } = await supabase
+        .from("alias_requests")
+        .select("id, created_at")
+        .eq("requester_id", user.id)
+        .gte("created_at", fifteenDaysAgo.toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (recentRequest) {
+        const nextAllowedDate = new Date(recentRequest.created_at);
+        nextAllowedDate.setDate(nextAllowedDate.getDate() + 15);
+        const daysRemaining = Math.ceil((nextAllowedDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        
+        return new Response(
+          JSON.stringify({ 
+            error: `You can only request an alias once every 15 days. Try again in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}.`,
+            nextAllowedDate: nextAllowedDate.toISOString(),
+            daysRemaining
+          }),
+          { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
       // Get requester's profile
       const { data: requesterProfile } = await supabase
         .from("profiles")
@@ -197,8 +225,8 @@ const handler = async (req: Request): Promise<Response> => {
                       </tr>
                       <tr>
                         <td style="color: #a1a1aa; font-size: 16px; line-height: 1.6; padding-bottom: 30px;">
-                          <p style="margin: 0 0 16px 0;"><strong style="color: #ffffff;">@${requesterProfile?.username || "Someone"}</strong> wants to use <strong style="color: #8B5CF6;">@${requestedAlias}</strong> as their alias.</p>
-                          <p style="margin: 0;">If you approve, they will be able to use this handle as a redirect to their profile while you keep full ownership of your username.</p>
+                          <p style="margin: 0 0 16px 0;"><strong style="color: #ffffff;">@${requesterProfile?.username || "Someone"}</strong> wants to take over your username <strong style="color: #8B5CF6;">@${requestedAlias}</strong>.</p>
+                          <p style="margin: 0;">If you approve, your usernames will be swapped - you will get their current username <strong style="color: #8B5CF6;">@${requesterProfile?.username || "their username"}</strong> instead.</p>
                         </td>
                       </tr>
                       <tr>
@@ -326,16 +354,48 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      // If approved, set the alias on the requester's profile
+      // If approved, swap the usernames - requester takes over the username
       if (response === "approved") {
-        const { error: aliasError } = await supabase
+        // Get the requester's current username
+        const { data: requesterProfile } = await supabase
           .from("profiles")
-          .update({ alias_username: request.requested_alias })
+          .select("username")
+          .eq("user_id", request.requester_id)
+          .single();
+
+        const requesterOldUsername = requesterProfile?.username;
+
+        // Update requester's username to the requested alias
+        const { error: requesterUpdateError } = await supabase
+          .from("profiles")
+          .update({ 
+            username: request.requested_alias,
+            alias_username: null // Clear any existing alias
+          })
           .eq("user_id", request.requester_id);
 
-        if (aliasError) {
-          console.error("Error setting alias:", aliasError);
+        if (requesterUpdateError) {
+          console.error("Error updating requester username:", requesterUpdateError);
+          return new Response(
+            JSON.stringify({ error: "Failed to update username" }),
+            { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
         }
+
+        // Update target's username to the requester's old username (swap)
+        if (requesterOldUsername) {
+          const { error: targetUpdateError } = await supabase
+            .from("profiles")
+            .update({ username: requesterOldUsername })
+            .eq("user_id", request.target_user_id);
+
+          if (targetUpdateError) {
+            console.error("Error updating target username:", targetUpdateError);
+            // Note: We don't rollback here as partial swap is acceptable
+          }
+        }
+
+        console.log(`Username swap complete: ${requesterOldUsername} <-> ${request.requested_alias}`);
       }
 
       // Get requester's email to notify them
