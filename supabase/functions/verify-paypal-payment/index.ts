@@ -13,7 +13,7 @@ function generateInvoiceNumber(orderId: string): string {
   return `UV-${year}${month}-${shortId}`;
 }
 
-const PREMIUM_PRICE = '0.01'; // Test price - change to actual price
+const PREMIUM_PRICE = '3.00';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
