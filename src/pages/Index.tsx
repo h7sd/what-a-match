@@ -14,6 +14,7 @@ import { LiquidEther } from "@/components/landing/LiquidEther";
 import { ClaimBanner } from "@/components/landing/ClaimBanner";
 import { ProfileSearch } from "@/components/landing/ProfileSearch";
 import { FeaturedProfiles } from "@/components/landing/FeaturedProfiles";
+import { ClaimedUsernamesSidebar } from "@/components/landing/ClaimedUsernamesSidebar";
 
 export default function Index() {
   const { user } = useAuth();
@@ -43,6 +44,9 @@ export default function Index() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      {/* Claimed Usernames Sidebar */}
+      <ClaimedUsernamesSidebar />
+
       {/* Liquid Ether Background - covers entire viewport */}
       <div className="fixed inset-0" style={{ zIndex: -1 }}>
         <LiquidEther

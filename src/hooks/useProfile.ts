@@ -37,6 +37,7 @@ export interface SocialLink {
   style: string | null;
   display_order: number;
   is_visible: boolean;
+  click_count?: number;
   created_at: string;
 }
 
