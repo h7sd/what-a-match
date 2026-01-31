@@ -59,6 +59,8 @@ interface LiveProfilePreviewProps {
   glowSocials?: boolean;
   iconOnlyLinks?: boolean;
   iconLinksOpacity?: number;
+  enableRainbow?: boolean;
+  glowUsername?: boolean;
 }
 
 export function LiveProfilePreview({
@@ -98,6 +100,8 @@ export function LiveProfilePreview({
   glowSocials = false,
   iconOnlyLinks = false,
   iconLinksOpacity = 100,
+  enableRainbow = false,
+  glowUsername = false,
 }: LiveProfilePreviewProps) {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(true);
@@ -127,6 +131,8 @@ export function LiveProfilePreview({
     icon_color: iconColor,
     occupation,
     location,
+    enable_profile_gradient: enableRainbow,
+    glow_username: glowUsername,
   } as Profile;
 
   // Mobile: Phone frame design
