@@ -55,17 +55,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) return { error };
 
-    // Check if user has MFA enabled
-    const { data: factorsData } = await supabase.auth.mfa.listFactors();
+    // Check if user has MFA enabled - use getAuthenticatorAssuranceLevel for accurate MFA detection
+    const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     
-    if (factorsData) {
-      const verifiedFactors = factorsData.totp.filter(f => f.status === 'verified');
+    if (aalError) {
+      console.error('Error checking MFA status:', aalError);
+      return { error: null }; // Proceed without MFA if check fails
+    }
+
+    // If next level requires AAL2 but current is AAL1, user needs to verify MFA
+    if (aalData.nextLevel === 'aal2' && aalData.currentLevel === 'aal1') {
+      // Get the verified factor to use for challenge
+      const { data: factorsData } = await supabase.auth.mfa.listFactors();
       
-      if (verifiedFactors.length > 0) {
-        // User has MFA enabled, need to verify
-        const factor = verifiedFactors[0];
-        setMfaChallenge({ factorId: factor.id, needsMfa: true });
-        return { error: null, needsMfa: true, factorId: factor.id };
+      if (factorsData && factorsData.totp.length > 0) {
+        const verifiedFactor = factorsData.totp.find(f => f.status === 'verified');
+        if (verifiedFactor) {
+          setMfaChallenge({ factorId: verifiedFactor.id, needsMfa: true });
+          return { error: null, needsMfa: true, factorId: verifiedFactor.id };
+        }
       }
     }
 
@@ -80,13 +88,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (challengeError) throw challengeError;
 
-      const { error: verifyError } = await supabase.auth.mfa.verify({
+      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
         factorId,
         challengeId: challengeData.id,
         code
       });
 
       if (verifyError) throw verifyError;
+
+      // After successful MFA verification, refresh the session to get AAL2 token
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        setSession(sessionData.session);
+        setUser(sessionData.session.user);
+      }
 
       setMfaChallenge(null);
       return { error: null };
