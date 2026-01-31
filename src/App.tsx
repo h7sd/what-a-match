@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/lib/auth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -15,8 +15,25 @@ import Imprint from "./pages/Imprint";
 import ShareRedirect from "./pages/ShareRedirect";
 import Status from "./pages/Status";
 import AliasRespond from "./pages/AliasRespond";
+import { ClaimedUsernamePopup } from "@/components/landing/ClaimedUsernamePopup";
 
 const queryClient = new QueryClient();
+
+// Component that conditionally renders the popup based on route
+function GlobalPopups() {
+  const location = useLocation();
+  
+  // List of paths where the popup should NOT appear (profile pages)
+  const isProfilePage = location.pathname.match(/^\/[^\/]+$/) && 
+    !['/', '/auth', '/dashboard', '/terms', '/privacy', '/imprint', '/status', '/alias-respond'].includes(location.pathname) &&
+    !location.pathname.startsWith('/s/');
+  
+  if (isProfilePage) {
+    return null;
+  }
+  
+  return <ClaimedUsernamePopup />;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -25,6 +42,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <GlobalPopups />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
