@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Ban, Loader2, Search, UserX, Check } from 'lucide-react';
+import { Ban, Loader2, Search, UserX, Check, ShieldOff, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,17 @@ interface BannedUser {
   ban_reason?: string;
 }
 
+interface BanRecord {
+  id: string;
+  user_id: string;
+  username: string;
+  email: string | null;
+  reason: string | null;
+  banned_at: string;
+  appeal_submitted_at: string | null;
+  appeal_text: string | null;
+}
+
 export function UserBanManager() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,6 +45,36 @@ export function UserBanManager() {
   const [banReason, setBanReason] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isBanning, setIsBanning] = useState(false);
+  
+  // Banned users list state
+  const [bannedUsers, setBannedUsers] = useState<BanRecord[]>([]);
+  const [isLoadingBanned, setIsLoadingBanned] = useState(false);
+  const [unbanningId, setUnbanningId] = useState<string | null>(null);
+  const [selectedBanRecord, setSelectedBanRecord] = useState<BanRecord | null>(null);
+  const [isUnbanDialogOpen, setIsUnbanDialogOpen] = useState(false);
+
+  // Load banned users on mount
+  useEffect(() => {
+    loadBannedUsers();
+  }, []);
+
+  const loadBannedUsers = async () => {
+    setIsLoadingBanned(true);
+    try {
+      const { data, error } = await supabase
+        .from('banned_users')
+        .select('*')
+        .order('banned_at', { ascending: false });
+
+      if (error) throw error;
+      setBannedUsers(data || []);
+    } catch (error: any) {
+      console.error('Error loading banned users:', error);
+      toast({ title: 'Error loading banned users', variant: 'destructive' });
+    } finally {
+      setIsLoadingBanned(false);
+    }
+  };
 
   // Live search with debounce
   useEffect(() => {
@@ -96,6 +138,7 @@ export function UserBanManager() {
       setBanReason('');
       setSearchQuery('');
       setSearchResults([]);
+      loadBannedUsers(); // Refresh the banned users list
     } catch (error: any) {
       console.error('Error banning user:', error);
       toast({ title: error.message || 'Error banning user', variant: 'destructive' });
@@ -104,72 +147,183 @@ export function UserBanManager() {
     }
   };
 
+  const handleUnbanClick = (record: BanRecord) => {
+    setSelectedBanRecord(record);
+    setIsUnbanDialogOpen(true);
+  };
+
+  const handleUnban = async () => {
+    if (!selectedBanRecord) return;
+
+    setUnbanningId(selectedBanRecord.user_id);
+    try {
+      const { error } = await supabase.functions.invoke('unban-user', {
+        body: { odst4jf490: selectedBanRecord.user_id }
+      });
+
+      if (error) throw error;
+
+      toast({ 
+        title: 'User Unbanned', 
+        description: `${selectedBanRecord.username} has been unbanned.`,
+      });
+
+      setIsUnbanDialogOpen(false);
+      setSelectedBanRecord(null);
+      loadBannedUsers();
+    } catch (error: any) {
+      console.error('Error unbanning user:', error);
+      toast({ title: error.message || 'Error unbanning user', variant: 'destructive' });
+    } finally {
+      setUnbanningId(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-destructive/20 flex items-center justify-center">
-          <Ban className="w-4 h-4 text-destructive" />
-        </div>
-        <div>
-          <h3 className="font-semibold text-sm">Ban Manager</h3>
-          <p className="text-xs text-muted-foreground">Ban users from platform</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-destructive/20 flex items-center justify-center">
+            <Ban className="w-4 h-4 text-destructive" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-sm">Ban Manager</h3>
+            <p className="text-xs text-muted-foreground">Ban & unban users</p>
+          </div>
         </div>
       </div>
 
-      {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Username..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 h-9 text-sm"
-        />
-        {isSearching && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-        )}
-      </div>
+      <Tabs defaultValue="ban" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-8">
+          <TabsTrigger value="ban" className="text-xs">Ban User</TabsTrigger>
+          <TabsTrigger value="banned" className="text-xs">
+            Banned ({bannedUsers.length})
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Search Results */}
-      {searchResults.length > 0 && (
-        <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
-          {searchResults.map((user) => (
-            <div
-              key={user.id}
-              className="p-2 rounded-lg border border-border bg-secondary/20 flex items-center justify-between"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                {user.avatar_url ? (
-                  <img src={user.avatar_url} alt={user.username} className="w-7 h-7 rounded-full object-cover" />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
-                    <span className="text-xs font-medium">{user.username?.charAt(0).toUpperCase()}</span>
+        <TabsContent value="ban" className="space-y-3 mt-3">
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Username..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+            {isSearching && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+            )}
+          </div>
+
+          {/* Search Results */}
+          {searchResults.length > 0 && (
+            <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
+              {searchResults.map((user) => (
+                <div
+                  key={user.id}
+                  className="p-2 rounded-lg border border-border bg-secondary/20 flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt={user.username} className="w-7 h-7 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-xs font-medium">{user.username?.charAt(0).toUpperCase()}</span>
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium text-xs truncate">{user.username}</p>
+                      <p className="text-[10px] text-muted-foreground">UID #{user.uid_number}</p>
+                    </div>
                   </div>
-                )}
-                <div className="min-w-0">
-                  <p className="font-medium text-xs truncate">{user.username}</p>
-                  <p className="text-[10px] text-muted-foreground">UID #{user.uid_number}</p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => handleBanClick(user)}
+                  >
+                    <UserX className="w-3 h-3 mr-1" />
+                    Ban
+                  </Button>
                 </div>
-              </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => handleBanClick(user)}
-              >
-                <UserX className="w-3 h-3 mr-1" />
-                Ban
-              </Button>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
-      {searchResults.length === 0 && searchQuery && !isSearching && (
-        <p className="text-xs text-muted-foreground text-center py-4">
-          No users found
-        </p>
-      )}
+          {searchResults.length === 0 && searchQuery && !isSearching && (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              No users found
+            </p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="banned" className="space-y-3 mt-3">
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={loadBannedUsers}
+              disabled={isLoadingBanned}
+            >
+              <RefreshCw className={`w-3 h-3 mr-1 ${isLoadingBanned ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+
+          {isLoadingBanned ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : bannedUsers.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-8">
+              No banned users
+            </p>
+          ) : (
+            <div className="space-y-1.5 max-h-[250px] overflow-y-auto">
+              {bannedUsers.map((record) => (
+                <div
+                  key={record.id}
+                  className="p-2.5 rounded-lg border border-destructive/30 bg-destructive/5 space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="font-medium text-xs">@{record.username}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {record.email || 'No email'}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs border-green-500/50 text-green-500 hover:bg-green-500/10"
+                      onClick={() => handleUnbanClick(record)}
+                      disabled={unbanningId === record.user_id}
+                    >
+                      {unbanningId === record.user_id ? (
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      ) : (
+                        <ShieldOff className="w-3 h-3 mr-1" />
+                      )}
+                      Unban
+                    </Button>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground space-y-0.5">
+                    <p><span className="text-foreground/70">Reason:</span> {record.reason || 'None'}</p>
+                    <p><span className="text-foreground/70">Banned:</span> {new Date(record.banned_at).toLocaleDateString('de-DE')}</p>
+                    {record.appeal_submitted_at && (
+                      <p className="text-amber-500">
+                        ⚠️ Appeal submitted: {record.appeal_text?.substring(0, 50)}...
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Ban Confirmation Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -217,6 +371,50 @@ export function UserBanManager() {
                 Confirm Ban
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unban Confirmation Dialog */}
+      <Dialog open={isUnbanDialogOpen} onOpenChange={setIsUnbanDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-500">
+              <ShieldOff className="w-5 h-5" />
+              Unban User
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to unban <strong>@{selectedBanRecord?.username}</strong>? They will be able to access their account again.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedBanRecord?.appeal_text && (
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <p className="text-xs font-medium text-amber-500 mb-1">Appeal Text:</p>
+              <p className="text-xs text-muted-foreground">{selectedBanRecord.appeal_text}</p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsUnbanDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-green-600 hover:bg-green-700"
+              onClick={handleUnban}
+              disabled={unbanningId !== null}
+            >
+              {unbanningId !== null ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <ShieldOff className="w-4 h-4 mr-2" />
+              )}
+              Confirm Unban
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
