@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Ban, Loader2, Search, UserX, Check, ShieldOff, RefreshCw } from 'lucide-react';
+import { Ban, Loader2, Search, UserX, ShieldOff, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -52,6 +52,10 @@ export function UserBanManager() {
   const [unbanningId, setUnbanningId] = useState<string | null>(null);
   const [selectedBanRecord, setSelectedBanRecord] = useState<BanRecord | null>(null);
   const [isUnbanDialogOpen, setIsUnbanDialogOpen] = useState(false);
+  
+  // Delete account state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Load banned users on mount
   useEffect(() => {
@@ -152,6 +156,11 @@ export function UserBanManager() {
     setIsUnbanDialogOpen(true);
   };
 
+  const handleDeleteClick = (record: BanRecord) => {
+    setSelectedBanRecord(record);
+    setIsDeleteDialogOpen(true);
+  };
+
   const handleUnban = async () => {
     if (!selectedBanRecord) return;
 
@@ -176,6 +185,37 @@ export function UserBanManager() {
       toast({ title: error.message || 'Error unbanning user', variant: 'destructive' });
     } finally {
       setUnbanningId(null);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!selectedBanRecord) return;
+
+    setIsDeletingAccount(true);
+    try {
+      const { error } = await supabase.functions.invoke('admin-delete-account', {
+        body: {
+          userId: selectedBanRecord.user_id,
+          username: selectedBanRecord.username,
+          email: selectedBanRecord.email
+        }
+      });
+
+      if (error) throw error;
+
+      toast({ 
+        title: 'Account Deleted', 
+        description: `${selectedBanRecord.username}'s account has been permanently deleted.`,
+      });
+
+      setIsDeleteDialogOpen(false);
+      setSelectedBanRecord(null);
+      loadBannedUsers();
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      toast({ title: error.message || 'Error deleting account', variant: 'destructive' });
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
@@ -287,27 +327,38 @@ export function UserBanManager() {
                   key={record.id}
                   className="p-2.5 rounded-lg border border-destructive/30 bg-destructive/5 space-y-2"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium text-xs">@{record.username}</p>
                       <p className="text-[10px] text-muted-foreground truncate">
                         {record.email || 'No email'}
                       </p>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs border-green-500/50 text-green-500 hover:bg-green-500/10"
-                      onClick={() => handleUnbanClick(record)}
-                      disabled={unbanningId === record.user_id}
-                    >
-                      {unbanningId === record.user_id ? (
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                      ) : (
-                        <ShieldOff className="w-3 h-3 mr-1" />
-                      )}
-                      Unban
-                    </Button>
+                    <div className="flex gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10"
+                        onClick={() => handleUnbanClick(record)}
+                        disabled={unbanningId === record.user_id}
+                      >
+                        {unbanningId === record.user_id ? (
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        ) : (
+                          <ShieldOff className="w-3 h-3 mr-1" />
+                        )}
+                        Unban
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => handleDeleteClick(record)}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                   <div className="text-[10px] text-muted-foreground space-y-0.5">
                     <p><span className="text-foreground/70">Reason:</span> {record.reason || 'None'}</p>
@@ -379,7 +430,7 @@ export function UserBanManager() {
       <Dialog open={isUnbanDialogOpen} onOpenChange={setIsUnbanDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-500">
+            <DialogTitle className="flex items-center gap-2 text-emerald-500">
               <ShieldOff className="w-5 h-5" />
               Unban User
             </DialogTitle>
@@ -404,7 +455,7 @@ export function UserBanManager() {
               Cancel
             </Button>
             <Button
-              className="flex-1 bg-green-600 hover:bg-green-700"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
               onClick={handleUnban}
               disabled={unbanningId !== null}
             >
@@ -414,6 +465,59 @@ export function UserBanManager() {
                 <ShieldOff className="w-4 h-4 mr-2" />
               )}
               Confirm Unban
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              Delete Account Permanently
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete <strong>@{selectedBanRecord?.username}</strong>'s account? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+            <p className="text-xs font-medium text-destructive mb-2">This will permanently delete:</p>
+            <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+              <li>Profile and all customizations</li>
+              <li>All badges and achievements</li>
+              <li>Social links and integrations</li>
+              <li>Analytics and view history</li>
+              <li>Account credentials</li>
+            </ul>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            The user will be notified via email at: <strong>{selectedBanRecord?.email || 'No email'}</strong>
+          </p>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleDeleteAccount}
+              disabled={isDeletingAccount}
+            >
+              {isDeletingAccount ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
+              Delete Forever
             </Button>
           </div>
         </DialogContent>

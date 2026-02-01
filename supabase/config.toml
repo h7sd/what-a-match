@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.reply-support-email]
 verify_jwt = false
+
+[functions.admin-delete-account]
+verify_jwt = false
