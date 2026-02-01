@@ -65,7 +65,7 @@ async function sendDiscordWebhook(banRecord: any, appealText: string) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        content: "<@h9sd> <@qo5c> New ban appeal submitted!",
+        content: "<@1234567890123456789> <@9876543210987654321> New ban appeal submitted!",
         embeds: [embed],
       }),
     });
