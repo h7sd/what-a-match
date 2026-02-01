@@ -123,8 +123,12 @@ export function LiveProfilePreview({
     return 'other' as const;
   }, [customCursorUrl]);
 
-  const useOverlayCursor = !!customCursorUrl && (cursorType === 'gif' || cursorType === 'png');
-  const useCssCursor = !!customCursorUrl && !useOverlayCursor;
+  // .cur works via CSS cursor property
+  // .ani does NOT work in modern browsers at all - show warning
+  // .png/.gif use overlay image
+  const useOverlayCursor = !!customCursorUrl && (cursorType === 'gif' || cursorType === 'png' || cursorType === 'other');
+  const useCssCursor = cursorType === 'cur';
+  const isAniCursor = cursorType === 'ani';
 
   useEffect(() => {
     if (!useOverlayCursor) return;
@@ -265,6 +269,13 @@ export function LiveProfilePreview({
                        objectFit: 'contain',
                      }}
                    />
+                 )}
+
+                 {/* Warning for .ani files */}
+                 {isAniCursor && (
+                   <div className="absolute top-2 left-2 right-2 z-20 px-2 py-1 rounded bg-destructive/90 text-[9px] text-destructive-foreground text-center">
+                     ⚠️ .ani nicht unterstützt
+                   </div>
                  )}
 
                 {/* Content - Scaled down */}
@@ -413,9 +424,15 @@ export function LiveProfilePreview({
               />
             )}
 
-            {customCursorUrl && (cursorType === 'ani' || cursorType === 'cur') && (
-              <div className="absolute top-2 right-2 z-20 px-2 py-1 rounded bg-muted/70 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                {cursorType.toUpperCase()} preview is browser-limited
+            {isAniCursor && (
+              <div className="absolute top-2 left-2 right-2 z-20 px-2 py-1.5 rounded bg-destructive/90 text-[10px] text-destructive-foreground text-center">
+                ⚠️ .ani wird von Browsern NICHT unterstützt — nutze GIF oder PNG!
+              </div>
+            )}
+
+            {useCssCursor && (
+              <div className="absolute top-2 right-2 z-20 px-2 py-1 rounded bg-muted/80 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                .cur Cursor aktiv ✓
               </div>
             )}
 

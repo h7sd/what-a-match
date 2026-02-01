@@ -18,10 +18,14 @@ interface CustomCursorProps {
   cursorUrl?: string;
 }
 
-// Check if the file is a native cursor format (.cur or .ani)
-function isNativeCursorFormat(url: string): boolean {
+// Check cursor format type
+function getCursorType(url: string): 'cur' | 'ani' | 'image' | 'none' {
+  if (!url) return 'none';
   const lower = url.toLowerCase();
-  return lower.endsWith('.cur') || lower.endsWith('.ani');
+  if (lower.endsWith('.cur')) return 'cur';
+  if (lower.endsWith('.ani')) return 'ani';
+  if (lower.endsWith('.png') || lower.endsWith('.gif') || lower.endsWith('.webp') || lower.endsWith('.apng')) return 'image';
+  return 'image'; // Default to image for unknown types
 }
 
 export function CustomCursor({ color = '#8b5cf6', showTrail = true, cursorUrl }: CustomCursorProps) {
@@ -30,13 +34,14 @@ export function CustomCursor({ color = '#8b5cf6', showTrail = true, cursorUrl }:
   const [trails, setTrails] = useState<Trail[]>([]);
   const trailIdRef = useRef(0);
 
-  // Check if using native cursor format
-  const lowerCursorUrl = (cursorUrl || '').toLowerCase();
-  // NOTE: .ani is a Windows-native animated cursor format and is not supported by most modern browsers.
-  // We treat it as non-native to avoid silently falling back to the default OS cursor.
-  const isAniCursor = !!cursorUrl && lowerCursorUrl.endsWith('.ani');
-  const useNativeCursor = !!cursorUrl && isNativeCursorFormat(cursorUrl) && !isAniCursor;
-  const useImageCursor = !!cursorUrl && !useNativeCursor && !isAniCursor;
+  const cursorType = getCursorType(cursorUrl || '');
+  
+  // .cur files work via CSS cursor property in all modern browsers
+  // .ani files do NOT work in modern browsers - show fallback styled cursor
+  // .png/.gif files use overlay image approach
+  const useCssCursor = cursorType === 'cur';
+  const useImageCursor = cursorType === 'image';
+  const showFallbackCursor = cursorType === 'ani' || cursorType === 'none';
 
   useEffect(() => {
     const updatePosition = (e: MouseEvent) => {
@@ -77,8 +82,8 @@ export function CustomCursor({ color = '#8b5cf6', showTrail = true, cursorUrl }:
 
   if (typeof window === 'undefined') return null;
 
-  // For native cursor formats (.cur, .ani), use CSS cursor property
-  if (useNativeCursor) {
+  // For .cur files, use CSS cursor property (works in all modern browsers)
+  if (useCssCursor && cursorUrl) {
     return (
       <>
         <style>{`
@@ -110,6 +115,9 @@ export function CustomCursor({ color = '#8b5cf6', showTrail = true, cursorUrl }:
       </>
     );
   }
+
+  // For image cursors (.png, .gif) OR fallback (.ani which doesn't work in browsers)
+  const showOverlayImage = useImageCursor && cursorUrl;
 
   return (
     <>

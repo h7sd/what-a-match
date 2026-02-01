@@ -55,8 +55,9 @@ export function FileUploader({ type, currentUrl, onUpload, onRemove }: FileUploa
   const Icon = config.icon;
 
   const lowerUrl = (currentUrl || '').toLowerCase();
-  const isNonPreviewableCursor =
-    type === 'cursor' && (lowerUrl.endsWith('.cur') || lowerUrl.endsWith('.ani'));
+  const isCurFile = type === 'cursor' && lowerUrl.endsWith('.cur');
+  const isAniFile = type === 'cursor' && lowerUrl.endsWith('.ani');
+  const isNonPreviewableCursor = isCurFile || isAniFile;
 
   const handleUpload = async (file: File) => {
     if (!user) {
@@ -173,10 +174,21 @@ export function FileUploader({ type, currentUrl, onUpload, onRemove }: FileUploa
         ) : currentUrl && isNonPreviewableCursor ? (
           <div className="py-8 px-4 flex flex-col items-center justify-center text-center">
             <Icon className={`w-8 h-8 mb-2 ${config.color}`} />
-            <p className="text-xs text-primary font-medium">Cursor uploaded ✓</p>
-            <p className="mt-1 text-[10px] text-muted-foreground">
-              .cur/.ani preview not supported — use GIF/PNG for animated cursors
-            </p>
+            {isAniFile ? (
+              <>
+                <p className="text-xs text-destructive font-medium">⚠️ .ani wird NICHT unterstützt</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Moderne Browser unterstützen .ani nicht. Bitte verwende GIF oder PNG!
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-primary font-medium">Cursor uploaded ✓</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  .cur funktioniert — für animierte Cursor nutze GIF/PNG
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <div className="py-8 px-4 flex flex-col items-center justify-center text-center">
