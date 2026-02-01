@@ -912,9 +912,9 @@ export function AccountSettings({ profile, onUpdateUsername, onSaveDisplayName, 
           <p className="text-sm text-muted-foreground mb-3">
             Claim your badges and perks as roles on the official Discord server
           </p>
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full opacity-60 cursor-not-allowed" disabled>
             <MessageSquare className="w-4 h-4 mr-2" />
-            Claim Now
+            Coming Soon
           </Button>
         </div>
       </div>
