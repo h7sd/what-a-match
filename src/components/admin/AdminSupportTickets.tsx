@@ -111,11 +111,27 @@ export function AdminSupportTickets() {
       });
 
       setReplyText('');
-      await loadMessages(selectedTicket.id);
-      await loadTickets();
-
+      
+      // Update local state immediately to avoid duplicates
       if (closeTicket) {
+        // Update the ticket status in local state
+        setTickets(prev => prev.map(t => 
+          t.id === selectedTicket.id 
+            ? { ...t, status: 'closed', updated_at: new Date().toISOString() } 
+            : t
+        ));
+        // Update selected ticket state
+        setSelectedTicket(prev => prev ? { ...prev, status: 'closed' } : null);
         setIsDialogOpen(false);
+      } else {
+        // Update ticket to in_progress
+        setTickets(prev => prev.map(t => 
+          t.id === selectedTicket.id 
+            ? { ...t, status: 'in_progress', updated_at: new Date().toISOString() } 
+            : t
+        ));
+        setSelectedTicket(prev => prev ? { ...prev, status: 'in_progress' } : null);
+        await loadMessages(selectedTicket.id);
       }
     } catch (error: any) {
       console.error('Error sending reply:', error);
