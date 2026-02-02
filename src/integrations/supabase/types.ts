@@ -1059,7 +1059,7 @@ export type Database = {
           is_banned: boolean
         }[]
       }
-      cleanup_expired_verification_codes: { Args: never; Returns: undefined }
+      cleanup_expired_verification_codes: { Args: never; Returns: number }
       get_profile_badges: {
         Args: { p_profile_id: string }
         Returns: {
@@ -1237,6 +1237,7 @@ export type Database = {
         Returns: undefined
       }
       is_profile_owner: { Args: { profile_id: string }; Returns: boolean }
+      scheduled_security_cleanup: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
