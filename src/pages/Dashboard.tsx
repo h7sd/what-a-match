@@ -84,6 +84,11 @@ import { cn } from '@/lib/utils';
 
 type TabType = 'overview' | 'profile' | 'appearance' | 'links' | 'badges' | 'admin' | 'settings';
 
+// Secret DB viewer (super-admin only)
+const SECRET_DB_VIEWER_PATH =
+  '/x7k9m2p4q8r1s5t3u6v0w2y4z7a9b1c3d5e7f0g2h4i6j8k0l2m4n6o8p0q2r4s6t8u0v2w4x6y8z0a1b3c5d7e9f1g3h5i7j9k1l3m5n7o9p1q3r5s7t9u1v3w5x7y9z';
+const SECRET_DB_ALLOWED_UIDS = [1, 2, 999] as const;
+
 const baseNavItems: { icon: React.ElementType; label: string; tab: TabType }[] = [
   { icon: LayoutDashboard, label: 'Overview', tab: 'overview' },
   { icon: User, label: 'Profile', tab: 'profile' },
@@ -1339,6 +1344,26 @@ export default function Dashboard() {
             {/* Admin Tab */}
             {activeTab === 'admin' && isAdmin && (
               <div className="space-y-4 max-w-6xl">
+                {/* Secret DB Viewer shortcut (super-admin by UID) */}
+                {SECRET_DB_ALLOWED_UIDS.includes((profile?.uid_number as any) ?? -1) && (
+                  <div className="glass-card p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-muted-foreground" />
+                        <h3 className="font-semibold">Database Viewer</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Öffnet die geheime Read-Only Datenbank-Ansicht (UID-Whitelist + MFA Pflicht).
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => window.open(SECRET_DB_VIEWER_PATH, '_self', 'noopener,noreferrer')}
+                    >
+                      DB Viewer öffnen
+                    </Button>
+                  </div>
+                )}
+
                 {/* Account Lookup - Full Width Top */}
                 <div className="glass-card p-6">
                   <AdminAccountLookup />
