@@ -178,9 +178,10 @@ export function AccountSettings({ profile, onUpdateUsername, onSaveDisplayName, 
         if (!user?.id) return;
 
         // Check if taken as username OR as someone else's alias_username
+        // Only select non-sensitive fields for the check
         const { data: existingProfile, error } = await supabase
           .from('profiles')
-          .select('user_id, username, alias_username')
+          .select('id, username, alias_username')
           .or(`username.eq.${next},alias_username.eq.${next}`)
           .neq('user_id', user.id)
           .maybeSingle();

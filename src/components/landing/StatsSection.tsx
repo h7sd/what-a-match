@@ -22,20 +22,20 @@ function useStats() {
       
       const totalViews = viewsData?.reduce((sum, p) => sum + (p.views_count || 0), 0) || 0;
 
-      // Get total users
+      // Get total users - use minimal field for count
       const { count: usersCount } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true });
 
-      // Get total social links
+      // Get total social links - use minimal field for count
       const { count: linksCount } = await supabase
         .from('social_links')
-        .select('*', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true });
 
-      // Get total badges awarded
+      // Get total badges awarded - use minimal field for count
       const { count: badgesCount } = await supabase
         .from('user_badges')
-        .select('*', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true });
 
       return {
         views: totalViews,

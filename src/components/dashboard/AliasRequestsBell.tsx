@@ -51,12 +51,19 @@ export function AliasRequestsBell() {
       }
 
       const requesterIds = data.map(r => r.requester_id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, username, display_name')
-        .in('user_id', requesterIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      
+      // Fetch profiles individually to avoid exposing user_id in response
+      const profileMap = new Map<string, { username: string; display_name: string | null }>();
+      for (const requesterId of requesterIds) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, display_name')
+          .eq('user_id', requesterId)
+          .maybeSingle();
+        if (profile) {
+          profileMap.set(requesterId, profile);
+        }
+      }
 
       setRequests(
         data.map(r => ({
