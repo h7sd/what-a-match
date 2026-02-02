@@ -19,7 +19,7 @@ export interface GlobalBadge {
 
 export interface UserBadge {
   id: string;
-  user_id: string;
+  user_id?: string; // Optional - not included in public queries for privacy
   badge_id: string;
   claimed_at: string;
   is_enabled: boolean;
@@ -87,33 +87,17 @@ export function useUserBadges(userId: string) {
 }
 
 // Get badges for a profile (only enabled ones)
+// Uses a secure database function that doesn't expose user_id
 export function useProfileBadges(profileId: string) {
   return useQuery({
     queryKey: ['profileBadges', profileId],
     queryFn: async () => {
-      // First get the user_id from the profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('id', profileId)
-        .maybeSingle();
-      
-      if (profileError) throw profileError;
-      if (!profile) return [];
-
-      // Then get the user's enabled badges only (exclude locked ones)
+      // Use secure RPC function that joins internally without exposing user_id
       const { data, error } = await supabase
-        .from('user_badges')
-        .select(`
-          *,
-          badge:global_badges(*)
-        `)
-        .eq('user_id', profile.user_id)
-        .eq('is_enabled', true)
-        .or('is_locked.is.null,is_locked.eq.false');
+        .rpc('get_profile_badges', { p_profile_id: profileId });
       
       if (error) throw error;
-      return (data as (UserBadge & { badge: GlobalBadge })[]).map(ub => ub.badge);
+      return (data || []) as GlobalBadge[];
     },
     enabled: !!profileId,
   });

@@ -1053,6 +1053,21 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
+      get_profile_badges: {
+        Args: { p_profile_id: string }
+        Returns: {
+          claims_count: number
+          color: string
+          created_at: string
+          description: string
+          icon_url: string
+          id: string
+          is_limited: boolean
+          max_claims: number
+          name: string
+          rarity: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

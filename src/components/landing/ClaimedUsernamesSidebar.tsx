@@ -49,14 +49,28 @@ export function ClaimedUsernamesSidebar() {
           .limit(20);
 
         if (requestsData && requestsData.length > 0) {
-          // Fetch requester profiles
+          // Fetch requester profiles - only get public fields, map by requester_id
           const requesterIds = requestsData.map(r => r.requester_id);
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('user_id, username, display_name')
+            .select('id, username, display_name')
             .in('user_id', requesterIds);
 
-          const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+          // Create a map using the original requester_id to match back
+          const profileMap = new Map<string, { username: string; display_name: string | null }>();
+          
+          // We need to match profiles back to requester_ids - since we can't return user_id,
+          // we'll use a different approach: fetch by user_id but only return safe fields
+          for (let i = 0; i < requesterIds.length; i++) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username, display_name')
+              .eq('user_id', requesterIds[i])
+              .maybeSingle();
+            if (profile) {
+              profileMap.set(requesterIds[i], profile);
+            }
+          }
 
           const enrichedRequests: ApprovedAliasRequest[] = requestsData.map(r => ({
             id: r.id,
