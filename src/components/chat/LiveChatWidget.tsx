@@ -22,7 +22,7 @@ export function LiveChatWidget() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [mode, setMode] = useState<'ai' | 'agent'>('ai');
   const [agentRequested, setAgentRequested] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && !conversationId) {
@@ -67,10 +67,46 @@ export function LiveChatWidget() {
   }, [conversationId]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages]);
+
+  // Detect when a live agent takes over, and stop AI replies.
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const channel = supabase
+      .channel(`chat-conv-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'live_chat_conversations',
+          filter: `id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          if (updated?.assigned_admin_id) {
+            setAgentRequested(true);
+            setMode('agent');
+            setMessages(prev => {
+              if (prev.some(m => m.id === 'agent_connected')) return prev;
+              return [...prev, {
+                id: 'agent_connected',
+                content: "You're now connected with a live support agent.",
+                sender_type: 'ai',
+                created_at: new Date().toISOString(),
+              }];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
 
   const initConversation = async () => {
     try {
@@ -168,7 +204,21 @@ export function LiveChatWidget() {
         body: JSON.stringify({ messages: chatMessages, conversationId }),
       });
 
-      if (!response.ok) throw new Error('Failed to get AI response');
+      if (!response.ok) {
+        // If a human agent took over, the AI function returns 409.
+        if (response.status === 409) {
+          setAgentRequested(true);
+          setMode('agent');
+          setMessages(prev => [...prev, {
+            id: `system_${Date.now()}`,
+            content: "A live agent is handling this chat now. Please wait for their reply.",
+            sender_type: 'ai',
+            created_at: new Date().toISOString(),
+          }]);
+          return;
+        }
+        throw new Error('Failed to get AI response');
+      }
 
       // Stream the response
       const reader = response.body?.getReader();
@@ -275,7 +325,7 @@ export function LiveChatWidget() {
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((msg) => (
             <div
@@ -316,6 +366,7 @@ export function LiveChatWidget() {
               </div>
             </div>
           )}
+          <div ref={bottomRef} />
         </div>
       </ScrollArea>
 

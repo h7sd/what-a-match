@@ -1,4 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +24,30 @@ serve(async (req) => {
     }
 
     console.log("Processing chat message for conversation:", conversationId);
+
+    // If a live agent has taken over, do NOT respond as AI.
+    if (conversationId) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const { data: conv, error: convErr } = await supabase
+        .from("live_chat_conversations")
+        .select("assigned_admin_id")
+        .eq("id", conversationId)
+        .maybeSingle();
+
+      if (convErr) {
+        console.error("Conversation lookup error:", convErr);
+      }
+
+      if (conv?.assigned_admin_id) {
+        return new Response(
+          JSON.stringify({
+            error: "A live agent is handling this chat.",
+            code: "AGENT_ASSIGNED",
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

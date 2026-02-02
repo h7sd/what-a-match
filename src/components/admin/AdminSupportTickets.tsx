@@ -72,7 +72,7 @@ export function AdminSupportTickets() {
       .from('profiles')
       .select('user_id, username, display_name, avatar_url')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
     
     if (data) {
       setCurrentAdminProfile(data);
@@ -138,31 +138,22 @@ export function AdminSupportTickets() {
     if (!user) return;
     
     try {
-      const { error } = await supabase
-        .from('support_tickets')
-        .update({ 
-          claimed_by: user.id, 
-          claimed_at: new Date().toISOString(),
-          status: 'in_progress'
-        })
-        .eq('id', ticketId);
-
+      const { data, error } = await supabase.functions.invoke('claim-support-ticket', {
+        body: { ticketId },
+      });
       if (error) throw error;
+      const updatedTicket = (data as any)?.ticket as SupportTicket | undefined;
+      if (!updatedTicket) throw new Error('Claim failed');
       
       // Update local state
       setTickets(prev => prev.map(t => 
         t.id === ticketId 
-          ? { ...t, claimed_by: user.id, claimed_at: new Date().toISOString(), status: 'in_progress' } 
+          ? { ...t, ...updatedTicket } 
           : t
       ));
       
       if (selectedTicket?.id === ticketId) {
-        setSelectedTicket(prev => prev ? { 
-          ...prev, 
-          claimed_by: user.id, 
-          claimed_at: new Date().toISOString(),
-          status: 'in_progress'
-        } : null);
+        setSelectedTicket(prev => (prev ? { ...prev, ...updatedTicket } : null));
       }
       
       // Add current admin to profiles cache
@@ -172,7 +163,7 @@ export function AdminSupportTickets() {
       
       toast({ title: 'Ticket claimed successfully' });
     } catch (error: any) {
-      toast({ title: 'Error claiming ticket', variant: 'destructive' });
+      toast({ title: error?.message || 'Error claiming ticket', variant: 'destructive' });
     }
   };
 
@@ -254,6 +245,14 @@ export function AdminSupportTickets() {
   const getAdminInfo = (userId: string | null) => {
     if (!userId) return null;
     return adminProfiles[userId] || null;
+  };
+
+  const getAdminInfoWithFallback = (userId: string | null) => {
+    if (!userId) return null;
+    const cached = getAdminInfo(userId);
+    if (cached) return cached;
+    if (user?.id && userId === user.id && currentAdminProfile) return currentAdminProfile;
+    return null;
   };
 
   const filteredTickets = tickets.filter((t) => {
@@ -398,16 +397,14 @@ export function AdminSupportTickets() {
           {selectedTicket?.claimed_by && (
             <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={getAdminInfo(selectedTicket.claimed_by)?.avatar_url || undefined} />
+                <AvatarImage src={getAdminInfoWithFallback(selectedTicket.claimed_by)?.avatar_url || undefined} />
                 <AvatarFallback className="bg-primary/20 text-xs">
-                  {(getAdminInfo(selectedTicket.claimed_by)?.display_name || 
-                    getAdminInfo(selectedTicket.claimed_by)?.username)?.[0]?.toUpperCase()}
+                  {(getAdminInfoWithFallback(selectedTicket.claimed_by)?.display_name || getAdminInfoWithFallback(selectedTicket.claimed_by)?.username || 'S')?.[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <p className="text-sm font-medium text-primary">
-                  {getAdminInfo(selectedTicket.claimed_by)?.display_name || 
-                   getAdminInfo(selectedTicket.claimed_by)?.username} has claimed this ticket
+                  {(getAdminInfoWithFallback(selectedTicket.claimed_by)?.display_name || getAdminInfoWithFallback(selectedTicket.claimed_by)?.username || 'A support agent')} has claimed this ticket
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Will be processed as soon as possible
