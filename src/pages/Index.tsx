@@ -11,6 +11,7 @@ import { FAQSection } from "@/components/landing/FAQSection";
 import { ModernFooter } from "@/components/landing/ModernFooter";
 import { PremiumDialog } from "@/components/landing/PremiumDialog";
 import { LiveChatWidget } from "@/components/chat/LiveChatWidget";
+import { LiquidEther } from "@/components/landing/LiquidEther";
 
 export default function Index() {
   const { user, loading: authLoading } = useAuth();
@@ -29,14 +30,24 @@ export default function Index() {
 
   return (
     <div className="min-h-screen relative bg-background overflow-hidden">
-      {/* Animated background */}
-      <div className="fixed inset-0 animated-bg" />
+      {/* Liquid Ether Background with green-blue colors */}
+      <div className="fixed inset-0 z-0">
+        <LiquidEther 
+          colors={['#00D9A5', '#00B4D8', '#0077B6']}
+          autoDemo={true}
+          autoSpeed={0.4}
+          autoIntensity={1.8}
+          mouseForce={15}
+          cursorSize={120}
+          resolution={0.5}
+        />
+      </div>
       
       {/* Noise texture overlay */}
-      <div className="fixed inset-0 noise-overlay pointer-events-none" />
+      <div className="fixed inset-0 noise-overlay pointer-events-none z-[1]" />
       
       {/* Dot pattern */}
-      <div className="fixed inset-0 dot-pattern opacity-30 pointer-events-none" />
+      <div className="fixed inset-0 dot-pattern opacity-20 pointer-events-none z-[1]" />
 
       {/* Content */}
       <div className="relative z-10">

@@ -6,99 +6,99 @@
 
 @layer base {
   :root {
-    /* New clean dark theme with subtle warmth */
-    --background: 220 20% 3%;
+    /* Green-Blue cybernetic theme */
+    --background: 200 25% 3%;
     --foreground: 0 0% 98%;
 
-    --card: 220 15% 6%;
+    --card: 195 20% 6%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 220 15% 8%;
+    --popover: 195 20% 8%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 250 90% 65%;
+    --primary: 160 85% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 12%;
+    --secondary: 195 20% 12%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 15% 15%;
-    --muted-foreground: 220 10% 55%;
+    --muted: 195 20% 15%;
+    --muted-foreground: 195 15% 55%;
 
-    --accent: 280 80% 60%;
+    --accent: 195 90% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 70% 45%;
+    --success: 160 85% 45%;
     --success-foreground: 0 0% 100%;
 
-    --border: 220 15% 15%;
-    --input: 220 15% 15%;
-    --ring: 250 90% 65%;
+    --border: 195 20% 15%;
+    --input: 195 20% 15%;
+    --ring: 160 85% 45%;
 
     --radius: 1rem;
 
-    /* Custom tokens for new design */
-    --gradient-start: 250 90% 65%;
-    --gradient-mid: 280 80% 60%;
-    --gradient-end: 320 80% 55%;
+    /* Custom tokens for green-blue design */
+    --gradient-start: 160 85% 45%;
+    --gradient-mid: 180 80% 50%;
+    --gradient-end: 195 90% 55%;
     
-    --glass-bg: 220 15% 8%;
-    --glass-border: 220 15% 20%;
-    --glow-primary: 250 90% 65%;
+    --glass-bg: 195 20% 8%;
+    --glass-border: 195 20% 20%;
+    --glow-primary: 160 85% 45%;
 
-    --sidebar-background: 220 20% 3%;
+    --sidebar-background: 200 25% 3%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 250 90% 65%;
+    --sidebar-primary: 160 85% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 12%;
+    --sidebar-accent: 195 20% 12%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 220 15% 15%;
-    --sidebar-ring: 250 90% 65%;
+    --sidebar-border: 195 20% 15%;
+    --sidebar-ring: 160 85% 45%;
   }
 
   .dark {
-    --background: 220 20% 3%;
+    --background: 200 25% 3%;
     --foreground: 0 0% 98%;
 
-    --card: 220 15% 6%;
+    --card: 195 20% 6%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 220 15% 8%;
+    --popover: 195 20% 8%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 250 90% 65%;
+    --primary: 160 85% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 12%;
+    --secondary: 195 20% 12%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 15% 15%;
-    --muted-foreground: 220 10% 55%;
+    --muted: 195 20% 15%;
+    --muted-foreground: 195 15% 55%;
 
-    --accent: 280 80% 60%;
+    --accent: 195 90% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 70% 45%;
+    --success: 160 85% 45%;
     --success-foreground: 0 0% 100%;
 
-    --border: 220 15% 15%;
-    --input: 220 15% 15%;
-    --ring: 250 90% 65%;
+    --border: 195 20% 15%;
+    --input: 195 20% 15%;
+    --ring: 160 85% 45%;
 
-    --sidebar-background: 220 20% 3%;
+    --sidebar-background: 200 25% 3%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 250 90% 65%;
+    --sidebar-primary: 160 85% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 12%;
+    --sidebar-accent: 195 20% 12%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 220 15% 15%;
-    --sidebar-ring: 250 90% 65%;
+    --sidebar-border: 195 20% 15%;
+    --sidebar-ring: 160 85% 45%;
   }
 }
 
@@ -212,10 +212,10 @@
   /* Animated background */
   .animated-bg {
     background: linear-gradient(-45deg, 
-      hsl(220 20% 3%) 0%, 
-      hsl(250 30% 8%) 25%,
-      hsl(280 25% 6%) 50%,
-      hsl(220 20% 3%) 100%
+      hsl(200 25% 3%) 0%, 
+      hsl(180 30% 8%) 25%,
+      hsl(160 25% 6%) 50%,
+      hsl(200 25% 3%) 100%
     );
     background-size: 400% 400%;
     animation: gradient 20s ease infinite;
