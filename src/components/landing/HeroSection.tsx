@@ -116,29 +116,6 @@ export function HeroSection() {
             <span>View Demo</span>
           </Link>
         </motion.div>
-
-        {/* Stats inline */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="flex items-center justify-center gap-8 mt-16 pt-8 border-t border-border/30"
-        >
-          <div className="text-center">
-            <p className="text-2xl md:text-3xl font-bold text-foreground">10K+</p>
-            <p className="text-sm text-muted-foreground">Active Users</p>
-          </div>
-          <div className="w-px h-10 bg-border/50" />
-          <div className="text-center">
-            <p className="text-2xl md:text-3xl font-bold text-foreground">50K+</p>
-            <p className="text-sm text-muted-foreground">Profile Views</p>
-          </div>
-          <div className="w-px h-10 bg-border/50" />
-          <div className="text-center">
-            <p className="text-2xl md:text-3xl font-bold text-foreground">99.9%</p>
-            <p className="text-sm text-muted-foreground">Uptime</p>
-          </div>
-        </motion.div>
       </motion.div>
     </section>
   );
