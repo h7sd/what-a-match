@@ -1052,18 +1052,21 @@ export type Database = {
         Args: { p_ip_hash: string; p_profile_id: string }
         Returns: boolean
       }
+      check_user_ban_status: {
+        Args: { p_user_id: string }
+        Returns: {
+          can_appeal: boolean
+          is_banned: boolean
+        }[]
+      }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       get_profile_badges: {
         Args: { p_profile_id: string }
         Returns: {
-          claims_count: number
           color: string
-          created_at: string
           description: string
           icon_url: string
           id: string
-          is_limited: boolean
-          max_claims: number
           name: string
           rarity: string
         }[]

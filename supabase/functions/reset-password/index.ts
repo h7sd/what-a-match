@@ -152,6 +152,16 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Failed to update password");
     }
 
+    // SECURITY FIX: Invalidate all existing sessions after password reset
+    // This prevents attackers with active sessions from maintaining access
+    try {
+      await supabaseAdmin.auth.admin.signOut(user.id, 'global');
+      console.log("All sessions invalidated for user after password reset");
+    } catch (signOutError) {
+      // Log but don't fail the password reset if session invalidation fails
+      console.error("Warning: Failed to invalidate sessions:", signOutError);
+    }
+
     const emailHash = await hashEmail(email);
     console.log("Password reset successful for hash:", emailHash);
 
@@ -159,7 +169,7 @@ const handler = async (req: Request): Promise<Response> => {
     await addTimingJitter();
 
     return new Response(
-      JSON.stringify({ success: true, message: "Password updated successfully" }),
+      JSON.stringify({ success: true, message: "Password updated successfully. Please log in with your new password." }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
