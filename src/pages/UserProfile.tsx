@@ -14,6 +14,7 @@ import { ControlsBar } from '@/components/profile/ControlsBar';
 import { SimpleVolumeBar } from '@/components/profile/SimpleVolumeBar';
 import { GlitchOverlay } from '@/components/profile/GlitchOverlay';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Custom hook for animated document title
 function useAnimatedDocumentTitle(
@@ -146,6 +147,7 @@ function useAnimatedDocumentTitle(
 export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   // First check if this username is an alias
   const { data: aliasProfile, isLoading: aliasLoading } = useProfileByAlias(username || '');
@@ -324,8 +326,8 @@ export default function UserProfile() {
         <audio ref={audioRef} src={profile.music_url} loop />
       )}
 
-      {/* Custom cursor with trail or custom image */}
-      {(showCursorTrail || customCursorUrl) && hasInteracted && (
+      {/* Custom cursor with trail or custom image - disabled on mobile */}
+      {!isMobile && (showCursorTrail || customCursorUrl) && hasInteracted && (
         <CustomCursor 
           color={accentColor} 
           showTrail={!!showCursorTrail} 
