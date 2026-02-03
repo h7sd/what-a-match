@@ -553,8 +553,22 @@ export default function Auth() {
           variant: 'destructive',
         });
       } else {
-        toast({ title: 'Successfully logged in!' });
-        navigate('/dashboard');
+        // Fetch username for welcome message (same as non-MFA login)
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('username, display_name')
+            .eq('user_id', userData.user.id)
+            .single();
+          
+          const displayUsername = profileData?.display_name || profileData?.username || userData.user.email?.split('@')[0] || 'User';
+          setWelcomeUsername(displayUsername);
+          setShowWelcome(true);
+        } else {
+          // Fallback if user data not available
+          navigate('/dashboard');
+        }
       }
     } catch (err: any) {
       toast({
