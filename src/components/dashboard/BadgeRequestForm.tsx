@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBadgeIcon } from '@/lib/badges';
 import { invokeSecure } from '@/lib/secureEdgeFunctions';
+import { useIsAdmin } from '@/hooks/useBadges';
 
 interface BadgeRequest {
   id: string;
@@ -57,6 +58,7 @@ async function validateImageSignature(file: File): Promise<boolean> {
 export function BadgeRequestForm() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { data: isAdmin = false } = useIsAdmin();
   const [badgeName, setBadgeName] = useState('');
   const [badgeDescription, setBadgeDescription] = useState('');
   const [badgeColor, setBadgeColor] = useState('#8B5CF6');
@@ -243,8 +245,8 @@ export function BadgeRequestForm() {
     );
   }
 
-  // Show status if request exists
-  if (currentRequest) {
+  // Show status if request exists (but admins can always submit new requests for testing)
+  if (currentRequest && !isAdmin) {
     const finalName = currentRequest.admin_edited_name || currentRequest.badge_name;
     const finalColor = currentRequest.admin_edited_color || currentRequest.badge_color;
     const finalIcon = currentRequest.admin_edited_icon_url || currentRequest.badge_icon_url;
