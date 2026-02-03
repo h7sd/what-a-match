@@ -6,7 +6,7 @@ import { SparkleEffect } from './SparkleEffect';
 import { AnimatedUsername } from './AnimatedUsername';
 import { AnimatedDisplayName, type TextAnimationType } from './TextAnimations';
 import { OrbitingAvatar } from './OrbitingAvatar';
-import { getBadgeIcon, getBadgeImage } from '@/lib/badges';
+import { ProfileBadgesDisplay } from './ProfileBadgesDisplay';
 import {
   Tooltip,
   TooltipContent,
@@ -27,6 +27,7 @@ interface ProfileCardProps {
   borderColor?: string | null;
   borderWidth?: number;
   transparentBadges?: boolean;
+  isOwnProfile?: boolean;
 }
 
 export function ProfileCard({ 
@@ -42,6 +43,7 @@ export function ProfileCard({
   borderColor,
   borderWidth = 1,
   transparentBadges = false,
+  isOwnProfile = false,
 }: ProfileCardProps) {
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
@@ -169,67 +171,13 @@ export function ProfileCard({
 
             {/* Badges - with transparent rounded container */}
             {showBadges && badges.length > 0 && (
-              <TooltipProvider delayDuration={100}>
-                <div className="inline-flex items-center justify-center -space-x-1 mb-4 px-2.5 py-1 rounded-full border border-white/10 bg-black/20 backdrop-blur-sm mx-auto">
-                  {badges.map((badge) => {
-                    const Icon = getBadgeIcon(badge.name);
-                    const badgeColor = transparentBadges ? 'currentColor' : (badge.color || accentColor);
-                    const customImage = getBadgeImage(badge.name);
-                    const shadowFilter = transparentBadges ? 'none' : `drop-shadow(0 0 4px ${badge.color || accentColor}50)`;
-                    const hoverShadow = transparentBadges ? 'none' : `drop-shadow(0 0 8px ${badge.color || accentColor})`;
-
-                    return (
-                      <Tooltip key={badge.id}>
-                        <TooltipTrigger asChild>
-                          <motion.button
-                            type="button"
-                            aria-label={`Badge: ${badge.name}`}
-                            className={`w-8 h-8 flex items-center justify-center cursor-pointer rounded-full touch-manipulation ${transparentBadges ? 'opacity-70' : ''}`}
-                            whileHover={{ 
-                              scale: 1.15,
-                              filter: hoverShadow,
-                              opacity: 1,
-                            }}
-                            whileTap={{ scale: 0.95 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                          >
-                            {badge.icon_url ? (
-                              <img 
-                                src={badge.icon_url} 
-                                alt={badge.name} 
-                                className={`w-5 h-5 object-contain ${transparentBadges ? 'opacity-80' : ''}`} 
-                                loading="lazy" 
-                              />
-                            ) : customImage ? (
-                              <img 
-                                src={customImage} 
-                                alt={badge.name} 
-                                className={`w-5 h-5 object-contain ${transparentBadges ? 'opacity-80' : ''}`} 
-                                loading="lazy" 
-                              />
-                            ) : (
-                              <Icon 
-                                className="w-5 h-5 transition-all duration-200" 
-                                style={{ 
-                                  color: badgeColor, 
-                                  filter: shadowFilter,
-                                }} 
-                              />
-                            )}
-                          </motion.button>
-                        </TooltipTrigger>
-                        <TooltipContent 
-                          side="top" 
-                          className="bg-black/90 backdrop-blur-md border border-white/20 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-xl"
-                          style={{ boxShadow: transparentBadges ? undefined : `0 4px 20px ${badge.color || accentColor}40` }}
-                        >
-                          {badge.name}
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              </TooltipProvider>
+              <ProfileBadgesDisplay
+                badges={badges}
+                profileUsername={profile.username}
+                isOwnProfile={isOwnProfile}
+                accentColor={accentColor}
+                transparentBadges={transparentBadges}
+              />
             )}
 
             {/* Bio */}
@@ -412,69 +360,13 @@ export function ProfileCard({
 
           {/* Badges - with transparent rounded container */}
           {showBadges && badges.length > 0 && (
-            <TooltipProvider delayDuration={100}>
-              <div className="inline-flex items-center justify-center -space-x-1 mb-4 px-2.5 py-1 rounded-full border border-white/10 bg-black/20 backdrop-blur-sm mx-auto">
-                {badges.map((badge) => {
-                  const Icon = getBadgeIcon(badge.name);
-                  const badgeColor = transparentBadges ? 'currentColor' : (badge.color || accentColor);
-                  const customImage = getBadgeImage(badge.name);
-                  const shadowFilter = transparentBadges ? 'none' : `drop-shadow(0 0 4px ${badge.color || accentColor}50)`;
-                  const hoverShadow = transparentBadges ? 'none' : `drop-shadow(0 0 8px ${badge.color || accentColor})`;
-
-                  return (
-                    <Tooltip key={badge.id}>
-                      <TooltipTrigger asChild>
-                        <motion.button
-                          type="button"
-                          aria-label={`Badge: ${badge.name}`}
-                          className={`w-8 h-8 flex items-center justify-center cursor-pointer rounded-full touch-manipulation ${transparentBadges ? 'opacity-70' : ''}`}
-                          whileHover={{ 
-                            scale: 1.15,
-                            filter: hoverShadow,
-                            opacity: 1,
-                          }}
-                          whileTap={{ scale: 0.95 }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                        >
-                          {badge.icon_url ? (
-                            <img
-                              src={badge.icon_url}
-                              alt={badge.name}
-                              className={`w-5 h-5 object-contain ${transparentBadges ? 'opacity-80' : ''}`}
-                              loading="lazy"
-                            />
-                          ) : customImage ? (
-                            <img
-                              src={customImage}
-                              alt={badge.name}
-                              className={`w-5 h-5 object-contain ${transparentBadges ? 'opacity-80' : ''}`}
-                              loading="lazy"
-                            />
-                          ) : (
-                            <Icon 
-                              className="w-5 h-5 transition-all duration-200" 
-                              style={{ 
-                                color: badgeColor,
-                                filter: shadowFilter,
-                              }} 
-                            />
-                          )}
-                        </motion.button>
-                      </TooltipTrigger>
-                      <TooltipContent 
-                        side="top" 
-                        className="bg-black/90 backdrop-blur-md border border-white/20 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-xl"
-                        style={{
-                          boxShadow: transparentBadges ? undefined : `0 4px 20px ${badge.color || accentColor}40`,
-                        }}
-                      >
-                        {badge.name}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
-              </div>
-            </TooltipProvider>
+            <ProfileBadgesDisplay
+              badges={badges}
+              profileUsername={profile.username}
+              isOwnProfile={isOwnProfile}
+              accentColor={accentColor}
+              transparentBadges={transparentBadges}
+            />
           )}
 
           {/* Bio */}
