@@ -1,6 +1,7 @@
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { StealableBadge } from './StealableBadge';
 import { useActiveStealEvent } from '@/hooks/useActiveStealEvent';
+import { useActiveHuntEvent } from '@/hooks/useActiveHuntEvent';
 import { useHasStolenInEvent } from '@/hooks/useHasStolenInEvent';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -27,11 +28,21 @@ export function ProfileBadgesDisplay({
   transparentBadges = false,
 }: ProfileBadgesDisplayProps) {
   const { data: activeStealEvent } = useActiveStealEvent();
-  const { data: hasStolenInEvent = false } = useHasStolenInEvent(activeStealEvent?.id);
+  const { data: activeHuntEvent } = useActiveHuntEvent();
+
+  const activeEventId = activeStealEvent?.id ?? activeHuntEvent?.id;
+  const activeEventType: 'steal' | 'hunt' | null = activeStealEvent
+    ? 'steal'
+    : activeHuntEvent
+      ? 'hunt'
+      : null;
+
+  const huntTargetBadgeId = activeHuntEvent?.target_badge_id ?? null;
+  const { data: hasStolenInEvent = false } = useHasStolenInEvent(activeEventId);
   const queryClient = useQueryClient();
 
   // If user already stole in this event, don't show the steal UI
-  const canShowStealUI = !!activeStealEvent && !hasStolenInEvent;
+  const canShowStealUI = !!activeEventId && !hasStolenInEvent;
 
   const handleStealSuccess = () => {
     // Invalidate badges query to refresh
@@ -51,7 +62,11 @@ export function ProfileBadgesDisplay({
             badge={badge}
             victimUsername={profileUsername}
             isOwnProfile={isOwnProfile}
-            hasActiveStealEvent={canShowStealUI}
+            hasActiveStealEvent={
+              canShowStealUI &&
+              (activeEventType === 'steal' || (activeEventType === 'hunt' && !!huntTargetBadgeId && badge.id === huntTargetBadgeId))
+            }
+            activeEventId={activeEventId ?? null}
             accentColor={accentColor}
             transparentBadges={transparentBadges}
             onStealSuccess={handleStealSuccess}

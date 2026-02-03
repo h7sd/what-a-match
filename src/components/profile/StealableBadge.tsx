@@ -31,6 +31,7 @@ interface StealableBadgeProps {
   victimUsername: string;
   isOwnProfile: boolean;
   hasActiveStealEvent: boolean;
+  activeEventId?: string | null;
   accentColor: string;
   transparentBadges?: boolean;
   onStealSuccess?: () => void;
@@ -41,6 +42,7 @@ export function StealableBadge({
   victimUsername,
   isOwnProfile,
   hasActiveStealEvent,
+  activeEventId = null,
   accentColor,
   transparentBadges = false,
   onStealSuccess,
@@ -58,6 +60,10 @@ export function StealableBadge({
 
   const canSteal = !isOwnProfile && hasActiveStealEvent && user;
 
+  // Stolen badges are rendered as "Name (stolen)" in public badge list.
+  // The backend expects the real badge name.
+  const badgeNameForSteal = badge.name.replace(/\s*\(stolen\)\s*$/i, '');
+
   const handleBadgeClick = () => {
     if (canSteal) {
       setShowStealDialog(true);
@@ -74,7 +80,8 @@ export function StealableBadge({
     try {
       const { data, error } = await supabase.rpc('steal_badge', {
         p_victim_username: victimUsername,
-        p_badge_name: badge.name,
+        p_badge_name: badgeNameForSteal,
+        p_event_id: activeEventId,
       });
 
       if (error) throw error;
