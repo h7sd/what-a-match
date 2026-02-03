@@ -181,18 +181,6 @@ export function ProfileCommentInput({
     }
   };
 
-  // SVG filter for liquid glass distortion effect
-  const liquidGlassFilter = (
-    <svg style={{ position: 'absolute', width: 0, height: 0 }}>
-      <defs>
-        <filter id="glass-distortion" x="-50%" y="-50%" width="200%" height="200%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.01 0.02" numOctaves="3" seed="5" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-      </defs>
-    </svg>
-  );
-
   // Render bubbles via Portal to escape any parent transform/overflow constraints
   const bubbleOverlay = bubbles.length > 0 
     ? createPortal(
@@ -208,7 +196,6 @@ export function ProfileCommentInput({
             overflow: 'visible',
           }}
         >
-          {liquidGlassFilter}
           {bubbles.map((bubble) => (
             <div
               key={bubble.id}
@@ -222,70 +209,59 @@ export function ProfileCommentInput({
                 transform: 'translate(-50%, -50%)',
               }}
             >
-              {/* Liquid Glass Wrapper */}
+              {/* iOS 26 Liquid Glass Bubble */}
               <div
-                className="rounded-full font-semibold whitespace-nowrap"
+                className="rounded-full whitespace-nowrap"
                 style={{
                   position: 'relative',
                   display: 'flex',
-                  overflow: 'hidden',
-                  boxShadow: '0 6px 6px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1)',
-                  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2)',
-                  fontSize: `${0.6 + bubble.scale * 0.7}rem`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  // iOS 26 liquid glass: strong blur, soft gradient, clean look
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.25) 100%)',
+                  backdropFilter: 'blur(40px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                  border: '1px solid rgba(255,255,255,0.5)',
+                  // Soft multi-layer shadows for depth
+                  boxShadow: `
+                    0 8px 32px rgba(0,0,0,0.12),
+                    0 2px 8px rgba(0,0,0,0.08),
+                    inset 0 1px 0 rgba(255,255,255,0.6),
+                    inset 0 -1px 0 rgba(255,255,255,0.2)
+                  `,
+                  fontSize: `${0.65 + bubble.scale * 0.65}rem`,
                   padding: bubble.scale > 1.5 
-                    ? '0.85rem 1.75rem' 
+                    ? '0.9rem 1.8rem' 
                     : bubble.scale < 0.6 
-                      ? '0.3rem 0.6rem' 
-                      : '0.6rem 1.2rem',
+                      ? '0.35rem 0.7rem' 
+                      : '0.65rem 1.3rem',
+                  fontWeight: 500,
+                  letterSpacing: '0.01em',
                 }}
               >
-                {/* Glass Effect Layer with distortion filter */}
+                {/* Inner highlight for 3D effect */}
                 <div
                   style={{
                     position: 'absolute',
-                    zIndex: 0,
-                    inset: 0,
-                    backdropFilter: 'blur(3px)',
-                    WebkitBackdropFilter: 'blur(3px)',
-                    filter: 'url(#glass-distortion)',
-                    overflow: 'hidden',
+                    top: '2px',
+                    left: '10%',
+                    right: '10%',
+                    height: '40%',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 100%)',
                     borderRadius: 'inherit',
+                    pointerEvents: 'none',
                   }}
                 />
                 
-                {/* Tint Layer */}
-                <div
-                  style={{
-                    zIndex: 1,
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'rgba(255, 255, 255, 0.50)',
-                    borderRadius: 'inherit',
-                  }}
-                />
-                
-                {/* Shine Layer */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    zIndex: 2,
-                    overflow: 'hidden',
-                    boxShadow: 'inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5)',
-                    borderRadius: 'inherit',
-                  }}
-                />
-                
-                {/* Text Layer */}
+                {/* Text */}
                 <span 
                   className="block whitespace-normal break-words text-center"
                   style={{
-                    zIndex: 3,
                     position: 'relative',
-                    color: 'rgba(0, 0, 0, 0.85)',
+                    zIndex: 1,
+                    color: 'rgba(0,0,0,0.75)',
                     maxWidth: bubble.scale > 1.5 ? 'min(90vw, 28rem)' : 'min(70vw, 18rem)',
-                    fontWeight: 600,
-                    letterSpacing: '0.02em',
+                    textShadow: '0 1px 2px rgba(255,255,255,0.3)',
                   }}
                 >
                   {bubble.text}
