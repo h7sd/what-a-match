@@ -296,15 +296,27 @@ Deno.serve(async (req) => {
 
       case 'check_username': {
         const { username } = params || {};
-        if (!username || username.length > 50) throw new Error('Invalid username');
+        if (!username || username.length > 50) throw new Error('Invalid input');
 
-        const { data } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('username', username.toLowerCase())
-          .maybeSingle();
+        const normalizedUsername = username.toLowerCase();
 
-        result = { exists: !!data };
+        // Check BOTH username AND alias_username columns
+        // A handle is taken if it exists in either column
+        const [asUsername, asAlias] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('id')
+            .eq('username', normalizedUsername)
+            .maybeSingle(),
+          supabase
+            .from('profiles')
+            .select('id')
+            .eq('alias_username', normalizedUsername)
+            .maybeSingle()
+        ]);
+
+        // Return minimal response - no details about WHERE it's taken
+        result = { exists: !!(asUsername.data || asAlias.data) };
         break;
       }
 
