@@ -16,6 +16,7 @@ import { ProfileCommentInput } from '@/components/profile/ProfileCommentInput';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/lib/auth';
 
 // Custom hook for animated document title
 function useAnimatedDocumentTitle(
@@ -184,10 +185,14 @@ export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   
   // Use secure API proxy for all profile data
   const { data: profileData, isLoading: profileLoading, error } = useSecureProfile(username || '');
   const profile = profileData?.profile;
+  
+  // Check if this is the user's own profile
+  const isOwnProfile = !!user && profile?.username?.toLowerCase() === username?.toLowerCase();
   
   // Redirect if accessing via alias
   useEffect(() => {
@@ -416,6 +421,7 @@ export default function UserProfile() {
             borderColor={profile.card_border_color}
             borderWidth={profile.card_border_width ?? 1}
             transparentBadges={profile.transparent_badges ?? false}
+            isOwnProfile={isOwnProfile}
           />
 
           {/* Discord Presence Widget - Only show when border/card is enabled */}

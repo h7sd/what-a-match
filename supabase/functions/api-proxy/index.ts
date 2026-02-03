@@ -247,8 +247,8 @@ Deno.serve(async (req) => {
           break;
         }
 
-        // Use RPC function to get badges without exposing user_id
-        const { data, error } = await supabase.rpc('get_profile_badges', { 
+        // Use RPC function to get badges including friend badges and stolen badges
+        const { data, error } = await supabase.rpc('get_profile_badges_with_friends', { 
           p_profile_id: profile.id 
         });
 
