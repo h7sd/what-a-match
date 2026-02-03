@@ -1,11 +1,11 @@
 import { PayPalButtons, usePayPalScriptReducer } from "@paypal/react-paypal-js";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Crown, Check, Sparkles, Palette, Globe, Tag } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { invokeSecure } from "@/lib/secureEdgeFunctions";
 
 interface PremiumCheckoutProps {
   onSuccess?: () => void;
@@ -44,56 +44,53 @@ export function PremiumCheckout({ onSuccess }: PremiumCheckoutProps) {
     
     setIsValidatingCode(true);
     try {
-      const { data: codes, error } = await supabase
-        .from('promo_codes')
-        .select('*')
-        .eq('code', promoCode.trim().toUpperCase())
-        .eq('is_active', true)
-        .single();
+      const { data, error } = await invokeSecure<{
+        valid: boolean;
+        code?: string;
+        discount?: number;
+        type?: string;
+        error?: string;
+      }>('validate-promo-code', {
+        body: { code: promoCode.trim() }
+      });
 
-      if (error || !codes) {
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Could not validate promo code. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data?.valid) {
         toast({
           title: "Invalid Code",
-          description: "This promo code is not valid or has expired.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if expired
-      if (codes.expires_at && new Date(codes.expires_at) < new Date()) {
-        toast({
-          title: "Code Expired",
-          description: "This promo code has expired.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if max uses reached
-      if (codes.max_uses && codes.uses_count >= codes.max_uses) {
-        toast({
-          title: "Code Exhausted",
-          description: "This promo code has reached its maximum uses.",
+          description: data?.error || "This promo code is not valid or has expired.",
           variant: "destructive",
         });
         return;
       }
 
       setAppliedPromo({
-        code: codes.code,
-        discount: codes.discount_percentage,
-        type: codes.type,
+        code: data.code!,
+        discount: data.discount!,
+        type: data.type!,
       });
 
       toast({
-        title: codes.type === 'gift' ? "🎁 Gift Code Applied!" : "💰 Discount Applied!",
-        description: codes.discount_percentage === 100 
+        title: data.type === 'gift' ? "🎁 Gift Code Applied!" : "💰 Discount Applied!",
+        description: data.discount === 100 
           ? "You get Premium for FREE!" 
-          : `${codes.discount_percentage}% discount applied!`,
+          : `${data.discount}% discount applied!`,
       });
     } catch (err) {
       console.error("Error validating promo code:", err);
+      toast({
+        title: "Error",
+        description: "Could not validate promo code. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsValidatingCode(false);
     }
@@ -109,7 +106,7 @@ export function PremiumCheckout({ onSuccess }: PremiumCheckoutProps) {
     
     setIsProcessing(true);
     try {
-      const { data: result, error } = await supabase.functions.invoke('verify-paypal-payment', {
+      const { data: result, error } = await invokeSecure<{ success?: boolean; error?: string }>('verify-paypal-payment', {
         body: { 
           orderId: `PROMO-${Date.now()}`,
           promoCode: appliedPromo.code,
@@ -148,7 +145,7 @@ export function PremiumCheckout({ onSuccess }: PremiumCheckoutProps) {
     try {
       console.log("Payment approved, verifying order:", data.orderID);
       
-      const { data: result, error } = await supabase.functions.invoke('verify-paypal-payment', {
+      const { data: result, error } = await invokeSecure<{ success?: boolean; error?: string }>('verify-paypal-payment', {
         body: { 
           orderId: data.orderID,
           promoCode: appliedPromo?.code || null
