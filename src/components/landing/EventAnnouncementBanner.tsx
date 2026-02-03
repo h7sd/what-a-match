@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Target, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useHuntBadgeHolder } from '@/hooks/useHuntBadgeHolder';
 
 interface BadgeEvent {
   id: string;
@@ -12,6 +13,48 @@ interface BadgeEvent {
   description: string | null;
   is_active: boolean;
   steal_duration_hours: number;
+  target_badge_id: string | null;
+}
+
+function HuntButton({ event }: { event: BadgeEvent }) {
+  const { data: holder, isLoading } = useHuntBadgeHolder(event.id);
+  
+  if (event.event_type !== 'hunt') {
+    return (
+      <Link 
+        to="/" 
+        className="ml-2 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-xs font-bold transition-colors"
+      >
+        🏴‍☠️ Steal
+      </Link>
+    );
+  }
+  
+  // Hunt event - link to current holder's profile
+  if (isLoading) {
+    return (
+      <span className="ml-2 px-3 py-1 bg-white/20 rounded-full text-xs font-bold opacity-50">
+        🎯 Loading...
+      </span>
+    );
+  }
+  
+  if (!holder?.username) {
+    return (
+      <span className="ml-2 px-3 py-1 bg-white/20 rounded-full text-xs font-bold opacity-50">
+        🎯 No holder
+      </span>
+    );
+  }
+  
+  return (
+    <Link 
+      to={`/${holder.username}`}
+      className="ml-2 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-xs font-bold transition-colors animate-pulse"
+    >
+      🎯 Hunt
+    </Link>
+  );
 }
 
 export function EventAnnouncementBanner() {
@@ -73,12 +116,7 @@ export function EventAnnouncementBanner() {
                   : 'Find the hidden badge!'}
               </span>
 
-              <Link 
-                to="/" 
-                className="ml-2 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-xs font-bold transition-colors"
-              >
-                {event.event_type === 'steal' ? '🏴‍☠️ Steal' : '🎯 Hunt'}
-              </Link>
+              <HuntButton event={event} />
 
               <button
                 onClick={() => setDismissed(prev => [...prev, event.id])}
