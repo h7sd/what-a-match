@@ -310,7 +310,8 @@ export const LaserFlow: React.FC<Props> = ({
       logarithmicDepthBuffer: false
     });
     rendererRef.current = renderer;
-    baseDprRef.current = Math.min(dpr ?? (window.devicePixelRatio || 1), 2);
+    // Cap DPR at 1.5 for smoother performance on high-DPI displays
+    baseDprRef.current = Math.min(dpr ?? (window.devicePixelRatio || 1), 1.5);
     currentDprRef.current = baseDprRef.current;
     renderer.setPixelRatio(currentDprRef.current);
     renderer.shadowMap.enabled = false;
