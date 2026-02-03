@@ -54,11 +54,14 @@ const ALLOWED_PROFILE_FIELDS = new Set([
   'audio_volume', 'profile_opacity', 'profile_blur', 'monochrome_icons', 'animated_title',
   'swap_bio_colors', 'glow_username', 'glow_socials', 'glow_badges', 'enable_profile_gradient',
   'icon_only_links', 'icon_links_opacity', 'transparent_badges', 'ascii_size', 'ascii_waves',
-  'is_premium', 'uid_number', 'alias_username', 'effects_config'
+  'is_premium', 'uid_number', 'alias_username', 'effects_config', 'username'
 ]);
 
 // Sensitive fields that require extra validation
-const SENSITIVE_FIELDS = new Set(['is_premium', 'uid_number', 'alias_username']);
+const SENSITIVE_FIELDS = new Set(['is_premium', 'uid_number', 'alias_username', 'username']);
+
+// Username validation regex (1-20 chars, lowercase letters, numbers, underscores)
+const USERNAME_REGEX = /^[a-z0-9_]{1,20}$/;
 
 function validateAndSanitizeProfileData(data: Record<string, unknown>): Record<string, unknown> {
   const sanitized: Record<string, unknown> = {};
@@ -89,6 +92,14 @@ function validateAndSanitizeProfileData(data: Record<string, unknown>): Record<s
       // JSON field - validate it's an object
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         sanitized[key] = value;
+      }
+    } else if (key === 'username' || key === 'alias_username') {
+      // Special validation for username/alias - must match format
+      const strVal = sanitizeString(value, 20);
+      if (strVal && USERNAME_REGEX.test(strVal.toLowerCase())) {
+        sanitized[key] = strVal.toLowerCase();
+      } else {
+        console.warn(`Invalid ${key} format blocked:`, strVal);
       }
     } else {
       // String fields
@@ -250,6 +261,26 @@ Deno.serve(async (req) => {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
+      }
+
+      // If username is being changed, check for uniqueness
+      if (sanitizedData.username) {
+        const newUsername = sanitizedData.username as string;
+        
+        // Check if username is already taken (by another profile or as an alias)
+        const { data: existingProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .or(`username.eq.${newUsername},alias_username.eq.${newUsername}`)
+          .neq('id', profileId)
+          .maybeSingle();
+        
+        if (existingProfile) {
+          return new Response(JSON.stringify({ error: 'Username is already taken' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
       }
 
       const { error } = await supabaseAdmin

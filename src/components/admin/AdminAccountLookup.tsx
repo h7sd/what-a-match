@@ -20,7 +20,9 @@ import {
   Lock,
   Unlock,
   Ban,
-  Edit
+  Edit,
+  AtSign,
+  Save
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -99,6 +101,9 @@ export function AdminAccountLookup() {
   const [updatingBadgeId, setUpdatingBadgeId] = useState<string | null>(null);
   const [lockingBadgeId, setLockingBadgeId] = useState<string | null>(null);
   const [showUserDashboard, setShowUserDashboard] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
 
   // Live search with debounce
   useEffect(() => {
@@ -269,6 +274,54 @@ export function AdminAccountLookup() {
     setUserRoles([]);
     setSocialLinks([]);
     setSearchQuery('');
+    setEditingUsername(false);
+    setNewUsername('');
+  };
+
+  const handleSaveUsername = async () => {
+    if (!selectedUser || !newUsername.trim()) return;
+    
+    // Validate username format
+    const usernameRegex = /^[a-z0-9_]{1,20}$/;
+    if (!usernameRegex.test(newUsername.toLowerCase())) {
+      toast({ 
+        title: 'Invalid username format', 
+        description: 'Username must be 1-20 characters, only lowercase letters, numbers, and underscores.',
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    setIsSavingUsername(true);
+    try {
+      // Use the admin-update-profile edge function
+      const { data, error } = await supabase.functions.invoke('admin-update-profile', {
+        body: {
+          action: 'update_profile',
+          profileId: selectedUser.id,
+          data: { username: newUsername.toLowerCase() }
+        }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Update local state
+      setSelectedUser({ ...selectedUser, username: newUsername.toLowerCase() });
+      setEditingUsername(false);
+      setNewUsername('');
+      
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      toast({ title: 'Username updated successfully!' });
+    } catch (error: any) {
+      toast({ 
+        title: 'Failed to update username', 
+        description: error.message || 'Unknown error',
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsSavingUsername(false);
+    }
   };
 
   const refreshUserDetails = () => {
@@ -353,7 +406,67 @@ export function AdminAccountLookup() {
                     </Badge>
                   ))}
                 </div>
-                <p className="text-sm text-muted-foreground">@{selectedUser.username} • UID #{selectedUser.uid_number}</p>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  {editingUsername ? (
+                    <div className="flex items-center gap-2">
+                      <AtSign className="w-3 h-3" />
+                      <Input
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value.toLowerCase())}
+                        placeholder={selectedUser.username}
+                        className="h-6 w-32 text-xs px-1"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveUsername();
+                          if (e.key === 'Escape') {
+                            setEditingUsername(false);
+                            setNewUsername('');
+                          }
+                        }}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        onClick={handleSaveUsername}
+                        disabled={isSavingUsername}
+                      >
+                        {isSavingUsername ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Save className="w-3 h-3 text-green-500" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        onClick={() => {
+                          setEditingUsername(false);
+                          setNewUsername('');
+                        }}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <span>@{selectedUser.username}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 opacity-50 hover:opacity-100"
+                        onClick={() => {
+                          setEditingUsername(true);
+                          setNewUsername(selectedUser.username);
+                        }}
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                      <span>• UID #{selectedUser.uid_number}</span>
+                    </>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {selectedUser.views_count} views • Joined {new Date(selectedUser.created_at).toLocaleDateString()}
                 </p>
