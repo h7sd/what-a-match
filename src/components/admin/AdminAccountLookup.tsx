@@ -303,15 +303,16 @@ export function AdminAccountLookup() {
         }
       });
 
-      // Check for errors in both error and data properties
-      if (response.error) {
-        // Try to parse error context for better message
-        const errorMessage = response.data?.error || response.error.message || 'Unknown error';
+      // Extract error message from response.data first (Edge Function returns {error: "message"})
+      // This handles cases where HTTP status is 400 but error is in data
+      const errorMessage = response.data?.error;
+      if (errorMessage) {
         throw new Error(errorMessage);
       }
       
-      if (response.data?.error) {
-        throw new Error(response.data.error);
+      // Also check response.error for network/other errors
+      if (response.error && !response.data?.success) {
+        throw new Error(response.error.message || 'Unknown error');
       }
 
       // Update local state
