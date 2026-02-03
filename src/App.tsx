@@ -18,6 +18,7 @@ import AliasRespond from "./pages/AliasRespond";
 import Premium from "./pages/Premium";
 import SecretDatabaseViewer from "./pages/SecretDatabaseViewer";
 import { ClaimedUsernamePopup } from "@/components/landing/ClaimedUsernamePopup";
+import { WelcomeBackGate } from "@/components/auth/WelcomeBackGate";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <WelcomeBackGate />
             <GlobalPopups />
             <Routes>
               <Route path="/" element={<Index />} />

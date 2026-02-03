@@ -12,7 +12,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { BanAppealScreen } from '@/components/auth/BanAppealScreen';
 import { LiquidEther } from '@/components/landing/LiquidEther';
-import { WelcomeBackOverlay } from '@/components/auth/WelcomeBackOverlay';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAACVEg1JAQ99IiFFG';
 
@@ -70,10 +69,6 @@ export default function Auth() {
   const turnstileRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   
-  // Welcome back overlay state
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [welcomeUsername, setWelcomeUsername] = useState('');
-
   const { signIn, signUp, signOut, verifyMfa, user, mfaChallenge, banStatus, clearBanStatus } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -368,16 +363,13 @@ export default function Auth() {
           setStep('mfa-verify');
           toast({ title: '2FA Required', description: 'Please enter your authenticator code.' });
         } else {
-          // Fetch username for welcome message
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('username, display_name')
-            .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-            .single();
-          
-          const displayUsername = profileData?.display_name || profileData?.username || emailOrUsername.split('@')[0];
-          setWelcomeUsername(displayUsername);
-          setShowWelcome(true);
+          // Redirect; welcome animation is handled globally after auth is fully satisfied
+          const redirect = searchParams.get('redirect');
+          if (redirect === 'premium') {
+            navigate('/?showPremium=true');
+          } else {
+            navigate('/dashboard');
+          }
         }
       } else if (step === 'signup') {
         const result = signupSchema.safeParse({ email, password, username });
@@ -553,20 +545,12 @@ export default function Auth() {
           variant: 'destructive',
         });
       } else {
-        // Fetch username for welcome message (same as non-MFA login)
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('username, display_name')
-            .eq('user_id', userData.user.id)
-            .single();
-          
-          const displayUsername = profileData?.display_name || profileData?.username || userData.user.email?.split('@')[0] || 'User';
-          setWelcomeUsername(displayUsername);
-          setShowWelcome(true);
+        toast({ title: 'Successfully logged in!' });
+        // Redirect; welcome animation is handled globally after auth is fully satisfied
+        const redirect = searchParams.get('redirect');
+        if (redirect === 'premium') {
+          navigate('/?showPremium=true');
         } else {
-          // Fallback if user data not available
           navigate('/dashboard');
         }
       }
@@ -622,26 +606,8 @@ export default function Auth() {
     );
   }
 
-  // Handle welcome overlay completion
-  const handleWelcomeComplete = () => {
-    setShowWelcome(false);
-    const redirect = searchParams.get('redirect');
-    if (redirect === 'premium') {
-      navigate('/?showPremium=true');
-    } else {
-      navigate('/dashboard');
-    }
-  };
-
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden">
-      {/* Welcome Back Overlay */}
-      {showWelcome && (
-        <WelcomeBackOverlay
-          username={welcomeUsername}
-          onComplete={handleWelcomeComplete}
-        />
-      )}
       {/* Liquid Ether Background */}
       <div className="fixed inset-0 z-0">
         <LiquidEther 
