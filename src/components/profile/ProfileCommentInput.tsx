@@ -24,38 +24,40 @@ export function ProfileCommentInput({
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // GSAP plop animation like BubbleMenu - back.out(1.5) easing
+  // GSAP plop animation exactly like BubbleMenu - back.out(1.5) with overshoot
   useEffect(() => {
     if (showSuccess && successRef.current) {
-      gsap.killTweensOf(successRef.current);
+      const el = successRef.current;
       
-      // Initial state - hidden and scaled down
-      gsap.set(successRef.current, {
+      // Kill any existing animations
+      gsap.killTweensOf(el);
+      
+      // Initial state - completely hidden and scaled down
+      gsap.set(el, {
         scale: 0,
         opacity: 0,
-        y: 0,
-        transformOrigin: '50% 50%'
+        transformOrigin: '50% 50%',
+        display: 'block'
       });
 
-      // Plop in with back.out easing (exactly like BubbleMenu)
+      // Create timeline for the plop sequence
       const tl = gsap.timeline();
       
-      // First: plop in with back.out(1.5) - the signature bouncy effect
-      tl.to(successRef.current, {
+      // PLOP IN: Scale from 0 to 1 with back.out(1.5) overshoot
+      // This creates the bouncy "plop" effect - goes past 1 then settles back
+      tl.to(el, {
         scale: 1,
         opacity: 1,
-        y: -40,
         duration: 0.5,
         ease: 'back.out(1.5)'
       });
 
-      // Hold visible for a moment, then fade away smoothly
-      tl.to(successRef.current, {
+      // Hold visible for 1.5 seconds, then plop out
+      tl.to(el, {
+        scale: 0,
         opacity: 0,
-        y: -60,
-        scale: 0.9,
-        duration: 0.35,
-        ease: 'power2.in',
+        duration: 0.3,
+        ease: 'back.in(1.5)',
         delay: 1.5
       });
 
@@ -65,22 +67,6 @@ export function ProfileCommentInput({
     }
   }, [showSuccess]);
 
-  // Input container pulse animation on success
-  useEffect(() => {
-    if (showSuccess && inputContainerRef.current) {
-      gsap.to(inputContainerRef.current, {
-        boxShadow: `0 0 30px ${accentColor}60`,
-        duration: 0.3,
-        ease: 'power2.out'
-      });
-      gsap.to(inputContainerRef.current, {
-        boxShadow: `0 0 0px ${accentColor}00`,
-        duration: 0.5,
-        ease: 'power2.in',
-        delay: 0.3
-      });
-    }
-  }, [showSuccess, accentColor]);
 
   const handleSubmit = async () => {
     if (!comment.trim() || isSubmitting) return;
@@ -122,19 +108,18 @@ export function ProfileCommentInput({
 
   return (
     <div className={cn("w-full relative", className)}>
-      {/* Success Plop Animation - GSAP based with back.out(1.5) like BubbleMenu */}
+      {/* Success Plop Animation - GSAP based exactly like BubbleMenu */}
       <div
         ref={successRef}
-        className="absolute left-1/2 -translate-x-1/2 -top-2 pointer-events-none z-50"
-        style={{ opacity: 0 }}
+        className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 pointer-events-none z-50"
+        style={{ display: 'none' }}
       >
         <div
-          className="px-5 py-2.5 rounded-full border backdrop-blur-md text-sm font-semibold whitespace-nowrap shadow-xl"
+          className="px-6 py-3 rounded-full backdrop-blur-md text-base font-semibold whitespace-nowrap"
           style={{
-            background: `linear-gradient(135deg, ${accentColor}30, ${accentColor}15)`,
-            borderColor: accentColor,
-            color: accentColor,
-            boxShadow: `0 8px 32px ${accentColor}40, 0 0 0 1px ${accentColor}20`
+            background: accentColor,
+            color: '#ffffff',
+            boxShadow: `0 8px 32px ${accentColor}60, 0 4px 16px rgba(0,0,0,0.3)`
           }}
         >
           ✓ Comment sent!
