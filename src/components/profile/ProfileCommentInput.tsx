@@ -34,20 +34,23 @@ export function ProfileCommentInput({
   const nextBubbleId = useRef(0);
   const { toast } = useToast();
 
-  // Generate random bubbles across the viewport
+  // Generate random bubbles EVERYWHERE across the viewport
   const spawnBubbles = useCallback((text: string) => {
-    const count = 5 + Math.floor(Math.random() * 4); // 5-8 bubbles
+    const count = 10 + Math.floor(Math.random() * 8); // 10-17 bubbles
     const newBubbles: PlopBubble[] = [];
+
+    // Size distribution: some tiny, some medium, some HUGE
+    const sizes = [0.3, 0.4, 0.5, 0.7, 0.9, 1.0, 1.2, 1.5, 1.8, 2.2, 2.5];
 
     for (let i = 0; i < count; i++) {
       newBubbles.push({
         id: nextBubbleId.current++,
         text,
-        x: 10 + Math.random() * 80, // 10-90% from left
-        y: 10 + Math.random() * 70, // 10-80% from top
-        scale: 0.6 + Math.random() * 0.8, // 0.6-1.4 scale
-        rotation: -15 + Math.random() * 30, // -15 to +15 degrees
-        delay: i * 0.08, // staggered delay
+        x: 2 + Math.random() * 96, // 2-98% - truly everywhere horizontally
+        y: 2 + Math.random() * 94, // 2-96% - truly everywhere vertically
+        scale: sizes[Math.floor(Math.random() * sizes.length)], // random from size pool
+        rotation: -25 + Math.random() * 50, // -25 to +25 degrees
+        delay: i * 0.06, // faster stagger
       });
     }
 
@@ -196,15 +199,25 @@ export function ProfileCommentInput({
               }}
             >
               <div
-                className="px-4 py-2 rounded-full backdrop-blur-md font-semibold whitespace-nowrap"
+                className="px-3 py-1.5 rounded-full backdrop-blur-md font-bold whitespace-nowrap"
                 style={{
                   background: accentColor,
                   color: '#ffffff',
-                  boxShadow: `0 8px 32px ${accentColor}60, 0 4px 16px rgba(0,0,0,0.3)`,
-                  fontSize: `${0.75 + bubble.scale * 0.5}rem`,
+                  boxShadow: `0 8px 32px ${accentColor}60, 0 4px 16px rgba(0,0,0,0.4)`,
+                  fontSize: `${0.6 + bubble.scale * 0.7}rem`, // Dynamic font size based on scale
+                  padding: bubble.scale > 1.5 
+                    ? '0.75rem 1.5rem' 
+                    : bubble.scale < 0.6 
+                      ? '0.25rem 0.5rem' 
+                      : '0.5rem 1rem',
                 }}
               >
-                <span className="block max-w-[min(80vw,20rem)] whitespace-normal break-words text-center">
+                <span 
+                  className="block whitespace-normal break-words text-center"
+                  style={{
+                    maxWidth: bubble.scale > 1.5 ? 'min(90vw, 28rem)' : 'min(70vw, 18rem)',
+                  }}
+                >
                   ✓ {bubble.text}
                 </span>
               </div>
