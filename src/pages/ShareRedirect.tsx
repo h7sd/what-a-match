@@ -16,7 +16,8 @@ const ShareRedirect = () => {
     }
 
     // Redirect to the edge function which serves OG HTML
-    const shareUrl = `https://cjulgfbmcnmrkvnzkpym.supabase.co/functions/v1/share?u=${encodeURIComponent(username)}`;
+    // Use the public API domain so the underlying provider URL is never exposed.
+    const shareUrl = `https://api.uservault.net/functions/v1/share?u=${encodeURIComponent(username)}`;
     window.location.replace(shareUrl);
   }, [username, navigate]);
 
