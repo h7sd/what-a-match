@@ -323,34 +323,47 @@ serve(async (req) => {
 
       const { badgeName, badgeDescription, badgeColor, badgeIconUrl } = data;
 
-      // Check if user already has a request
-      const { data: existingRequest } = await supabase
-        .from("badge_requests")
-        .select("id, status")
+      // Check if user is admin (admins can submit unlimited requests for testing)
+      const { data: userRole } = await supabase
+        .from("user_roles")
+        .select("role")
         .eq("user_id", user.id)
-        .single();
+        .eq("role", "admin")
+        .maybeSingle();
+      
+      const isAdmin = !!userRole;
 
-      if (existingRequest && existingRequest.status === "pending") {
-        return new Response(
-          JSON.stringify({ error: "You already have a pending request" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      if (existingRequest && existingRequest.status === "approved") {
-        return new Response(
-          JSON.stringify({ error: "You already have an approved badge" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Delete old denied request if exists
-      if (existingRequest && existingRequest.status === "denied") {
-        await supabase
+      // Check if user already has a request (skip for admins)
+      if (!isAdmin) {
+        const { data: existingRequest } = await supabase
           .from("badge_requests")
-          .delete()
-          .eq("id", existingRequest.id);
+          .select("id, status")
+          .eq("user_id", user.id)
+          .single();
+
+        if (existingRequest && existingRequest.status === "pending") {
+          return new Response(
+            JSON.stringify({ error: "You already have a pending request" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (existingRequest && existingRequest.status === "approved") {
+          return new Response(
+            JSON.stringify({ error: "You already have an approved badge" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Delete old denied request if exists
+        if (existingRequest && existingRequest.status === "denied") {
+          await supabase
+            .from("badge_requests")
+            .delete()
+            .eq("id", existingRequest.id);
+        }
       }
+
 
       // Get user profile for username
       const { data: profile } = await supabase
