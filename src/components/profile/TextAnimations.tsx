@@ -190,7 +190,7 @@ export function ASCIIText({ text, className = '', style }: ASCIITextProps) {
 }
 
 // Wrapper component that selects animation type
-export type TextAnimationType = 'none' | 'shuffle' | 'fuzzy' | 'decrypted' | 'ascii' | 'ascii-3d' | 'glitch';
+export type TextAnimationType = 'none' | 'shuffle' | 'fuzzy' | 'decrypted' | 'ascii' | 'ascii-3d' | 'glitch' | 'typewriter';
 
 interface AnimatedDisplayNameProps {
   text: string;
@@ -199,6 +199,67 @@ interface AnimatedDisplayNameProps {
   style?: React.CSSProperties;
   asciiSize?: number;
   asciiWaves?: boolean;
+}
+
+// Typewriter Text Animation
+interface TypewriterTextProps {
+  text: string;
+  speed?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+function TypewriterText({ text, speed = 100, className = '', style }: TypewriterTextProps) {
+  const [displayText, setDisplayText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [showCursor, setShowCursor] = useState(true);
+  
+  useEffect(() => {
+    // Reset when text changes
+    setDisplayText('');
+    setCurrentIndex(0);
+  }, [text]);
+  
+  useEffect(() => {
+    if (currentIndex >= text.length) {
+      // Blink cursor after typing is done
+      const cursorInterval = setInterval(() => {
+        setShowCursor(prev => !prev);
+      }, 500);
+      
+      // Restart animation after delay
+      const restartTimeout = setTimeout(() => {
+        setDisplayText('');
+        setCurrentIndex(0);
+      }, 3000);
+      
+      return () => {
+        clearInterval(cursorInterval);
+        clearTimeout(restartTimeout);
+      };
+    }
+    
+    const timeout = setTimeout(() => {
+      setDisplayText(text.slice(0, currentIndex + 1));
+      setCurrentIndex(prev => prev + 1);
+    }, speed);
+    
+    return () => clearTimeout(timeout);
+  }, [text, currentIndex, speed]);
+  
+  return (
+    <span className={className} style={style}>
+      {displayText}
+      <span 
+        className="inline-block w-0.5 h-[1em] ml-0.5 align-middle"
+        style={{ 
+          backgroundColor: 'currentColor',
+          opacity: showCursor ? 1 : 0,
+          transition: 'opacity 0.1s',
+        }}
+      />
+    </span>
+  );
 }
 
 export function AnimatedDisplayName({ 
@@ -218,6 +279,8 @@ export function AnimatedDisplayName({
       return <DecryptedText text={text} className={className} style={style} />;
     case 'ascii':
       return <ASCIIText text={text} className={className} style={style} />;
+    case 'typewriter':
+      return <TypewriterText text={text} className={className} style={style} />;
     case 'ascii-3d':
       // For ASCII 3D, we use a lazy-loaded component to avoid loading Three.js for all users
       return (

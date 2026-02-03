@@ -11,10 +11,11 @@ import {
 import { Crown, Lock, Type } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export type DisplayNameAnimationType = 'none' | 'shuffle' | 'fuzzy' | 'decrypted' | 'ascii' | 'ascii-3d';
+export type DisplayNameAnimationType = 'none' | 'shuffle' | 'fuzzy' | 'decrypted' | 'ascii' | 'ascii-3d' | 'typewriter';
 
 const DISPLAY_NAME_ANIMATIONS: { value: DisplayNameAnimationType; label: string; description: string; premium?: boolean }[] = [
   { value: 'none', label: 'None', description: 'Static display name' },
+  { value: 'typewriter', label: 'Typewriter', description: 'Classic typing animation' },
   { value: 'shuffle', label: 'Shuffle', description: 'Characters shuffle on hover' },
   { value: 'fuzzy', label: 'Fuzzy', description: 'Chromatic aberration effect', premium: true },
   { value: 'decrypted', label: 'Decrypted', description: 'Matrix-style decrypt', premium: true },
