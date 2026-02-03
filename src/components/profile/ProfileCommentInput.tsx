@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Loader2, MessageCircle } from 'lucide-react';
 import { gsap } from 'gsap';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase-proxy-client';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
