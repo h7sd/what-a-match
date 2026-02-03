@@ -131,3 +131,6 @@ verify_jwt = false
 
 [functions.mfa-verify]
 verify_jwt = false
+
+[functions.get-encryption-key]
+verify_jwt = false
