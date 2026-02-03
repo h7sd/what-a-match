@@ -152,10 +152,10 @@ export function CustomCursor({ color = '#8b5cf6', showTrail = true, cursorUrl }:
       {isVisible && (
         <>
           {useImageCursor ? (
-            // Custom image cursor (png, gif)
-            <motion.img
+            // Custom image cursor (png, gif) - use native img for max performance
+            <img
               src={cursorUrl}
-              alt="cursor"
+              alt=""
               className="fixed pointer-events-none z-[9999]"
               style={{
                 left: position.x - 16,
@@ -163,12 +163,15 @@ export function CustomCursor({ color = '#8b5cf6', showTrail = true, cursorUrl }:
                 width: 32,
                 height: 32,
                 objectFit: 'contain',
+                willChange: 'left, top',
+                transform: 'translateZ(0)', // GPU acceleration
               }}
+              draggable={false}
             />
           ) : (
             <>
               {/* Outer ring */}
-              <motion.div
+              <div
                 className="fixed pointer-events-none z-[9999] rounded-full border-2"
                 style={{
                   borderColor: color,
@@ -176,18 +179,12 @@ export function CustomCursor({ color = '#8b5cf6', showTrail = true, cursorUrl }:
                   height: 32,
                   left: position.x - 16,
                   top: position.y - 16,
-                }}
-                animate={{
-                  scale: [1, 1.1, 1],
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
+                  willChange: 'left, top',
+                  transform: 'translateZ(0)',
                 }}
               />
               {/* Inner dot */}
-              <motion.div
+              <div
                 className="fixed pointer-events-none z-[9999] rounded-full"
                 style={{
                   backgroundColor: color,
@@ -196,6 +193,8 @@ export function CustomCursor({ color = '#8b5cf6', showTrail = true, cursorUrl }:
                   left: position.x - 3,
                   top: position.y - 3,
                   boxShadow: `0 0 10px ${color}, 0 0 20px ${color}`,
+                  willChange: 'left, top',
+                  transform: 'translateZ(0)',
                 }}
               />
             </>
