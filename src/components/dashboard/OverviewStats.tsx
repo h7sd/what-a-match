@@ -1,6 +1,9 @@
 import { Eye, Hash, User, TrendingUp } from 'lucide-react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, lazy, Suspense } from 'react';
+
+// Lazy load Aurora for performance
+const Aurora = lazy(() => import('@/components/ui/Aurora'));
 
 interface OverviewStatsProps {
   profileViews: number;
@@ -53,47 +56,27 @@ function StatCard({
   color = 'primary'
 }: StatCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  
-  const springX = useSpring(mouseX, { stiffness: 500, damping: 100 });
-  const springY = useSpring(mouseY, { stiffness: 500, damping: 100 });
-  
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    mouseX.set(e.clientX - rect.left);
-    mouseY.set(e.clientY - rect.top);
-  };
 
   const colorStyles = {
     primary: {
-      iconBg: 'from-primary/20 to-primary/5',
-      iconBorder: 'border-primary/20 group-hover:border-primary/40',
-      iconColor: 'text-primary',
-      glow: 'rgba(0, 217, 165, 0.1)',
-      gradientBorder: 'from-primary/20 via-transparent to-accent/20'
+      iconBg: 'from-[#00B4D8]/20 via-[#00D9A5]/15 to-[#0077B6]/20',
+      iconBorder: 'border-[#00D9A5]/20 group-hover:border-[#00D9A5]/40',
+      iconColor: 'text-[#00D9A5]',
     },
     blue: {
-      iconBg: 'from-blue-500/20 to-blue-500/5',
-      iconBorder: 'border-blue-500/20 group-hover:border-blue-500/40',
-      iconColor: 'text-blue-400',
-      glow: 'rgba(59, 130, 246, 0.1)',
-      gradientBorder: 'from-blue-500/20 via-transparent to-blue-400/20'
+      iconBg: 'from-[#00B4D8]/20 to-[#0077B6]/20',
+      iconBorder: 'border-[#00B4D8]/20 group-hover:border-[#00B4D8]/40',
+      iconColor: 'text-[#00B4D8]',
     },
     amber: {
       iconBg: 'from-amber-500/20 to-amber-500/5',
       iconBorder: 'border-amber-500/20 group-hover:border-amber-500/40',
       iconColor: 'text-amber-400',
-      glow: 'rgba(245, 158, 11, 0.1)',
-      gradientBorder: 'from-amber-500/20 via-transparent to-amber-400/20'
     },
     emerald: {
-      iconBg: 'from-emerald-500/20 to-emerald-500/5',
-      iconBorder: 'border-emerald-500/20 group-hover:border-emerald-500/40',
-      iconColor: 'text-emerald-400',
-      glow: 'rgba(16, 185, 129, 0.1)',
-      gradientBorder: 'from-emerald-500/20 via-transparent to-emerald-400/20'
+      iconBg: 'from-[#00D9A5]/20 to-[#00D9A5]/5',
+      iconBorder: 'border-[#00D9A5]/20 group-hover:border-[#00D9A5]/40',
+      iconColor: 'text-[#00D9A5]',
     }
   };
 
@@ -102,20 +85,23 @@ function StatCard({
   return (
     <motion.div
       ref={cardRef}
-      onMouseMove={handleMouseMove}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1, duration: 0.5 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5"
+      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-5"
     >
-      {/* Spotlight effect */}
-      <motion.div
-        className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{
-          background: `radial-gradient(400px circle at ${springX}px ${springY}px, ${styles.glow}, transparent 40%)`,
-        }}
-      />
+      {/* Aurora background effect */}
+      <Suspense fallback={null}>
+        <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-500">
+          <Aurora
+            colorStops={['#00B4D8', '#00D9A5', '#0077B6']}
+            amplitude={0.6}
+            blend={0.7}
+            speed={0.4}
+          />
+        </div>
+      </Suspense>
       
       {/* Content */}
       <div className="relative z-10">
@@ -132,11 +118,6 @@ function StatCard({
           </p>
           <p className="text-sm text-white/40">{label}</p>
         </div>
-      </div>
-      
-      {/* Gradient border on hover */}
-      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${styles.gradientBorder}`} />
       </div>
     </motion.div>
   );

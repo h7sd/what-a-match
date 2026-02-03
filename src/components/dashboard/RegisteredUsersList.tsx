@@ -1,9 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, useMotionValue, useSpring } from 'framer-motion';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { motion } from 'framer-motion';
 import { Users, ExternalLink, Loader2, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getFeaturedProfiles, FeaturedProfile } from '@/lib/api';
 import { Input } from '@/components/ui/input';
+
+// Lazy load Aurora for performance
+const Aurora = lazy(() => import('@/components/ui/Aurora'));
 
 export function RegisteredUsersList() {
   const [users, setUsers] = useState<FeaturedProfile[]>([]);
@@ -11,18 +14,6 @@ export function RegisteredUsersList() {
   const [searchQuery, setSearchQuery] = useState('');
   
   const cardRef = useRef<HTMLDivElement>(null);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  
-  const springX = useSpring(mouseX, { stiffness: 500, damping: 100 });
-  const springY = useSpring(mouseY, { stiffness: 500, damping: 100 });
-  
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    mouseX.set(e.clientX - rect.left);
-    mouseY.set(e.clientY - rect.top);
-  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -46,8 +37,8 @@ export function RegisteredUsersList() {
 
   if (isLoading) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5 flex items-center justify-center min-h-[280px]">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-5 flex items-center justify-center min-h-[280px]">
+        <Loader2 className="w-6 h-6 animate-spin text-[#00D9A5]" />
       </div>
     );
   }
@@ -55,21 +46,24 @@ export function RegisteredUsersList() {
   return (
     <motion.div 
       ref={cardRef}
-      onMouseMove={handleMouseMove}
-      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5 space-y-4"
+      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-5 space-y-4"
     >
-      {/* Spotlight effect */}
-      <motion.div
-        className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{
-          background: `radial-gradient(400px circle at ${springX}px ${springY}px, rgba(0, 217, 165, 0.06), transparent 40%)`,
-        }}
-      />
+      {/* Aurora background effect */}
+      <Suspense fallback={null}>
+        <div className="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-500">
+          <Aurora
+            colorStops={['#00B4D8', '#00D9A5', '#0077B6']}
+            amplitude={0.6}
+            blend={0.7}
+            speed={0.4}
+          />
+        </div>
+      </Suspense>
 
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20">
-            <Users className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00B4D8]/20 via-[#00D9A5]/15 to-[#0077B6]/20 flex items-center justify-center border border-[#00D9A5]/20">
+            <Users className="w-5 h-5 text-[#00D9A5]" />
           </div>
           <div className="flex-1">
             <h3 className="font-semibold text-white text-sm">Community</h3>
@@ -101,8 +95,8 @@ export function RegisteredUsersList() {
                 className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/[0.04] transition-colors group/item"
               >
                 <div className="relative">
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/10">
-                    <span className="text-xs font-semibold text-primary">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#00B4D8]/20 to-[#00D9A5]/10 flex items-center justify-center border border-[#00D9A5]/10">
+                    <span className="text-xs font-semibold text-[#00D9A5]">
                       {user.u.charAt(0).toUpperCase()}
                     </span>
                   </div>
