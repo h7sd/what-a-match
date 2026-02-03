@@ -1366,6 +1366,13 @@ export type Database = {
           target_user_id: string
         }[]
       }
+      get_hunt_badge_holder: {
+        Args: { p_event_id: string }
+        Returns: {
+          user_id: string
+          username: string
+        }[]
+      }
       get_my_sent_alias_requests: {
         Args: never
         Returns: {
