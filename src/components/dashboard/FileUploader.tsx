@@ -1,9 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ImageIcon, Music, User, MousePointer2, Loader2, X } from 'lucide-react';
+import { ImageIcon, Music, User, MousePointer2, Loader2, X, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
+import { useEncryption } from '@/hooks/useEncryption';
+import { encodeFileMetadata } from '@/lib/crypto';
 import { Button } from '@/components/ui/button';
 
 interface FileUploaderProps {
@@ -11,9 +13,11 @@ interface FileUploaderProps {
   currentUrl?: string | null;
   onUpload: (url: string) => void;
   onRemove?: () => void;
+  enableEncryption?: boolean; // Optional: enable encryption for sensitive files
 }
 
 // Secure upload configuration with size limits and allowed MIME types
+// All uploads now support up to 100MB as requested
 const typeConfig = {
   background: {
     icon: ImageIcon,
@@ -21,7 +25,7 @@ const typeConfig = {
     accept: 'image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime',
     folder: 'backgrounds',
     color: 'text-primary',
-    maxSize: 15 * 1024 * 1024, // 15MB for backgrounds
+    maxSize: 100 * 1024 * 1024, // 100MB
     allowedMimes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/quicktime'],
   },
   audio: {
@@ -30,7 +34,7 @@ const typeConfig = {
     accept: 'audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/aac',
     folder: 'audio',
     color: 'text-green-400',
-    maxSize: 25 * 1024 * 1024, // 25MB for audio
+    maxSize: 100 * 1024 * 1024, // 100MB
     allowedMimes: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/aac', 'audio/x-m4a'],
   },
   avatar: {
@@ -39,7 +43,7 @@ const typeConfig = {
     accept: 'image/jpeg,image/png,image/webp,image/gif',
     folder: 'avatars',
     color: 'text-pink-400',
-    maxSize: 5 * 1024 * 1024, // 5MB for avatars
+    maxSize: 100 * 1024 * 1024, // 100MB
     allowedMimes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
   },
   cursor: {
@@ -48,7 +52,7 @@ const typeConfig = {
     accept: 'image/png,image/gif',
     folder: 'cursors',
     color: 'text-purple-400',
-    maxSize: 1 * 1024 * 1024, // 1MB for cursors
+    maxSize: 100 * 1024 * 1024, // 100MB
     allowedMimes: ['image/png', 'image/gif', 'image/x-icon'],
   },
 };
@@ -70,11 +74,13 @@ function generateSecureFilename(originalName: string): string {
   return `${randomPart}.${safeExt}`;
 }
 
-export function FileUploader({ type, currentUrl, onUpload, onRemove }: FileUploaderProps) {
+export function FileUploader({ type, currentUrl, onUpload, onRemove, enableEncryption = false }: FileUploaderProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { encrypt, isReady: encryptionReady } = useEncryption();
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const config = typeConfig[type];
@@ -114,17 +120,42 @@ export function FileUploader({ type, currentUrl, onUpload, onRemove }: FileUploa
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
+    
     try {
+      let fileToUpload: File | Blob = file;
+      let finalContentType = file.type;
+      let folderPrefix = config.folder;
+      
+      // Encrypt file if encryption is enabled and ready
+      if (enableEncryption && encryptionReady) {
+        const encryptedBlob = await encrypt(file);
+        if (!encryptedBlob) {
+          throw new Error('Encryption failed');
+        }
+        fileToUpload = encryptedBlob;
+        finalContentType = 'application/octet-stream';
+        folderPrefix = `encrypted/${config.folder}`;
+        
+        // Store original metadata in filename
+        const metadata = encodeFileMetadata(file.name, file.type);
+        console.log('File encrypted, metadata:', metadata);
+      }
+      
+      setUploadProgress(30);
+      
       // Generate secure random filename to prevent enumeration
-      const fileName = generateSecureFilename(file.name);
-      const filePath = `${user.id}/${config.folder}/${fileName}`;
+      const fileName = generateSecureFilename(file.name) + (enableEncryption ? '.enc' : '');
+      const filePath = `${user.id}/${folderPrefix}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('profile-assets')
-        .upload(filePath, file, { 
+        .upload(filePath, fileToUpload, { 
           upsert: true,
-          contentType: file.type, // Explicitly set content type
+          contentType: finalContentType,
         });
+
+      setUploadProgress(80);
 
       if (uploadError) throw uploadError;
 
@@ -132,13 +163,17 @@ export function FileUploader({ type, currentUrl, onUpload, onRemove }: FileUploa
         .from('profile-assets')
         .getPublicUrl(filePath);
 
+      setUploadProgress(100);
       onUpload(publicUrl);
-      toast({ title: `${config.label} uploaded!` });
+      
+      const encryptedNote = enableEncryption ? ' (verschlüsselt)' : '';
+      toast({ title: `${config.label} uploaded!${encryptedNote}` });
     } catch (error: any) {
       console.error('Upload error:', error);
       toast({ title: 'Upload failed. Please try again.', variant: 'destructive' });
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 

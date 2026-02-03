@@ -23,7 +23,7 @@ export function BadgeIconUploader({ currentUrl, onUpload, onRemove, color = '#8B
 
   // Allowed MIME types for badge icons
   const ALLOWED_MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml'];
-  const MAX_SIZE = 3 * 1024 * 1024; // 3MB for badge icons
+  const MAX_SIZE = 100 * 1024 * 1024; // 100MB for all uploads
 
   // Validate image file signature (magic bytes)
   async function validateImageSignature(file: File): Promise<boolean> {
@@ -69,9 +69,9 @@ export function BadgeIconUploader({ currentUrl, onUpload, onRemove, color = '#8B
       return;
     }
 
-    // Validate file size
+    // Validate file size (100MB)
     if (file.size > MAX_SIZE) {
-      toast({ title: 'File size must be under 3MB', variant: 'destructive' });
+      toast({ title: 'File size must be under 100MB', variant: 'destructive' });
       return;
     }
 
