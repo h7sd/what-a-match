@@ -1,14 +1,27 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Play } from 'lucide-react';
+import { ArrowRight, Play } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { BlurText } from './BlurText';
 import { GradientText } from './GradientText';
+import { supabase } from '@/integrations/supabase/client';
 
 export function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const [userCount, setUserCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    supabase.functions
+      .invoke('api-proxy', { body: { action: 'get_stats' } })
+      .then(({ data }) => {
+        if (data?.data?.totalUsers) {
+          setUserCount(data.data.totalUsers);
+        }
+      })
+      .catch(() => {});
+  }, []);
   
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -138,7 +151,10 @@ export function HeroSection() {
             ))}
           </div>
           <p className="text-sm text-muted-foreground">
-            <span className="text-foreground font-semibold">2,500+</span> creators already joined
+            <span className="text-foreground font-semibold">
+              {userCount !== null ? userCount.toLocaleString('de-DE') : '–'}
+            </span>{' '}
+            creators already joined
           </p>
         </motion.div>
       </motion.div>
