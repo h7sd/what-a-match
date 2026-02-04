@@ -1,6 +1,19 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Partials, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, REST, Routes } = require('discord.js');
 const crypto = require('crypto');
+const {
+  commands,
+  handleBalance,
+  handleDaily,
+  handleTrivia,
+  handleCoinflip,
+  handleSlots,
+  handleRPS,
+  handleBlackjack,
+  handleLink,
+  activeGames
+} = require('./commands');
+const { handValue, formatHand, createDeck, sendReward, getBalance } = require('./minigames');
 
 // ============================================
 // CONFIGURATION
@@ -12,11 +25,18 @@ const GUILD_ID = process.env.GUILD_ID;
 const WEBHOOK_SECRET = process.env.DISCORD_WEBHOOK_SECRET;
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS || '').split(',').filter(Boolean);
 const BADGE_REQUEST_CHANNEL_ID = process.env.BADGE_REQUEST_CHANNEL_ID || '1466581321169240076';
-// Edge function URL for secure badge request polling (no service role key needed!)
 const BOT_BADGE_REQUESTS_URL = process.env.BOT_BADGE_REQUESTS_URL || 'https://cjulgfbmcnmrkvnzkpym.supabase.co/functions/v1/bot-badge-requests';
+const MINIGAME_EDGE_URL = process.env.MINIGAME_EDGE_URL || 'https://cjulgfbmcnmrkvnzkpym.supabase.co/functions/v1/minigame-reward';
+const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 
 // Track already notified requests to avoid duplicates
 const notifiedRequests = new Set();
+
+// Config object for minigame handlers
+const minigameConfig = {
+  MINIGAME_EDGE_URL,
+  DISCORD_WEBHOOK_SECRET: WEBHOOK_SECRET
+};
 
 if (!DISCORD_TOKEN || !EDGE_FUNCTION_URL || !GUILD_ID || !WEBHOOK_SECRET) {
   console.error('❌ Missing environment variables! Check your .env file.');
@@ -130,17 +150,43 @@ async function handleBadgeAction(action, requestId, options = {}) {
 // INTERACTION HANDLER (Buttons & Modals)
 // ============================================
 client.on('interactionCreate', async (interaction) => {
-  // Check if user is admin
+  // Handle slash commands
+  if (interaction.isChatInputCommand()) {
+    const { commandName } = interaction;
+    
+    switch (commandName) {
+      case 'balance': return handleBalance(interaction, minigameConfig);
+      case 'daily': return handleDaily(interaction, minigameConfig);
+      case 'trivia': return handleTrivia(interaction, minigameConfig);
+      case 'coinflip': return handleCoinflip(interaction, minigameConfig);
+      case 'slots': return handleSlots(interaction, minigameConfig);
+      case 'rps': return handleRPS(interaction, minigameConfig);
+      case 'blackjack': return handleBlackjack(interaction, minigameConfig);
+      case 'link': return handleLink(interaction, minigameConfig);
+    }
+    return;
+  }
+
+  // Check if user is admin for badge management
   const isAdmin = ADMIN_USER_IDS.includes(interaction.user.id);
   
   if (!isAdmin) {
     if (interaction.isButton() || interaction.isModalSubmit()) {
+      // Check for blackjack buttons (anyone can use their own)
+      if (interaction.isButton() && interaction.customId.startsWith('bj_')) {
+        return handleBlackjackButton(interaction);
+      }
       return interaction.reply({ 
         content: '❌ You do not have permission to manage badge requests.', 
         ephemeral: true 
       });
     }
     return;
+  }
+  
+  // Handle blackjack buttons for admins too
+  if (interaction.isButton() && interaction.customId.startsWith('bj_')) {
+    return handleBlackjackButton(interaction);
   }
 
   // Handle button clicks

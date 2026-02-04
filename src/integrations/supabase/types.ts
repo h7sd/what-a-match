@@ -369,6 +369,33 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_rewards: {
+        Row: {
+          created_at: string
+          discord_user_id: string
+          id: string
+          last_claim: string
+          streak: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          discord_user_id: string
+          id?: string
+          last_claim?: string
+          streak?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          discord_user_id?: string
+          id?: string
+          last_claim?: string
+          streak?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       discord_integrations: {
         Row: {
           avatar: string | null
@@ -638,6 +665,152 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      marketplace_items: {
+        Row: {
+          badge_color: string | null
+          badge_description: string | null
+          badge_icon_url: string | null
+          badge_name: string | null
+          created_at: string
+          denial_reason: string | null
+          id: string
+          item_type: string
+          price: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sale_type: string
+          seller_id: string
+          status: string
+          stock_limit: number | null
+          stock_sold: number
+          template_data: Json | null
+          template_description: string | null
+          template_name: string | null
+          template_preview_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          badge_color?: string | null
+          badge_description?: string | null
+          badge_icon_url?: string | null
+          badge_name?: string | null
+          created_at?: string
+          denial_reason?: string | null
+          id?: string
+          item_type: string
+          price: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sale_type?: string
+          seller_id: string
+          status?: string
+          stock_limit?: number | null
+          stock_sold?: number
+          template_data?: Json | null
+          template_description?: string | null
+          template_name?: string | null
+          template_preview_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          badge_color?: string | null
+          badge_description?: string | null
+          badge_icon_url?: string | null
+          badge_name?: string | null
+          created_at?: string
+          denial_reason?: string | null
+          id?: string
+          item_type?: string
+          price?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sale_type?: string
+          seller_id?: string
+          status?: string
+          stock_limit?: number | null
+          stock_sold?: number
+          template_data?: Json | null
+          template_description?: string | null
+          template_name?: string | null
+          template_preview_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      marketplace_purchases: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          id: string
+          item_id: string
+          price: number
+          seller_id: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          id?: string
+          item_id: string
+          price: number
+          seller_id: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          price?: number
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_purchases_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minigame_stats: {
+        Row: {
+          created_at: string
+          discord_user_id: string
+          game_type: string
+          games_played: number
+          games_won: number
+          id: string
+          total_earned: number
+          total_lost: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          discord_user_id: string
+          game_type: string
+          games_played?: number
+          games_won?: number
+          id?: string
+          total_earned?: number
+          total_lost?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          discord_user_id?: string
+          game_type?: string
+          games_played?: number
+          games_won?: number
+          id?: string
+          total_earned?: number
+          total_lost?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       profile_comments: {
         Row: {
@@ -1331,6 +1504,36 @@ export type Database = {
           },
         ]
       }
+      user_balances: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          total_earned: number
+          total_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1348,6 +1551,39 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      uv_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          reference_type: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type?: string
           user_id?: string
         }
         Relationships: []
@@ -1705,6 +1941,7 @@ export type Database = {
           views_count: number
         }[]
       }
+      get_user_balance: { Args: { p_user_id: string }; Returns: number }
       get_visitor_conversation: {
         Args: { p_session_token: string }
         Returns: {
@@ -1740,6 +1977,7 @@ export type Database = {
       }
       is_profile_owner: { Args: { profile_id: string }; Returns: boolean }
       is_protected_uid: { Args: { uid: number }; Returns: boolean }
+      purchase_marketplace_item: { Args: { p_item_id: string }; Returns: Json }
       return_stolen_badges: { Args: never; Returns: number }
       scheduled_security_cleanup: { Args: never; Returns: undefined }
       send_visitor_message: {

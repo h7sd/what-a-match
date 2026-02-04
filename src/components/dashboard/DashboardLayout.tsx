@@ -15,7 +15,8 @@ import {
   X,
   Save,
   Loader2,
-  Sparkles
+  Sparkles,
+  ShoppingBag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ import { AdminChatNotificationBell } from '@/components/admin/AdminChatNotificat
 const FaultyTerminal = lazy(() => import('@/components/ui/FaultyTerminal'));
 const Aurora = lazy(() => import('@/components/ui/Aurora'));
 
-type TabType = 'overview' | 'profile' | 'appearance' | 'links' | 'badges' | 'admin' | 'settings';
+type TabType = 'overview' | 'profile' | 'appearance' | 'links' | 'badges' | 'marketplace' | 'admin' | 'settings';
 
 const baseNavItems: { icon: React.ElementType; label: string; tab: TabType }[] = [
   { icon: LayoutDashboard, label: 'Overview', tab: 'overview' },
@@ -36,6 +37,7 @@ const baseNavItems: { icon: React.ElementType; label: string; tab: TabType }[] =
   { icon: Palette, label: 'Appearance', tab: 'appearance' },
   { icon: Link2, label: 'Links', tab: 'links' },
   { icon: Award, label: 'Badges', tab: 'badges' },
+  { icon: ShoppingBag, label: 'Marketplace', tab: 'marketplace' },
   { icon: Settings, label: 'Settings', tab: 'settings' },
 ];
 
