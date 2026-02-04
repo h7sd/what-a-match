@@ -29,9 +29,15 @@ from discord import app_commands
 from discord.ext import commands
 import aiohttp
 from dotenv import load_dotenv
+from pathlib import Path
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from the same directory as this script
+env_path = Path(__file__).parent / '.env'
+load_dotenv(env_path)
+
+# Debug: Print loading info
+print(f"📁 Looking for .env at: {env_path}")
+print(f"📁 .env exists: {env_path.exists()}")
 
 # Configuration
 BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
