@@ -4,9 +4,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import CardSwap, { Card } from '@/components/ui/CardSwap';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Sparkles, Eye, Heart } from 'lucide-react';
+import { Sparkles, Eye, MapPin, Briefcase, AtSign } from 'lucide-react';
 
 interface ProfileWithBadges {
   id: string;
@@ -15,7 +13,9 @@ interface ProfileWithBadges {
   avatar_url: string | null;
   bio: string | null;
   views_count: number | null;
-  likes_count: number | null;
+  accent_color: string | null;
+  location: string | null;
+  occupation: string | null;
   badges: {
     name: string;
     color: string | null;
@@ -27,10 +27,10 @@ function useRandomProfilesWithBadges() {
   return useQuery({
     queryKey: ['card-swap-profiles'],
     queryFn: async () => {
-      // Get random profiles
+      // Get random profiles with more fields
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, bio, views_count, likes_count')
+        .select('id, username, display_name, avatar_url, bio, views_count, accent_color, location, occupation')
         .limit(50);
       
       if (profilesError) throw profilesError;
@@ -54,12 +54,12 @@ function useRandomProfilesWithBadges() {
             `)
             .eq('user_id', profile.id)
             .eq('is_enabled', true)
-            .limit(4);
+            .order('display_order', { ascending: true })
+            .limit(6);
 
           const badges = (userBadges || [])
             .map((ub: any) => ub.global_badges)
-            .filter(Boolean)
-            .slice(0, 4);
+            .filter(Boolean);
 
           return {
             ...profile,
@@ -75,69 +75,146 @@ function useRandomProfilesWithBadges() {
   });
 }
 
-function ProfileCard({ profile }: { profile: ProfileWithBadges }) {
+function ProfileCardContent({ profile }: { profile: ProfileWithBadges }) {
+  const accentColor = profile.accent_color || '#10b981';
+  
   return (
     <Link to={`/${profile.username}`} className="block w-full h-full">
-      <div className="relative w-full h-full p-6 flex flex-col bg-gradient-to-br from-background/95 via-card/90 to-background/95">
-        {/* Background decoration */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-        
-        {/* Header */}
-        <div className="relative flex items-start gap-4 mb-4">
-          <Avatar className="w-16 h-16 border-2 border-primary/30">
-            <AvatarImage src={profile.avatar_url || undefined} alt={profile.display_name || profile.username} />
-            <AvatarFallback className="bg-primary/20 text-primary text-xl font-bold">
-              {(profile.display_name || profile.username).charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-foreground text-lg truncate">
-              {profile.display_name || profile.username}
-            </h3>
-            <p className="text-muted-foreground text-sm">@{profile.username}</p>
-          </div>
-        </div>
+      <div className="relative w-full h-full flex flex-col overflow-hidden">
+        {/* Animated glow effect behind card */}
+        <motion.div
+          className="absolute -inset-1 rounded-2xl opacity-60 blur-xl"
+          style={{
+            background: `linear-gradient(135deg, ${accentColor}, ${accentColor}80, ${accentColor}40)`,
+          }}
+          animate={{
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
 
-        {/* Bio */}
-        {profile.bio && (
-          <p className="relative text-muted-foreground text-sm line-clamp-2 mb-4 flex-shrink-0">
-            {profile.bio}
-          </p>
-        )}
+        <div
+          className="relative rounded-2xl p-6 backdrop-blur-xl flex flex-col h-full"
+          style={{
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            border: `1px solid ${accentColor}30`,
+          }}
+        >
+          {/* Corner sparkle decorations */}
+          <motion.div
+            className="absolute top-3 right-3 text-sm"
+            animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1, 0.8] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{ color: accentColor }}
+          >
+            ✦
+          </motion.div>
 
-        {/* Badges */}
-        {profile.badges.length > 0 && (
-          <div className="relative flex flex-wrap gap-2 mb-4">
-            {profile.badges.map((badge, idx) => (
-              <Badge
-                key={idx}
-                variant="secondary"
-                className="text-xs px-2 py-1 flex items-center gap-1"
+          {/* Gradient border glow */}
+          <div
+            className="absolute inset-0 rounded-2xl opacity-30"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor}30, transparent 50%, ${accentColor}20)`,
+            }}
+          />
+
+          <div className="relative z-10 flex flex-col items-center text-center flex-1">
+            {/* Avatar with glow ring */}
+            <div className="mb-4 relative">
+              <div 
+                className="absolute -inset-1 rounded-full blur-md opacity-50"
+                style={{ background: accentColor }}
+              />
+              <div 
+                className="relative w-20 h-20 rounded-full overflow-hidden"
                 style={{ 
-                  backgroundColor: badge.color ? `${badge.color}20` : undefined,
-                  borderColor: badge.color || undefined,
-                  color: badge.color || undefined
+                  boxShadow: `0 0 0 2px ${accentColor}50`
                 }}
               >
-                {badge.icon_url && (
-                  <img src={badge.icon_url} alt="" className="w-3 h-3" />
+                {profile.avatar_url ? (
+                  <img 
+                    src={profile.avatar_url} 
+                    alt={profile.display_name || profile.username}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div 
+                    className="w-full h-full flex items-center justify-center text-2xl font-bold"
+                    style={{ backgroundColor: `${accentColor}30`, color: accentColor }}
+                  >
+                    {(profile.display_name || profile.username).charAt(0).toUpperCase()}
+                  </div>
                 )}
-                {badge.name}
-              </Badge>
-            ))}
-          </div>
-        )}
+              </div>
+            </div>
 
-        {/* Stats */}
-        <div className="relative mt-auto flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Eye className="w-4 h-4" />
-            <span>{profile.views_count || 0}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Heart className="w-4 h-4" />
-            <span>{profile.likes_count || 0}</span>
+            {/* Display Name */}
+            <h3 
+              className="text-xl font-bold text-white mb-1"
+            >
+              {profile.display_name || profile.username}
+            </h3>
+
+            {/* Username */}
+            <p className="text-muted-foreground text-sm mb-3 flex items-center gap-0.5">
+              <AtSign className="w-3.5 h-3.5" />
+              {profile.username}
+            </p>
+
+            {/* Badges */}
+            {profile.badges.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-1.5 mb-3 px-2">
+                {profile.badges.map((badge, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm"
+                    style={{
+                      backgroundColor: badge.color ? `${badge.color}20` : 'rgba(255,255,255,0.1)',
+                      border: `1px solid ${badge.color || 'rgba(255,255,255,0.2)'}40`,
+                      color: badge.color || '#fff',
+                    }}
+                  >
+                    {badge.icon_url && (
+                      <img src={badge.icon_url} alt="" className="w-3.5 h-3.5" />
+                    )}
+                    <span className="truncate max-w-[60px]">{badge.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Bio */}
+            {profile.bio && (
+              <p className="text-muted-foreground text-xs max-w-[200px] leading-relaxed mb-3 line-clamp-2">
+                {profile.bio}
+              </p>
+            )}
+
+            {/* Location & Occupation */}
+            <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground mb-3">
+              {profile.occupation && (
+                <div className="flex items-center gap-1">
+                  <Briefcase className="w-3 h-3" />
+                  <span className="truncate max-w-[80px]">{profile.occupation}</span>
+                </div>
+              )}
+              {profile.location && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  <span className="truncate max-w-[80px]">{profile.location}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Views */}
+            <div className="mt-auto flex items-center justify-center gap-1 text-xs text-muted-foreground">
+              <Eye className="w-3.5 h-3.5" />
+              <span>{(profile.views_count || 0).toLocaleString()} views</span>
+            </div>
           </div>
         </div>
       </div>
@@ -155,12 +232,12 @@ export function ProfileCardSwap() {
   }
 
   return (
-    <section ref={ref} className="py-24 px-6 relative overflow-hidden">
+    <section ref={ref} className="py-32 px-6 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
       
       <div className="max-w-7xl mx-auto relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Left side - Text content */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -179,26 +256,26 @@ export function ProfileCardSwap() {
             </p>
           </motion.div>
 
-          {/* Right side - Card Swap */}
+          {/* Right side - Card Swap - MUCH BIGGER */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={isInView ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="relative h-[500px] md:h-[550px] flex items-center justify-center"
+            className="relative h-[600px] md:h-[700px] flex items-center justify-center"
           >
             <CardSwap
-              width={320}
-              height={380}
-              cardDistance={50}
-              verticalDistance={60}
-              delay={4000}
+              width={340}
+              height={480}
+              cardDistance={55}
+              verticalDistance={65}
+              delay={4500}
               pauseOnHover={true}
-              skewAmount={4}
+              skewAmount={5}
               easing="elastic"
             >
               {profiles.map((profile) => (
-                <Card key={profile.id}>
-                  <ProfileCard profile={profile} />
+                <Card key={profile.id} className="!bg-transparent !border-0">
+                  <ProfileCardContent profile={profile} />
                 </Card>
               ))}
             </CardSwap>
