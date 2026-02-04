@@ -51,11 +51,13 @@ async function loadProfile(username: string): Promise<SwapProfile | null> {
   }
 }
 
-// Hook to manage profile queue - profiles rotate through fixed slots
+// Hook to manage profile queue with preloading
 function useProfileQueue() {
   const poolRef = useRef<FeaturedProfile[]>([]);
   const poolIndexRef = useRef(0);
   const usedUsernames = useRef<Set<string>>(new Set());
+  const preloadedRef = useRef<SwapProfile | null>(null);
+  const isPreloadingRef = useRef(false);
 
   // Load the pool of featured profiles
   const { data: pool } = useQuery({
@@ -83,7 +85,7 @@ function useProfileQueue() {
   );
   const [isLoading, setIsLoading] = useState(true);
 
-  // Get next valid profile from pool
+  // Get next valid profile from pool (without adding to used yet)
   const getNextFromPool = useCallback(async (): Promise<SwapProfile | null> => {
     const pool = poolRef.current;
     if (pool.length === 0) return null;
@@ -96,16 +98,27 @@ function useProfileQueue() {
       // Skip if already in use
       if (usedUsernames.current.has(candidate.u)) continue;
 
-      usedUsernames.current.add(candidate.u);
       const loaded = await loadProfile(candidate.u);
       if (loaded) return loaded;
-      
-      // If profile didn't load (no background), remove from used
-      usedUsernames.current.delete(candidate.u);
     }
 
     return null;
   }, []);
+
+  // Preload next profile in background
+  const preloadNext = useCallback(async () => {
+    if (isPreloadingRef.current || preloadedRef.current) return;
+    
+    isPreloadingRef.current = true;
+    try {
+      const next = await getNextFromPool();
+      if (next) {
+        preloadedRef.current = next;
+      }
+    } finally {
+      isPreloadingRef.current = false;
+    }
+  }, [getNextFromPool]);
 
   // Initial load - fill all slots
   useEffect(() => {
@@ -117,21 +130,36 @@ function useProfileQueue() {
 
       for (let i = 0; i < CARD_SLOTS; i++) {
         const profile = await getNextFromPool();
+        if (profile) {
+          usedUsernames.current.add(profile.profile.username);
+        }
         loadedSlots.push(profile);
       }
 
       setSlots(loadedSlots);
       setIsLoading(false);
+      
+      // Start preloading the next profile
+      preloadNext();
     };
 
     loadInitial();
-  }, [pool, getNextFromPool]);
+  }, [pool, getNextFromPool, preloadNext]);
 
-  // Replace profile at a specific slot index
+  // Replace profile at a specific slot index using preloaded profile
   const replaceSlot = useCallback(
-    async (slotIndex: number) => {
-      const newProfile = await getNextFromPool();
-      if (!newProfile) return;
+    (slotIndex: number) => {
+      // Use preloaded profile if available
+      const newProfile = preloadedRef.current;
+      if (!newProfile) {
+        // No preloaded profile, start preloading for next time
+        preloadNext();
+        return;
+      }
+
+      // Clear preloaded and start loading next one immediately
+      preloadedRef.current = null;
+      preloadNext();
 
       setSlots((prev) => {
         const updated = [...prev];
@@ -139,11 +167,12 @@ function useProfileQueue() {
         if (old) {
           usedUsernames.current.delete(old.profile.username);
         }
+        usedUsernames.current.add(newProfile.profile.username);
         updated[slotIndex] = newProfile;
         return updated;
       });
     },
-    [getNextFromPool]
+    [preloadNext]
   );
 
   // Filter out null slots for display, but keep slot indices
