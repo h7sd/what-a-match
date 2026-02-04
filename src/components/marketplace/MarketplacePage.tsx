@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -25,19 +24,29 @@ import { MarketplaceGrid } from './MarketplaceGrid';
 import { CreateListingDialog } from './CreateListingDialog';
 import { TransactionHistory } from './TransactionHistory';
 import { cn } from '@/lib/utils';
+import PillNav from '@/components/ui/PillNav';
 
 type ItemFilter = 'all' | 'badge' | 'template';
+type TabValue = 'browse' | 'my-items' | 'purchases' | 'history';
 
 export function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [itemFilter, setItemFilter] = useState<ItemFilter>('all');
+  const [activeTab, setActiveTab] = useState<TabValue>('browse');
   
   const { data: balance } = useUserBalance();
   const { data: items, isLoading: itemsLoading } = useMarketplaceItems();
   const { data: myItems } = useMyMarketplaceItems();
   const { data: myPurchases } = useMyPurchases();
   const { data: transactions } = useUCTransactions();
+
+  const pillNavItems = [
+    { label: 'Browse', value: 'browse', icon: <ShoppingBag className="w-4 h-4" /> },
+    { label: 'My Listings', value: 'my-items', icon: <Tag className="w-4 h-4" /> },
+    { label: 'Purchases', value: 'purchases', icon: <Package className="w-4 h-4" /> },
+    { label: 'History', value: 'history', icon: <History className="w-4 h-4" /> },
+  ];
   
   const filteredItems = items?.filter(item => {
     const name = item.item_type === 'badge' ? item.badge_name : item.template_name;
@@ -81,26 +90,13 @@ export function MarketplacePage() {
         </div>
       </div>
 
-      <Tabs defaultValue="browse" className="space-y-6">
+      <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <TabsList className="bg-muted/50 p-1">
-            <TabsTrigger value="browse" className="gap-2 data-[state=active]:bg-background">
-              <ShoppingBag className="w-4 h-4" />
-              <span className="hidden sm:inline">Browse</span>
-            </TabsTrigger>
-            <TabsTrigger value="my-items" className="gap-2 data-[state=active]:bg-background">
-              <Tag className="w-4 h-4" />
-              <span className="hidden sm:inline">My Listings</span>
-            </TabsTrigger>
-            <TabsTrigger value="purchases" className="gap-2 data-[state=active]:bg-background">
-              <Package className="w-4 h-4" />
-              <span className="hidden sm:inline">Purchases</span>
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2 data-[state=active]:bg-background">
-              <History className="w-4 h-4" />
-              <span className="hidden sm:inline">History</span>
-            </TabsTrigger>
-          </TabsList>
+          <PillNav
+            items={pillNavItems}
+            activeValue={activeTab}
+            onChange={(value) => setActiveTab(value as TabValue)}
+          />
 
           {/* Search & Filters */}
           <div className="flex items-center gap-3">
@@ -132,7 +128,7 @@ export function MarketplacePage() {
           </div>
         </div>
 
-        <TabsContent value="browse" className="mt-0">
+        {activeTab === 'browse' && (
           <MarketplaceGrid 
             items={filteredItems || []} 
             isLoading={itemsLoading}
@@ -141,9 +137,9 @@ export function MarketplacePage() {
             emptyAction={() => setShowCreateDialog(true)}
             emptyActionLabel="Be the first to list something!"
           />
-        </TabsContent>
+        )}
 
-        <TabsContent value="my-items" className="mt-0">
+        {activeTab === 'my-items' && (
           <MarketplaceGrid 
             items={myItems || []} 
             isLoading={false}
@@ -153,9 +149,9 @@ export function MarketplacePage() {
             emptyAction={() => setShowCreateDialog(true)}
             emptyActionLabel="Create your first listing"
           />
-        </TabsContent>
+        )}
 
-        <TabsContent value="purchases" className="mt-0">
+        {activeTab === 'purchases' && (
           <MarketplaceGrid 
             items={myPurchases?.map(p => p.item as any) || []} 
             isLoading={false}
@@ -163,19 +159,21 @@ export function MarketplacePage() {
             isPurchased
             emptyMessage="No purchases yet"
           />
-        </TabsContent>
+        )}
 
-        <TabsContent value="history" className="mt-0 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">UC Transaction History</h2>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <TrendingUp className="w-4 h-4 text-green-500" />
-              <span>Total Earned: {balance?.total_earned?.toLocaleString() || 0} UC</span>
+        {activeTab === 'history' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">UC Transaction History</h2>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <TrendingUp className="w-4 h-4 text-green-500" />
+                <span>Total Earned: {balance?.total_earned?.toLocaleString() || 0} UC</span>
+              </div>
             </div>
+            <TransactionHistory transactions={transactions || []} />
           </div>
-          <TransactionHistory transactions={transactions || []} />
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
 
       <CreateListingDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
     </div>
