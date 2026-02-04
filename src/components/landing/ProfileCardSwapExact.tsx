@@ -146,49 +146,49 @@ function useProfileQueue() {
     loadInitial();
   }, [pool, getNextFromPool, preloadNext]);
 
-  // Replace profile at a specific slot index using preloaded profile
+  // Replace profile at a specific slot index.
+  // Important: Keep the 5 card DOM nodes stable; only swap the *content* after the card reached the back.
   const replaceSlot = useCallback(
     (slotIndex: number) => {
-      // Use preloaded profile if available
-      const newProfile = preloadedRef.current;
-      if (!newProfile) {
-        // No preloaded profile, start preloading for next time
-        preloadNext();
-        return;
-      }
+      void (async () => {
+        // Prefer preloaded profile (loaded during the 5s display time)
+        let next = preloadedRef.current;
+        preloadedRef.current = null;
 
-      // Clear preloaded and start loading next one immediately
-      preloadedRef.current = null;
-      preloadNext();
-
-      setSlots((prev) => {
-        const updated = [...prev];
-        const old = updated[slotIndex];
-        if (old) {
-          usedUsernames.current.delete(old.profile.username);
+        if (!next) {
+          // Fallback: load on-demand so we never "stall" visually
+          next = await getNextFromPool();
         }
-        usedUsernames.current.add(newProfile.profile.username);
-        updated[slotIndex] = newProfile;
-        return updated;
-      });
+
+        // Always start preloading the next one for the next swap
+        preloadNext();
+
+        if (!next) return;
+
+        setSlots((prev) => {
+          const updated = [...prev];
+          const old = updated[slotIndex];
+          if (old) usedUsernames.current.delete(old.profile.username);
+
+          // If the candidate is (now) already used, skip to avoid duplicates
+          if (usedUsernames.current.has(next.profile.username)) return updated;
+
+          usedUsernames.current.add(next.profile.username);
+          updated[slotIndex] = next;
+          return updated;
+        });
+      })();
     },
-    [preloadNext]
+    [getNextFromPool, preloadNext]
   );
 
-  // Filter out null slots for display, but keep slot indices
-  const validSlots = useMemo(
-    () =>
-      slots
-        .map((slot, index) => ({ slot, index }))
-        .filter((s): s is { slot: SwapProfile; index: number } => s.slot !== null),
-    [slots]
-  );
+  const hasProfiles = useMemo(() => slots.some(Boolean), [slots]);
 
   return {
-    slots: validSlots,
+    slots,
     isLoading,
     replaceSlot,
-    hasProfiles: validSlots.length > 0,
+    hasProfiles,
   };
 }
 
@@ -287,17 +287,12 @@ export function ProfileCardSwapExact() {
 
   const { slots, isLoading, replaceSlot, hasProfiles } = useProfileQueue();
 
-  // Track which slot index maps to which card position
-  // When a card (by position in CardSwap children) swaps to back, replace its content
+  // CardSwap calls back with the stable child index (slot index).
   const handleCardSwap = useCallback(
-    (cardPosition: number) => {
-      // cardPosition is the index in the current CardSwap children array
-      const slotData = slots[cardPosition];
-      if (slotData) {
-        replaceSlot(slotData.index);
-      }
+    (slotIndex: number) => {
+      replaceSlot(slotIndex);
     },
-    [slots, replaceSlot]
+    [replaceSlot]
   );
 
   return (
@@ -353,15 +348,19 @@ export function ProfileCardSwapExact() {
                 easing="elastic"
                 onCardSwap={handleCardSwap}
               >
-                {slots.map(({ slot, index }) => (
+                {slots.map((slot, index) => (
                   <Card key={`slot-${index}`} className="!bg-transparent !border-0">
-                    <Link
-                      to={`/${slot.profile.username}`}
-                      className="group block w-full h-full"
-                      aria-label={`Open profile ${slot.profile.username}`}
-                    >
-                      <ProfilePageCardPreview data={slot} />
-                    </Link>
+                    {slot ? (
+                      <Link
+                        to={`/${slot.profile.username}`}
+                        className="group block w-full h-full"
+                        aria-label={`Open profile ${slot.profile.username}`}
+                      >
+                        <ProfilePageCardPreview data={slot} />
+                      </Link>
+                    ) : (
+                      <div className="w-full h-full rounded-2xl bg-muted/10 animate-pulse" aria-hidden="true" />
+                    )}
                   </Card>
                 ))}
               </CardSwap>
