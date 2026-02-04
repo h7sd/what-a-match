@@ -37,6 +37,7 @@ import {
   Volume2,
   Send,
   Crown,
+  ShoppingBag,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -87,9 +88,11 @@ import { ProfileCommentsViewer } from '@/components/dashboard/ProfileCommentsVie
 import { FriendBadgesManager } from '@/components/dashboard/FriendBadgesManager';
 import { AdminEventController } from '@/components/admin/AdminEventController';
 import { AdminNotificationSender } from '@/components/admin/AdminNotificationSender';
+import { AdminMarketplaceManager } from '@/components/admin/AdminMarketplaceManager';
+import { MarketplacePage } from '@/components/marketplace/MarketplacePage';
 import { cn } from '@/lib/utils';
 
-type TabType = 'overview' | 'profile' | 'appearance' | 'links' | 'badges' | 'admin' | 'settings';
+type TabType = 'overview' | 'profile' | 'appearance' | 'links' | 'badges' | 'marketplace' | 'admin' | 'settings';
 
 // Secret DB viewer (super-admin only)
 const SECRET_DB_VIEWER_PATH =
@@ -102,6 +105,7 @@ const baseNavItems: { icon: React.ElementType; label: string; tab: TabType }[] =
   { icon: Palette, label: 'Appearance', tab: 'appearance' },
   { icon: LinkIcon, label: 'Links', tab: 'links' },
   { icon: Award, label: 'Badges', tab: 'badges' },
+  { icon: ShoppingBag, label: 'Marketplace', tab: 'marketplace' },
   { icon: Settings, label: 'Settings', tab: 'settings' },
 ];
 
@@ -1353,6 +1357,11 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* Marketplace Tab */}
+            {activeTab === 'marketplace' && (
+              <MarketplacePage />
+            )}
+
             {/* Admin Tab */}
             {activeTab === 'admin' && isAdmin && (
               <div className="space-y-4 max-w-6xl">
@@ -1437,6 +1446,11 @@ export default function Dashboard() {
                 {/* Support Tickets - Full Width */}
                 <div className="glass-card p-6">
                   <AdminSupportTickets />
+                </div>
+
+                {/* Marketplace Approvals */}
+                <div className="glass-card p-6">
+                  <AdminMarketplaceManager />
                 </div>
 
                 {/* Promo Codes Manager - Full Width */}

@@ -8,7 +8,8 @@ import {
   Settings,
   LogOut,
   Eye,
-  Crown
+  Crown,
+  ShoppingBag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ const navItems = [
   { icon: Palette, label: 'Appearance', href: '/dashboard', tab: 'appearance' },
   { icon: Link2, label: 'Links', href: '/dashboard', tab: 'links' },
   { icon: Sparkles, label: 'Effects', href: '/dashboard', tab: 'effects' },
+  { icon: ShoppingBag, label: 'Marketplace', href: '/dashboard', tab: 'marketplace' },
 ];
 
 export function Sidebar({ username, onSignOut, isPremium = false }: SidebarProps) {
