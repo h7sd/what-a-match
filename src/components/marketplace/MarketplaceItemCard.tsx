@@ -130,7 +130,7 @@ export function MarketplaceItemCard({ item, isOwner, isPurchased, userBalance }:
         <CardFooter className="p-4 pt-0 flex justify-between items-center">
           <div className="flex items-center gap-1.5 font-bold text-amber-500">
             <Coins className="w-4 h-4" />
-            <span>{item.price.toLocaleString()} UV</span>
+            <span>{item.price.toLocaleString()} UC</span>
           </div>
           
           {!isOwner && !isPurchased && item.status === 'approved' && !isSoldOut && (
@@ -141,7 +141,7 @@ export function MarketplaceItemCard({ item, isOwner, isPurchased, userBalance }:
               className="gap-1.5"
             >
               <ShoppingCart className="w-4 h-4" />
-              {canAfford ? 'Buy' : 'Not enough UV'}
+              {canAfford ? 'Buy' : 'Not enough UC'}
             </Button>
           )}
           
@@ -159,9 +159,9 @@ export function MarketplaceItemCard({ item, isOwner, isPurchased, userBalance }:
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>You're about to purchase <strong>{name}</strong> for <strong>{item.price.toLocaleString()} UV</strong>.</p>
+              <p>You're about to purchase <strong>{name}</strong> for <strong>{item.price.toLocaleString()} UC</strong>.</p>
               <p className="text-sm">
-                Your balance after purchase: <strong>{(userBalance - item.price).toLocaleString()} UV</strong>
+                Your balance after purchase: <strong>{(userBalance - item.price).toLocaleString()} UC</strong>
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>

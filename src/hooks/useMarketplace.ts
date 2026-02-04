@@ -38,7 +38,7 @@ export interface UserBalance {
   updated_at: string;
 }
 
-export interface UVTransaction {
+export interface UCTransaction {
   id: string;
   user_id: string;
   amount: number;
@@ -49,7 +49,7 @@ export interface UVTransaction {
   created_at: string;
 }
 
-// Get user's UV balance
+// Get user's UC balance
 export function useUserBalance() {
   const { user } = useAuth();
   
@@ -66,7 +66,7 @@ export function useUserBalance() {
       
       if (error && error.code !== 'PGRST116') throw error;
       
-      // If no balance exists, create one with 1000 UV
+      // If no balance exists, create one with 1000 UC
       if (!data) {
         const { data: newBalance, error: insertError } = await supabase
           .from('user_balances')
@@ -84,12 +84,12 @@ export function useUserBalance() {
   });
 }
 
-// Get UV transaction history
-export function useUVTransactions() {
+// Get UC transaction history
+export function useUCTransactions() {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['uvTransactions', user?.id],
+    queryKey: ['ucTransactions', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       
@@ -101,7 +101,7 @@ export function useUVTransactions() {
         .limit(50);
       
       if (error) throw error;
-      return data as UVTransaction[];
+      return data as UCTransaction[];
     },
     enabled: !!user?.id,
   });
@@ -254,7 +254,7 @@ export function usePurchaseItem() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userBalance'] });
-      queryClient.invalidateQueries({ queryKey: ['uvTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['ucTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['marketplaceItems'] });
       queryClient.invalidateQueries({ queryKey: ['myPurchases'] });
       queryClient.invalidateQueries({ queryKey: ['userBadges'] });

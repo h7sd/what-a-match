@@ -1,10 +1,10 @@
 import { format } from 'date-fns';
 import { ArrowDownLeft, ArrowUpRight, Gift, Coins, Gamepad2, ShoppingBag } from 'lucide-react';
-import { UVTransaction } from '@/hooks/useMarketplace';
+import { UCTransaction } from '@/hooks/useMarketplace';
 import { cn } from '@/lib/utils';
 
 interface TransactionHistoryProps {
-  transactions: UVTransaction[];
+  transactions: UCTransaction[];
 }
 
 export function TransactionHistory({ transactions }: TransactionHistoryProps) {
@@ -56,7 +56,7 @@ export function TransactionHistory({ transactions }: TransactionHistoryProps) {
             "font-bold",
             tx.amount > 0 ? 'text-green-500' : 'text-red-500'
           )}>
-            {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString()} UV
+            {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString()} UC
           </div>
         </div>
       ))}
