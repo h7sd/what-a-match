@@ -116,9 +116,9 @@ export function FriendBadgesManager() {
       return;
     }
     
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: 'Image must be less than 2MB', variant: 'destructive' });
+    // Validate file size (max 100MB)
+    if (file.size > 100 * 1024 * 1024) {
+      toast({ title: 'Image must be less than 100MB', variant: 'destructive' });
       return;
     }
     
@@ -380,7 +380,7 @@ export function FriendBadgesManager() {
                     Upload Icon
                   </Button>
                 )}
-                <p className="text-xs text-muted-foreground">Max 2MB, PNG/JPG/GIF</p>
+                <p className="text-xs text-muted-foreground">Max 100MB, PNG/JPG/GIF</p>
               </div>
 
               <Button 
