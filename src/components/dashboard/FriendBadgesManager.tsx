@@ -102,29 +102,45 @@ export function FriendBadgesManager() {
     setSelectedRecipient({ id: data.user_id, username: data.username });
   };
 
-  // Create badge mutation
+  // Create badge mutation - creates badge for both recipient AND creator
   const createBadge = useMutation({
     mutationFn: async () => {
       if (!selectedRecipient || !newBadge.name.trim()) {
         throw new Error('Please select a recipient and enter a badge name');
       }
       
-      const { error } = await supabase
+      const badgeData = {
+        name: newBadge.name.trim(),
+        description: newBadge.description.trim() || null,
+        color: newBadge.color,
+        icon_url: newBadge.icon_url.trim() || null,
+      };
+      
+      // Insert badge for recipient
+      const { error: recipientError } = await supabase
         .from('friend_badges')
         .insert({
           creator_id: user!.id,
           recipient_id: selectedRecipient.id,
-          name: newBadge.name.trim(),
-          description: newBadge.description.trim() || null,
-          color: newBadge.color,
-          icon_url: newBadge.icon_url.trim() || null,
+          ...badgeData,
         });
       
-      if (error) throw error;
+      if (recipientError) throw recipientError;
+      
+      // Insert badge for creator (themselves)
+      const { error: creatorError } = await supabase
+        .from('friend_badges')
+        .insert({
+          creator_id: user!.id,
+          recipient_id: user!.id,
+          ...badgeData,
+        });
+      
+      if (creatorError) throw creatorError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friendBadges'] });
-      toast({ title: 'Badge created and sent!' });
+      toast({ title: 'Badge created! Both you and your friend received it.' });
       setIsCreateOpen(false);
       setSelectedRecipient(null);
       setSearchUsername('');
