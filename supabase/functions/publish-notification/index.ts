@@ -256,14 +256,16 @@ Deno.serve(async (req) => {
     })
 
     // Prepare payload with dynamic content based on type
+    // For announcements, include @everyone
     const contentMessage = isAnnouncement 
-      ? `${roleMentions} **New Announcement!**`
+      ? `@everyone ${roleMentions} **New Announcement!**`
       : `${roleMentions} **Website Update Published!**`
     
     const payload = {
       content: contentMessage,
       embeds: [embed],
       allowed_mentions: {
+        everyone: isAnnouncement, // Allow @everyone only for announcements
         roles: rolesToMention
       }
     }
