@@ -78,24 +78,27 @@ const CardSwap: React.FC<CardSwapProps> = ({
   easing = 'elastic',
   children
 }) => {
-  const config =
-    easing === 'elastic'
-      ? {
-          ease: 'elastic.out(0.6,0.9)',
-          durDrop: 2,
-          durMove: 2,
-          durReturn: 2,
-          promoteOverlap: 0.9,
-          returnDelay: 0.05
-        }
-      : {
-          ease: 'power1.inOut',
-          durDrop: 0.8,
-          durMove: 0.8,
-          durReturn: 0.8,
-          promoteOverlap: 0.45,
-          returnDelay: 0.2
-        };
+  const config = useMemo(
+    () =>
+      easing === 'elastic'
+        ? {
+            ease: 'elastic.out(0.6,0.9)',
+            durDrop: 2,
+            durMove: 2,
+            durReturn: 2,
+            promoteOverlap: 0.9,
+            returnDelay: 0.05
+          }
+        : {
+            ease: 'power1.inOut',
+            durDrop: 0.8,
+            durMove: 0.8,
+            durReturn: 0.8,
+            promoteOverlap: 0.45,
+            returnDelay: 0.2
+          },
+    [easing]
+  );
 
   const childArr = useMemo(() => Children.toArray(children) as ReactElement<CardProps>[], [children]);
   const refs = useMemo<CardRef[]>(() => childArr.map(() => React.createRef<HTMLDivElement>()), [childArr.length]);
@@ -105,6 +108,16 @@ const CardSwap: React.FC<CardSwapProps> = ({
   const safetyTimeoutRef = useRef<number>(0);
   const intervalRef = useRef<number>(0);
   const container = useRef<HTMLDivElement>(null);
+  const onCardSwapRef = useRef<typeof onCardSwap>(onCardSwap);
+  const onCardClickRef = useRef<typeof onCardClick>(onCardClick);
+
+  useEffect(() => {
+    onCardSwapRef.current = onCardSwap;
+  }, [onCardSwap]);
+
+  useEffect(() => {
+    onCardClickRef.current = onCardClick;
+  }, [onCardClick]);
 
   useEffect(() => {
     const total = refs.length;
@@ -140,8 +153,13 @@ const CardSwap: React.FC<CardSwapProps> = ({
       tlRef.current = tl;
       isSwappingRef.current = true;
 
+      // Ensure predictable visual state each cycle
+      gsap.set(elFront, { opacity: 1, filter: 'blur(0px)' });
+
       tl.to(elFront, {
         y: '+=500',
+        opacity: 0,
+        filter: 'blur(10px)',
         duration: config.durDrop,
         ease: config.ease
       });
@@ -191,11 +209,22 @@ const CardSwap: React.FC<CardSwapProps> = ({
       tl.call(() => {
         order.current = [...rest, front];
         // Notify parent that front card swapped to the back
-        onCardSwap?.(front);
+        onCardSwapRef.current?.(front);
       });
+
+      // Reveal card again once it's in the back (after React had a moment to swap content)
+      tl.to(
+        elFront,
+        {
+          opacity: 1,
+          filter: 'blur(0px)',
+          duration: 0.25,
+          ease: 'power1.out'
+        },
+        '+=0.05'
+      );
     };
 
-    swap();
     intervalRef.current = window.setInterval(swap, delay);
 
     if (pauseOnHover && container.current) {
@@ -226,7 +255,7 @@ const CardSwap: React.FC<CardSwapProps> = ({
       window.clearTimeout(safetyTimeoutRef.current);
       clearInterval(intervalRef.current);
     };
-  }, [cardDistance, verticalDistance, delay, pauseOnHover, skewAmount, easing, refs, config]);
+  }, [cardDistance, verticalDistance, delay, pauseOnHover, skewAmount, refs, config]);
 
   const rendered = childArr.map((child, i) =>
     isValidElement<CardProps>(child)
@@ -236,7 +265,7 @@ const CardSwap: React.FC<CardSwapProps> = ({
           style: { width, height, ...(child.props.style ?? {}) },
           onClick: e => {
             child.props.onClick?.(e as React.MouseEvent<HTMLDivElement>);
-            onCardClick?.(i);
+            onCardClickRef.current?.(i);
           }
         } as CardProps & React.RefAttributes<HTMLDivElement>)
       : child
