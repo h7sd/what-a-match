@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Coins, Search, ShoppingBag, Tag, Palette, Plus, History, TrendingUp } from 'lucide-react';
-import { useUserBalance, useMarketplaceItems, useMyMarketplaceItems, useMyPurchases, useUVTransactions } from '@/hooks/useMarketplace';
+import { useUserBalance, useMarketplaceItems, useMyMarketplaceItems, useMyPurchases, useUCTransactions } from '@/hooks/useMarketplace';
 import { MarketplaceItemCard } from './MarketplaceItemCard';
 import { CreateListingDialog } from './CreateListingDialog';
 import { TransactionHistory } from './TransactionHistory';
@@ -19,7 +19,7 @@ export function MarketplacePage() {
   const { data: items, isLoading: itemsLoading } = useMarketplaceItems();
   const { data: myItems } = useMyMarketplaceItems();
   const { data: myPurchases } = useMyPurchases();
-  const { data: transactions } = useUVTransactions();
+  const { data: transactions } = useUCTransactions();
   
   const filteredItems = items?.filter(item => {
     const matchesSearch = 
@@ -49,7 +49,7 @@ export function MarketplacePage() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30">
             <Coins className="w-5 h-5 text-amber-500" />
-            <span className="font-bold text-amber-500">{balance?.balance?.toLocaleString() || 0} UV</span>
+            <span className="font-bold text-amber-500">{balance?.balance?.toLocaleString() || 0} UC</span>
           </div>
           <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
             <Plus className="w-4 h-4" />
@@ -192,10 +192,10 @@ export function MarketplacePage() {
 
         <TabsContent value="history" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">UV Transaction History</h2>
+            <h2 className="text-lg font-semibold">UC Transaction History</h2>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <TrendingUp className="w-4 h-4 text-green-500" />
-              <span>Total Earned: {balance?.total_earned?.toLocaleString() || 0} UV</span>
+              <span>Total Earned: {balance?.total_earned?.toLocaleString() || 0} UC</span>
             </div>
           </div>
           

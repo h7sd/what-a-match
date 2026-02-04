@@ -86,7 +86,7 @@ export function CreateListingDialog({ open, onOpenChange }: CreateListingDialogP
       return;
     }
     if (price < 1 || price > 10000) {
-      toast.error('Price must be between 1 and 10,000 UV');
+      toast.error('Price must be between 1 and 10,000 UC');
       return;
     }
     if (saleType === 'limited' && stockLimit < 1) {
@@ -305,7 +305,7 @@ export function CreateListingDialog({ open, onOpenChange }: CreateListingDialogP
 
           {/* Price */}
           <div className="space-y-2">
-            <Label htmlFor="price">Price (UV)</Label>
+            <Label htmlFor="price">Price (UC)</Label>
             <div className="relative">
               <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
               <Input
@@ -318,7 +318,7 @@ export function CreateListingDialog({ open, onOpenChange }: CreateListingDialogP
                 className="pl-10"
               />
             </div>
-            <p className="text-xs text-muted-foreground">Price must be between 1 and 10,000 UV</p>
+            <p className="text-xs text-muted-foreground">Price must be between 1 and 10,000 UC</p>
           </div>
 
           <Button 
