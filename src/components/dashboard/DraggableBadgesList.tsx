@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Check, X, Loader2, Lock, GripVertical, Palette } from 'lucide-react';
+import { Check, X, Loader2, Lock, GripVertical, Palette, Target } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { getBadgeIcon } from '@/lib/badges';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { useActiveHuntEvent } from '@/hooks/useActiveHuntEvent';
 import {
   DndContext,
   closestCenter,
@@ -49,13 +50,15 @@ function SortableBadgeItem({
   onToggle, 
   onColorChange,
   updating,
-  isLocked 
+  isLocked,
+  isHuntTarget,
 }: { 
   userBadge: UserBadgeWithEnabled;
   onToggle: (id: string, enabled: boolean) => void;
   onColorChange: (id: string, color: string | null) => void;
   updating: string | null;
   isLocked: boolean;
+  isHuntTarget: boolean;
 }) {
   const {
     attributes,
@@ -164,13 +167,19 @@ function SortableBadgeItem({
         </Popover>
 
         <div className="flex items-center gap-2">
+          {isHuntTarget && isEnabled && (
+            <div className="flex items-center gap-1 text-emerald-400 text-xs">
+              <Target className="w-3 h-3" />
+              <span>Hunt</span>
+            </div>
+          )}
           {updating === userBadge.id ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <Switch
               checked={isEnabled}
               onCheckedChange={() => onToggle(userBadge.id, isEnabled)}
-              disabled={isLocked}
+              disabled={isLocked || (isHuntTarget && isEnabled)}
             />
           )}
         </div>
@@ -197,6 +206,9 @@ export function DraggableBadgesList({ userBadges, userId }: DraggableBadgesListP
   const [localBadges, setLocalBadges] = useState(userBadges);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { data: activeHuntEvent } = useActiveHuntEvent();
+  
+  const huntTargetBadgeId = activeHuntEvent?.target_badge_id ?? null;
 
   // Update local state when props change
   useState(() => {
@@ -330,6 +342,7 @@ export function DraggableBadgesList({ userBadges, userId }: DraggableBadgesListP
                     onColorChange={handleColorChange}
                     updating={updating}
                     isLocked={false}
+                    isHuntTarget={ub.badge_id === huntTargetBadgeId}
                   />
                 ))}
               </div>
