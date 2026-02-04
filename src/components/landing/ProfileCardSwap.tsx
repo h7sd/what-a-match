@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import CardSwap, { Card } from '@/components/ui/CardSwap';
-import { Sparkles, Eye, MapPin, Briefcase, AtSign } from 'lucide-react';
+import { Sparkles, Eye, AtSign } from 'lucide-react';
+import { OrbitingAvatar } from '@/components/profile/OrbitingAvatar';
 
 interface ProfileWithBadges {
   id: string;
@@ -21,7 +22,14 @@ interface ProfileWithBadges {
   profile_opacity: number | null;
   profile_blur: number | null;
   card_color: string | null;
+  card_border_enabled: boolean | null;
+  card_border_color: string | null;
+  card_border_width: number | null;
+  avatar_shape: string | null;
+  name_font: string | null;
+  glow_username: boolean | null;
   badges: {
+    id: string;
     name: string;
     color: string | null;
     icon_url: string | null;
@@ -32,10 +40,15 @@ function useRandomProfilesWithBadges() {
   return useQuery({
     queryKey: ['card-swap-profiles'],
     queryFn: async () => {
-      // Get random profiles with full preview fields
+      // Get random profiles with full customization fields
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, bio, views_count, accent_color, location, occupation, background_url, background_video_url, profile_opacity, profile_blur, card_color')
+        .select(`
+          id, username, display_name, avatar_url, bio, views_count, accent_color, 
+          location, occupation, background_url, background_video_url, 
+          profile_opacity, profile_blur, card_color, card_border_enabled,
+          card_border_color, card_border_width, avatar_shape, name_font, glow_username
+        `)
         .limit(50);
       
       if (profilesError) throw profilesError;
@@ -52,6 +65,7 @@ function useRandomProfilesWithBadges() {
             .select(`
               badge_id,
               global_badges (
+                id,
                 name,
                 color,
                 icon_url
@@ -80,13 +94,17 @@ function useRandomProfilesWithBadges() {
   });
 }
 
-function ProfileCardContent({ profile }: { profile: ProfileWithBadges }) {
-  const accentColor = profile.accent_color || '#10b981';
-  const cardColor = profile.card_color || 'rgba(0,0,0,0.7)';
+function MiniProfileCard({ profile }: { profile: ProfileWithBadges }) {
+  const accentColor = profile.accent_color || '#8b5cf6';
+  const cardColor = profile.card_color || 'rgba(0,0,0,0.6)';
+  const borderEnabled = profile.card_border_enabled !== false;
+  const borderColor = profile.card_border_color || accentColor;
+  const borderWidth = profile.card_border_width || 1;
+  const avatarShape = (profile.avatar_shape || 'circle') as 'circle' | 'rounded' | 'soft' | 'square';
+  const hasBackground = profile.background_url || profile.background_video_url;
   const opacity = profile.profile_opacity ?? 80;
   const blur = profile.profile_blur ?? 12;
-  const hasBackground = profile.background_url || profile.background_video_url;
-  
+
   return (
     <Link to={`/${profile.username}`} className="block w-full h-full group">
       <div className="relative w-full h-full flex flex-col overflow-hidden rounded-2xl">
@@ -125,49 +143,48 @@ function ProfileCardContent({ profile }: { profile: ProfileWithBadges }) {
           <div 
             className="absolute inset-0 z-0"
             style={{
-              background: `linear-gradient(145deg, ${accentColor}20, rgba(0,0,0,0.9), ${accentColor}10)`
+              background: `linear-gradient(145deg, ${accentColor}15, rgba(0,0,0,0.95), ${accentColor}10)`
             }}
           />
         )}
 
         {/* Animated glow effect behind card */}
         <motion.div
-          className="absolute -inset-1 rounded-2xl opacity-40 blur-2xl z-[-1]"
+          className="absolute -inset-1 rounded-2xl opacity-50 blur-xl z-[-1]"
           style={{
             background: `linear-gradient(135deg, ${accentColor}, ${accentColor}60, transparent)`,
           }}
           animate={{
-            opacity: [0.2, 0.4, 0.2],
+            opacity: [0.3, 0.5, 0.3],
           }}
           transition={{
-            duration: 4,
+            duration: 3,
             repeat: Infinity,
             ease: 'easeInOut',
           }}
         />
 
-        {/* Card Content */}
+        {/* Card Content - Like real ProfileCard */}
         <div
-          className="relative z-10 rounded-2xl p-6 flex flex-col h-full"
+          className="relative z-10 rounded-2xl p-6 flex flex-col h-full backdrop-blur-xl overflow-hidden"
           style={{
-            backgroundColor: hasBackground ? `${cardColor}80` : cardColor,
-            backdropFilter: hasBackground ? `blur(${blur}px)` : undefined,
-            border: `1px solid ${accentColor}30`,
+            backgroundColor: hasBackground ? `${cardColor}90` : cardColor,
+            border: borderEnabled ? `${borderWidth}px solid ${borderColor}30` : 'none',
           }}
         >
-          {/* Corner sparkle decorations */}
+          {/* Corner sparkle decorations - matching ProfileCard */}
           <motion.div
             className="absolute top-4 right-4 text-lg"
-            animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
-            transition={{ duration: 2.5, repeat: Infinity }}
+            animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1, 0.8] }}
+            transition={{ duration: 2, repeat: Infinity }}
             style={{ color: accentColor }}
           >
             ✦
           </motion.div>
           <motion.div
-            className="absolute bottom-4 left-4 text-sm"
-            animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.8, 1, 0.8] }}
-            transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
+            className="absolute bottom-4 right-4 text-lg"
+            animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1, 0.8] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 1 }}
             style={{ color: accentColor }}
           >
             ✦
@@ -175,45 +192,53 @@ function ProfileCardContent({ profile }: { profile: ProfileWithBadges }) {
 
           {/* Gradient border glow */}
           <div
-            className="absolute inset-0 rounded-2xl opacity-20 pointer-events-none"
+            className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
             style={{
-              background: `linear-gradient(135deg, ${accentColor}40, transparent 40%, transparent 60%, ${accentColor}30)`,
+              background: `linear-gradient(135deg, ${accentColor}30, transparent 50%, ${accentColor}20)`,
             }}
           />
 
           <div className="relative z-10 flex flex-col items-center text-center flex-1 justify-center">
-            {/* Avatar with glow ring - larger */}
-            <div className="mb-5 relative">
-              <div 
-                className="absolute -inset-2 rounded-full blur-lg opacity-60"
-                style={{ background: accentColor }}
-              />
-              <div 
-                className="relative w-24 h-24 rounded-full overflow-hidden"
-                style={{ 
-                  boxShadow: `0 0 20px ${accentColor}50, 0 0 0 2px ${accentColor}60`
-                }}
-              >
-                {profile.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt={profile.display_name || profile.username}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div 
-                    className="w-full h-full flex items-center justify-center text-3xl font-bold"
-                    style={{ backgroundColor: `${accentColor}30`, color: accentColor }}
-                  >
-                    {(profile.display_name || profile.username).charAt(0).toUpperCase()}
-                  </div>
-                )}
+            {/* Avatar with OrbitingAvatar component - like real profile */}
+            {profile.avatar_url && (
+              <div className="mb-5">
+                <OrbitingAvatar
+                  avatarUrl={profile.avatar_url}
+                  displayName={profile.display_name || profile.username}
+                  size={100}
+                  accentColor={accentColor}
+                  shape={avatarShape}
+                />
               </div>
-            </div>
+            )}
 
-            {/* Display Name - larger */}
+            {/* Fallback avatar if no image */}
+            {!profile.avatar_url && (
+              <div className="mb-5 relative">
+                <div 
+                  className="absolute -inset-2 rounded-full blur-lg opacity-50"
+                  style={{ background: accentColor }}
+                />
+                <div 
+                  className="relative w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold"
+                  style={{ 
+                    backgroundColor: `${accentColor}30`, 
+                    color: accentColor,
+                    boxShadow: `0 0 20px ${accentColor}40`
+                  }}
+                >
+                  {(profile.display_name || profile.username).charAt(0).toUpperCase()}
+                </div>
+              </div>
+            )}
+
+            {/* Display Name - with font from profile */}
             <h3 
               className="text-2xl font-bold text-white mb-1 drop-shadow-lg"
+              style={{ 
+                fontFamily: profile.name_font || 'Inter',
+                textShadow: profile.glow_username ? `0 0 20px ${accentColor}` : undefined
+              }}
             >
               {profile.display_name || profile.username}
             </h3>
@@ -224,59 +249,45 @@ function ProfileCardContent({ profile }: { profile: ProfileWithBadges }) {
               {profile.username}
             </p>
 
-            {/* Badges - larger pills */}
+            {/* Badges - matching ProfileCard style */}
             {profile.badges.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-2 mb-4 px-3">
-                {profile.badges.slice(0, 4).map((badge, idx) => (
+              <div className="inline-flex items-center justify-center -space-x-1 mb-4 px-2.5 py-1 rounded-full border border-white/10 bg-black/20 backdrop-blur-sm">
+                {profile.badges.slice(0, 5).map((badge) => (
                   <div
-                    key={idx}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-md shadow-lg"
+                    key={badge.id}
+                    className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-black/50"
                     style={{
-                      backgroundColor: badge.color ? `${badge.color}25` : 'rgba(255,255,255,0.1)',
-                      border: `1px solid ${badge.color || 'rgba(255,255,255,0.2)'}50`,
-                      color: badge.color || '#fff',
-                      boxShadow: badge.color ? `0 0 10px ${badge.color}30` : undefined
+                      backgroundColor: badge.color ? `${badge.color}30` : 'rgba(255,255,255,0.1)',
+                      boxShadow: badge.color ? `0 0 8px ${badge.color}40` : undefined
                     }}
+                    title={badge.name}
                   >
-                    {badge.icon_url && (
-                      <img src={badge.icon_url} alt="" className="w-4 h-4" />
+                    {badge.icon_url ? (
+                      <img src={badge.icon_url} alt={badge.name} className="w-4 h-4" />
+                    ) : (
+                      <span className="text-xs" style={{ color: badge.color || '#fff' }}>
+                        {badge.name.charAt(0)}
+                      </span>
                     )}
-                    <span className="truncate max-w-[70px]">{badge.name}</span>
                   </div>
                 ))}
-                {profile.badges.length > 4 && (
-                  <div className="flex items-center px-2 py-1 rounded-full text-xs text-muted-foreground bg-white/5">
-                    +{profile.badges.length - 4}
+                {profile.badges.length > 5 && (
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-black/50 bg-white/5 text-xs text-muted-foreground">
+                    +{profile.badges.length - 5}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Bio - more space */}
+            {/* Bio */}
             {profile.bio && (
-              <p className="text-muted-foreground text-sm max-w-[280px] leading-relaxed mb-4 line-clamp-3">
+              <p className="text-muted-foreground text-sm max-w-[260px] leading-relaxed mb-4 line-clamp-2">
                 {profile.bio}
               </p>
             )}
 
-            {/* Location & Occupation */}
-            <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground mb-4">
-              {profile.occupation && (
-                <div className="flex items-center gap-1.5">
-                  <Briefcase className="w-4 h-4" />
-                  <span className="truncate max-w-[100px]">{profile.occupation}</span>
-                </div>
-              )}
-              {profile.location && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4" />
-                  <span className="truncate max-w-[100px]">{profile.location}</span>
-                </div>
-              )}
-            </div>
-
             {/* Views - at bottom */}
-            <div className="mt-auto pt-4 flex items-center justify-center gap-1.5 text-sm text-muted-foreground border-t border-white/10 w-full">
+            <div className="mt-auto pt-3 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
               <Eye className="w-4 h-4" />
               <span>{(profile.views_count || 0).toLocaleString()} views</span>
             </div>
@@ -284,9 +295,10 @@ function ProfileCardContent({ profile }: { profile: ProfileWithBadges }) {
         </div>
 
         {/* Hover effect */}
-        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        <div 
+          className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
           style={{
-            boxShadow: `0 0 40px ${accentColor}40, inset 0 0 20px ${accentColor}10`
+            boxShadow: `0 0 40px ${accentColor}30, inset 0 0 20px ${accentColor}10`
           }}
         />
       </div>
@@ -348,7 +360,7 @@ export function ProfileCardSwap() {
             </p>
           </motion.div>
 
-          {/* Right side - Card Swap - MUCH BIGGER */}
+          {/* Right side - Card Swap */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={isInView ? { opacity: 1, scale: 1 } : {}}
@@ -367,7 +379,7 @@ export function ProfileCardSwap() {
             >
               {profiles.map((profile) => (
                 <Card key={profile.id} className="!bg-transparent !border-0">
-                  <ProfileCardContent profile={profile} />
+                  <MiniProfileCard profile={profile} />
                 </Card>
               ))}
             </CardSwap>
