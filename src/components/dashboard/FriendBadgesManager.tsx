@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gift, Plus, Trash2, User, Loader2, Search, X } from 'lucide-react';
+import { Gift, Plus, Trash2, User, Loader2, Search, X, Upload, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,11 +31,14 @@ export function FriendBadgesManager() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [searchUsername, setSearchUsername] = useState('');
   const [selectedRecipient, setSelectedRecipient] = useState<{ id: string; username: string } | null>(null);
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconPreview, setIconPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [newBadge, setNewBadge] = useState({
     name: '',
     description: '',
     color: '#8B5CF6',
-    icon_url: '',
   });
 
   // Fetch created badges
@@ -102,6 +105,47 @@ export function FriendBadgesManager() {
     setSelectedRecipient({ id: data.user_id, username: data.username });
   };
 
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Please select an image file', variant: 'destructive' });
+      return;
+    }
+    
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Image must be less than 2MB', variant: 'destructive' });
+      return;
+    }
+    
+    setIconFile(file);
+    setIconPreview(URL.createObjectURL(file));
+  };
+
+  // Upload file to storage
+  const uploadIcon = async (): Promise<string | null> => {
+    if (!iconFile || !user?.id) return null;
+    
+    const fileExt = iconFile.name.split('.').pop();
+    const fileName = `${user.id}/friend-badges/${crypto.randomUUID()}.${fileExt}`;
+    
+    const { error } = await supabase.storage
+      .from('profile-assets')
+      .upload(fileName, iconFile, { contentType: iconFile.type });
+    
+    if (error) throw error;
+    
+    const { data: urlData } = supabase.storage
+      .from('profile-assets')
+      .getPublicUrl(fileName);
+    
+    return urlData.publicUrl;
+  };
+
   // Create badge mutation - creates badge for both recipient AND creator
   const createBadge = useMutation({
     mutationFn: async () => {
@@ -109,11 +153,19 @@ export function FriendBadgesManager() {
         throw new Error('Please select a recipient and enter a badge name');
       }
       
+      setIsUploading(true);
+      
+      // Upload icon if selected
+      let iconUrl: string | null = null;
+      if (iconFile) {
+        iconUrl = await uploadIcon();
+      }
+      
       const badgeData = {
         name: newBadge.name.trim(),
         description: newBadge.description.trim() || null,
         color: newBadge.color,
-        icon_url: newBadge.icon_url.trim() || null,
+        icon_url: iconUrl,
       };
       
       // Insert badge for recipient
@@ -144,9 +196,13 @@ export function FriendBadgesManager() {
       setIsCreateOpen(false);
       setSelectedRecipient(null);
       setSearchUsername('');
-      setNewBadge({ name: '', description: '', color: '#8B5CF6', icon_url: '' });
+      setNewBadge({ name: '', description: '', color: '#8B5CF6' });
+      setIconFile(null);
+      setIconPreview(null);
+      setIsUploading(false);
     },
     onError: (error: any) => {
+      setIsUploading(false);
       toast({ title: error.message || 'Failed to create badge', variant: 'destructive' });
     },
   });
@@ -280,22 +336,59 @@ export function FriendBadgesManager() {
                 </div>
               </div>
 
-              {/* Icon URL */}
+              {/* Icon Upload */}
               <div className="space-y-2">
-                <Label>Icon URL (optional)</Label>
-                <Input
-                  value={newBadge.icon_url}
-                  onChange={(e) => setNewBadge(prev => ({ ...prev, icon_url: e.target.value }))}
-                  placeholder="https://..."
+                <Label>Badge Icon (optional)</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
                 />
+                
+                {iconPreview ? (
+                  <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
+                    <img 
+                      src={iconPreview} 
+                      alt="Badge preview" 
+                      className="w-10 h-10 rounded-lg object-cover"
+                    />
+                    <span className="text-sm text-muted-foreground flex-1 truncate">
+                      {iconFile?.name}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setIconFile(null);
+                        setIconPreview(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Icon
+                  </Button>
+                )}
+                <p className="text-xs text-muted-foreground">Max 2MB, PNG/JPG/GIF</p>
               </div>
 
               <Button 
                 className="w-full" 
                 onClick={() => createBadge.mutate()}
-                disabled={!selectedRecipient || !newBadge.name.trim() || createBadge.isPending}
+                disabled={!selectedRecipient || !newBadge.name.trim() || createBadge.isPending || isUploading}
               >
-                {createBadge.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {(createBadge.isPending || isUploading) ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Send Badge
               </Button>
             </div>
