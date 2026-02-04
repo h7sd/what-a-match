@@ -107,19 +107,19 @@ export function EventAnnouncementBanner() {
   if (visibleEvents.length === 0) return null;
 
   return (
-    <div className="fixed left-0 right-0 z-[100] pointer-events-none top-[var(--event-banner-top,80px)]">
-      <div className="flex flex-col">
+    <div className="fixed left-1/2 -translate-x-1/2 z-[100] pointer-events-none top-[var(--event-banner-top,80px)]">
+      <div className="flex flex-col gap-2 items-center">
         <AnimatePresence mode="popLayout">
           {visibleEvents.map((event, index) => (
             <motion.div
               key={event.id}
               layout
-              initial={{ y: -60, opacity: 0, scale: 0.95 }}
+              initial={{ y: -30, opacity: 0, scale: 0.9 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ 
-                y: -60, 
+                y: -30, 
                 opacity: 0, 
-                scale: 0.95,
+                scale: 0.9,
                 transition: { duration: 0.2 }
               }}
               transition={{ 
@@ -132,15 +132,16 @@ export function EventAnnouncementBanner() {
             >
               <div 
                 className={`
-                  relative overflow-hidden backdrop-blur-md
+                  relative overflow-hidden backdrop-blur-xl rounded-full shadow-lg
+                  border border-white/20
                   ${event.event_type === 'steal' 
-                    ? 'bg-gradient-to-r from-red-600/95 via-orange-500/95 to-red-600/95' 
-                    : 'bg-gradient-to-r from-emerald-600/95 via-teal-500/95 to-emerald-600/95'}
+                    ? 'bg-gradient-to-r from-red-600/90 via-orange-500/90 to-red-600/90' 
+                    : 'bg-gradient-to-r from-emerald-600/90 via-teal-500/90 to-emerald-600/90'}
                 `}
               >
                 {/* Animated shine effect */}
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
                   initial={{ x: '-100%' }}
                   animate={{ x: '200%' }}
                   transition={{ 
@@ -152,7 +153,7 @@ export function EventAnnouncementBanner() {
                 />
 
                 {/* Content */}
-                <div className="relative px-3 py-1.5 flex items-center justify-center gap-2">
+                <div className="relative px-4 py-2 flex items-center gap-3">
                   {/* Icon with pulse */}
                   <motion.div
                     animate={{ 
@@ -167,22 +168,16 @@ export function EventAnnouncementBanner() {
                     className="flex-shrink-0"
                   >
                     {event.event_type === 'steal' ? (
-                      <Target className="w-3.5 h-3.5 text-white drop-shadow-lg" />
+                      <Target className="w-4 h-4 text-white drop-shadow-lg" />
                     ) : (
-                      <Sparkles className="w-3.5 h-3.5 text-white drop-shadow-lg" />
+                      <Sparkles className="w-4 h-4 text-white drop-shadow-lg" />
                     )}
                   </motion.div>
                   
                   {/* Text content */}
-                  <div className="flex items-center gap-1 text-white text-xs font-medium">
-                    <span className="font-bold tracking-wide">{event.name}</span>
-                    <span className="hidden sm:inline text-white/80 font-normal">
-                      —
-                      {event.event_type === 'steal' 
-                        ? ' Steal badges from other users!' 
-                        : ' Find the hidden badge!'}
-                    </span>
-                  </div>
+                  <span className="text-white text-sm font-bold tracking-wide whitespace-nowrap">
+                    {event.name}
+                  </span>
 
                   {/* Action Button */}
                   <HuntButton event={event} />
@@ -190,7 +185,7 @@ export function EventAnnouncementBanner() {
                   {/* Close button */}
                   <motion.button
                     onClick={() => setDismissed(prev => [...prev, event.id])}
-                    className="p-1 hover:bg-black/20 rounded-full transition-colors flex-shrink-0"
+                    className="p-1 hover:bg-black/20 rounded-full transition-colors flex-shrink-0 ml-1"
                     aria-label="Close"
                     whileHover={{ scale: 1.1, rotate: 90 }}
                     whileTap={{ scale: 0.9 }}
@@ -199,15 +194,6 @@ export function EventAnnouncementBanner() {
                     <X className="w-3.5 h-3.5 text-white/80" />
                   </motion.button>
                 </div>
-
-                {/* Bottom border glow */}
-                <div 
-                  className={`absolute bottom-0 left-0 right-0 h-px ${
-                    event.event_type === 'steal' 
-                      ? 'bg-gradient-to-r from-transparent via-orange-300/50 to-transparent' 
-                      : 'bg-gradient-to-r from-transparent via-teal-300/50 to-transparent'
-                  }`}
-                />
               </div>
             </motion.div>
           ))}
