@@ -249,9 +249,10 @@ Deno.serve(async (req) => {
     }
 
     // Add link to the website
+    // Use the vanity domain to avoid Discord showing the Lovable app domain.
     embed.fields.push({
       name: '🔗 Website',
-      value: '[View Live Site](https://what-a-match.lovable.app)',
+      value: '[View Live Site](https://uservault.cc)',
       inline: false
     })
 
