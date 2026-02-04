@@ -38,13 +38,30 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Run the scheduled cleanup function
-    const { data: cleanupResult, error: cleanupError } = await supabase
+    // Run maintenance tasks (including returning stolen badges)
+    const { data: returnedBadgesCount, error: returnError } = await supabase
+      .rpc('return_stolen_badges');
+
+    if (returnError) {
+      console.error("Return stolen badges error:", returnError);
+      throw returnError;
+    }
+
+    const { data: verificationCodesCleaned, error: codesError } = await supabase
       .rpc('cleanup_expired_verification_codes');
 
-    if (cleanupError) {
-      console.error("Cleanup error:", cleanupError);
-      throw cleanupError;
+    if (codesError) {
+      console.error("Verification codes cleanup error:", codesError);
+      throw codesError;
+    }
+
+    // Expired profile comments
+    const { error: commentsError } = await supabase
+      .rpc('cleanup_expired_comments');
+
+    if (commentsError) {
+      console.error("Comments cleanup error:", commentsError);
+      // Non-fatal
     }
 
     // Also cleanup old profile views (older than 90 days) to prevent table bloat
@@ -67,12 +84,15 @@ serve(async (req) => {
       console.error("Link clicks cleanup error:", clicksError);
     }
 
-    console.log(`Security cleanup completed. Verification codes cleaned: ${cleanupResult}`);
+    console.log(
+      `Security cleanup completed. Badges returned: ${returnedBadgesCount ?? 0}. Verification codes cleaned: ${verificationCodesCleaned}`
+    );
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        verification_codes_cleaned: cleanupResult,
+        badges_returned: returnedBadgesCount ?? 0,
+        verification_codes_cleaned: verificationCodesCleaned,
         timestamp: new Date().toISOString()
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
