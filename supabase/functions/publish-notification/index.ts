@@ -235,16 +235,37 @@ Deno.serve(async (req) => {
       timestamp: timestamp
     }
 
-    // Add changes field if provided
+    // Add changes field if provided - split into multiple fields if needed (Discord limit: 1024 chars per field)
     if (changes && changes.length > 0) {
       const changesText = Array.isArray(changes) 
         ? changes.map((c: string) => `• ${c}`).join('\n')
         : changes
       
-      embed.fields.push({
-        name: isAnnouncement ? '📝 Details' : '📝 Changes',
-        value: changesText.substring(0, 1024),
-        inline: false
+      // Split content into chunks of max 1024 characters
+      const maxFieldLength = 1024
+      const chunks: string[] = []
+      let currentChunk = ''
+      
+      const lines = changesText.split('\n')
+      for (const line of lines) {
+        if ((currentChunk + '\n' + line).length > maxFieldLength) {
+          if (currentChunk) chunks.push(currentChunk)
+          currentChunk = line
+        } else {
+          currentChunk = currentChunk ? currentChunk + '\n' + line : line
+        }
+      }
+      if (currentChunk) chunks.push(currentChunk)
+      
+      // Add each chunk as a separate field
+      chunks.forEach((chunk, index) => {
+        embed.fields.push({
+          name: index === 0 
+            ? (isAnnouncement ? '📝 Details' : '📝 Changes')
+            : '📝 ...',
+          value: chunk,
+          inline: false
+        })
       })
     }
 
