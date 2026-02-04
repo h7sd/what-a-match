@@ -16,8 +16,15 @@ const ShareRedirect = () => {
     }
 
     // Redirect to the edge function which serves OG HTML
-    // Use the public API domain so the underlying provider URL is never exposed.
-    const shareUrl = `https://api.uservault.cc/functions/v1/share?u=${encodeURIComponent(username)}`;
+    // Prefer the public API domain (custom proxy). If we're not on the custom domain
+    // (e.g. preview), fall back to the direct backend URL so redirects still work.
+    const isOnCustomDomain = window.location.hostname.endsWith('uservault.cc');
+    const baseUrl = isOnCustomDomain
+      ? 'https://api.uservault.cc'
+      : import.meta.env.VITE_SUPABASE_URL;
+
+    const src = window.location.href;
+    const shareUrl = `${baseUrl}/functions/v1/share?u=${encodeURIComponent(username)}&src=${encodeURIComponent(src)}`;
     window.location.replace(shareUrl);
   }, [username, navigate]);
 

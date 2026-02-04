@@ -83,13 +83,14 @@ Deno.serve(async (req) => {
   const ogImage = baseOgImage.includes('?') ? `${baseOgImage}&v=${timestamp}` : `${baseOgImage}?v=${timestamp}`;
   
   const ogIcon = profile.og_icon_url || "https://storage.googleapis.com/gpt-engineer-file-uploads/N7OIoQRjNPSXaLFdJjQDPkdaXHs1/uploads/1769473434323-UserVault%204%20(1).png";
-  const profileUrl = `https://uservault.cc/${profile.username}`;
+  const defaultProfileUrl = `https://uservault.cc/${profile.username}`;
 
   // Discord can de-dupe/cache based on og:url. When users paste cache-busters like ?v=123
   // we need og:url to reflect the original request URL. The Cloudflare Worker should pass
   // the original URL as `src`.
   // Use original request URL (incl. cache-busters like ?v=123) to avoid Discord caching old cards.
-  const resolvedOgUrl = resolveOgUrl(src) || profileUrl;
+  const resolvedOgUrl = resolveOgUrl(src) || defaultProfileUrl;
+  const resolvedRedirectUrl = resolveRedirectUrl(src, profile.username) || defaultProfileUrl;
   const updatedTime = new Date().toISOString();
 
   const html = `<!DOCTYPE html>
@@ -128,11 +129,11 @@ Deno.serve(async (req) => {
   <link rel="icon" type="image/png" href="${ogIcon}">
   
   <!-- Auto-redirect for humans (bots don't execute JS) -->
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(profileUrl)}">
-  <script>window.location.replace("${escapeHtml(profileUrl)}");</script>
+   <meta http-equiv="refresh" content="0;url=${escapeHtml(resolvedRedirectUrl)}">
+   <script>window.location.replace("${escapeHtml(resolvedRedirectUrl)}");</script>
 </head>
 <body style="background:#0a0a0a;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;">
-  <p>Redirecting to <a href="${escapeHtml(profileUrl)}" style="color:#8B5CF6;">${escapeHtml(profile.display_name || profile.username)}</a>...</p>
+  <p>Redirecting to <a href="${escapeHtml(resolvedRedirectUrl)}" style="color:#8B5CF6;">${escapeHtml(profile.display_name || profile.username)}</a>...</p>
 </body>
 </html>`;
 
@@ -156,12 +157,37 @@ function resolveOgUrl(src: string | null): string | null {
   try {
     const u = new URL(src);
     // Allow only our own domains to avoid abuse.
-    const allowedHosts = new Set(["uservault.cc", "www.uservault.cc"]);
-    if (!allowedHosts.has(u.host)) return null;
+    if (!isAllowedHost(u.host)) return null;
     return u.toString();
   } catch {
     return null;
   }
+}
+
+function resolveRedirectUrl(src: string | null, username: string): string | null {
+  if (!src) return null;
+  try {
+    const u = new URL(src);
+    if (!isAllowedHost(u.host)) return null;
+    return `${u.origin}/${encodeURIComponent(username)}`;
+  } catch {
+    return null;
+  }
+}
+
+function isAllowedHost(host: string): boolean {
+  // Primary domains
+  if (host === 'uservault.cc' || host === 'www.uservault.cc') return true;
+
+  // Lovable hosted origins (preview + published)
+  // Examples:
+  // - what-a-match.lovable.app
+  // - id-preview--....lovable.app
+  // - ....lovableproject.com
+  if (host.endsWith('.lovable.app')) return true;
+  if (host.endsWith('.lovableproject.com')) return true;
+
+  return false;
 }
 
 function escapeHtml(text: string): string {
