@@ -819,79 +819,6 @@ export function AdminAccountLookup() {
 
               {/* Badges Tab */}
               <TabsContent value="badges" className="mt-4 space-y-4">
-
-              {/* Coins Tab */}
-              <TabsContent value="coins" className="mt-4 space-y-4">
-                <div className="p-4 rounded-lg border bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border-amber-500/30">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Coins className="w-5 h-5 text-amber-500" />
-                      <span className="font-medium">Current Balance</span>
-                    </div>
-                    <span className="text-2xl font-bold text-amber-500">
-                      {userBalance?.toLocaleString() ?? 0} UC
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm text-muted-foreground">Amount</label>
-                      <Input
-                        type="number"
-                        placeholder="Enter amount..."
-                        value={coinsAmount}
-                        onChange={(e) => setCoinsAmount(e.target.value)}
-                        min={1}
-                        className="mt-1"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm text-muted-foreground">Reason (optional)</label>
-                      <Input
-                        placeholder="e.g. Event reward, Bug compensation..."
-                        value={coinsReason}
-                        onChange={(e) => setCoinsReason(e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleGiveCoins(true)}
-                        disabled={isGivingCoins || !coinsAmount}
-                        className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
-                      >
-                        {isGivingCoins ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Plus className="w-4 h-4" />
-                        )}
-                        Add Coins
-                      </Button>
-                      <Button
-                        onClick={() => handleGiveCoins(false)}
-                        disabled={isGivingCoins || !coinsAmount}
-                        variant="destructive"
-                        className="flex-1 gap-2"
-                      >
-                        {isGivingCoins ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Minus className="w-4 h-4" />
-                        )}
-                        Remove Coins
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-xs text-muted-foreground">
-                  <p>• Adding coins increases the user's balance and total earned.</p>
-                  <p>• Removing coins decreases the balance (minimum 0).</p>
-                  <p>• All changes are logged in transaction history.</p>
-                </div>
-              </TabsContent>
                 {userBadges.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -1093,6 +1020,81 @@ export function AdminAccountLookup() {
                   userBadgeIds={userBadges.map(ub => ub.badge_id)}
                   onBadgeAssigned={refreshUserDetails}
                 />
+              </TabsContent>
+
+              {/* Settings Tab */}
+
+              {/* Coins Tab */}
+              <TabsContent value="coins" className="mt-4 space-y-4">
+                <div className="p-4 rounded-lg border bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border-amber-500/30">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Coins className="w-5 h-5 text-amber-500" />
+                      <span className="font-medium">Current Balance</span>
+                    </div>
+                    <span className="text-2xl font-bold text-amber-500">
+                      {userBalance?.toLocaleString() ?? 0} UC
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm text-muted-foreground">Amount</label>
+                      <Input
+                        type="number"
+                        placeholder="Enter amount..."
+                        value={coinsAmount}
+                        onChange={(e) => setCoinsAmount(e.target.value)}
+                        min={1}
+                        className="mt-1"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm text-muted-foreground">Reason (optional)</label>
+                      <Input
+                        placeholder="e.g. Event reward, Bug compensation..."
+                        value={coinsReason}
+                        onChange={(e) => setCoinsReason(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleGiveCoins(true)}
+                        disabled={isGivingCoins || !coinsAmount}
+                        className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
+                      >
+                        {isGivingCoins ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Plus className="w-4 h-4" />
+                        )}
+                        Add Coins
+                      </Button>
+                      <Button
+                        onClick={() => handleGiveCoins(false)}
+                        disabled={isGivingCoins || !coinsAmount}
+                        variant="destructive"
+                        className="flex-1 gap-2"
+                      >
+                        {isGivingCoins ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Minus className="w-4 h-4" />
+                        )}
+                        Remove Coins
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-xs text-muted-foreground">
+                  <p>• Adding coins increases the user's balance and total earned.</p>
+                  <p>• Removing coins decreases the balance (minimum 0).</p>
+                  <p>• All changes are logged in transaction history.</p>
+                </div>
               </TabsContent>
 
               {/* Settings Tab */}
