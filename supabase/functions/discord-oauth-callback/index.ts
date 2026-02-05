@@ -232,7 +232,13 @@ Deno.serve(async (req) => {
       console.log('Processing Discord login/register...');
 
       // Check if user exists with this email
-      const { data: existingUsers } = await supabase.auth.admin.listUsers();
+      // IMPORTANT: listUsers() is paginated and defaults to a small page size.
+      // If we don't raise perPage, we can miss existing users and then createUser() fails with "email_exists".
+      const { data: existingUsers, error: listUsersError } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+      if (listUsersError) {
+        console.error('listUsers error:', listUsersError);
+        throw new Error('Failed to look up existing users');
+      }
       const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === discordUser.email?.toLowerCase());
 
       let userId: string;
