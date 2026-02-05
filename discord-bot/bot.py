@@ -1471,9 +1471,14 @@ class UserVaultPrefixCommands(commands.Cog):
         # Check balance
         balance_result = await ctx.bot.api.get_balance(str(ctx.author.id))  # type: ignore[attr-defined]
         current_balance = balance_result.get("balance", 0)
-        # Balance might be string from BigInt - convert to int
+        # Balance might be string from BigInt - convert to int safely
         if isinstance(current_balance, str):
-            current_balance = int(current_balance) if current_balance.isdigit() else 0
+            try:
+                current_balance = int(current_balance.replace(",", "").split(".")[0])
+            except (ValueError, AttributeError):
+                current_balance = 0
+        elif not isinstance(current_balance, int):
+            current_balance = int(current_balance) if current_balance else 0
         if current_balance < bet:
             await ctx.send(f"❌ Insufficient balance! You have {current_balance} UC.")
             return
@@ -1813,9 +1818,14 @@ class UserVaultPrefixCommands(commands.Cog):
             # Check balance
             balance_result = await self.client.api.get_balance(str(message.author.id))  # type: ignore[attr-defined]
             current_balance = balance_result.get("balance", 0)
-            # Balance might be string from BigInt - convert to int
+            # Balance might be string from BigInt - convert to int safely
             if isinstance(current_balance, str):
-                current_balance = int(current_balance) if current_balance.isdigit() else 0
+                try:
+                    current_balance = int(current_balance.replace(",", "").split(".")[0])
+                except (ValueError, AttributeError):
+                    current_balance = 0
+            elif not isinstance(current_balance, int):
+                current_balance = int(current_balance) if current_balance else 0
             if current_balance < bet:
                 await message.reply(f"❌ Nicht genug Guthaben! Du hast {current_balance} UC.")
                 return
@@ -1843,9 +1853,14 @@ class UserVaultPrefixCommands(commands.Cog):
             # Check balance (no max limit - only balance dependent)
             balance_result = await self.client.api.get_balance(str(message.author.id))  # type: ignore[attr-defined]
             current_balance = balance_result.get("balance", 0)
-            # Balance might be string from BigInt - convert to int
+            # Balance might be string from BigInt - convert to int safely
             if isinstance(current_balance, str):
-                current_balance = int(current_balance) if current_balance.isdigit() else 0
+                try:
+                    current_balance = int(current_balance.replace(",", "").split(".")[0])
+                except (ValueError, AttributeError):
+                    current_balance = 0
+            elif not isinstance(current_balance, int):
+                current_balance = int(current_balance) if current_balance else 0
             if current_balance < bet:
                 await message.reply(f"❌ Nicht genug Guthaben! Du hast {current_balance} UC.")
                 return
@@ -1911,9 +1926,14 @@ class UserVaultPrefixCommands(commands.Cog):
             # Check balance
             balance_result = await self.client.api.get_balance(str(message.author.id))  # type: ignore[attr-defined]
             current_balance = balance_result.get("balance", 0)
-            # Balance might be string from BigInt - convert to int
+            # Balance might be string from BigInt - convert to int safely
             if isinstance(current_balance, str):
-                current_balance = int(current_balance) if current_balance.isdigit() else 0
+                try:
+                    current_balance = int(current_balance.replace(",", "").split(".")[0])
+                except (ValueError, AttributeError):
+                    current_balance = 0
+            elif not isinstance(current_balance, int):
+                current_balance = int(current_balance) if current_balance else 0
             if current_balance < bet:
                 await message.reply(f"❌ Nicht genug Guthaben! Du hast {current_balance} UC.")
                 return
