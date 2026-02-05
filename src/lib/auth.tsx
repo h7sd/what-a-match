@@ -164,8 +164,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Use secure edge function for MFA verification (rate-limited, validated)
-      // Route through proxy to hide Supabase URL
-      const { data, error } = await invokeSecure<{ success?: boolean; lockoutMinutes?: number; message?: string; error?: string }>('mfa-verify', {
+      const { data, error } = await invokeSecure<{ 
+        success?: boolean; 
+        lockoutMinutes?: number; 
+        message?: string; 
+        error?: string;
+        access_token?: string;
+        refresh_token?: string;
+      }>('mfa-verify', {
         body: { action: 'verify', factorId, code }
       });
 
@@ -184,21 +190,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // CRITICAL: Clear MFA challenge FIRST to prevent re-triggering
       setMfaChallenge(null);
 
-      // After successful MFA verification, refresh the session to get AAL2 token
-      // Use refreshSession to actually get a new AAL2 token from Supabase
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-      
-      if (refreshError) {
-        console.error('Session refresh error:', refreshError);
-        // Fallback to getSession
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData.session) {
-          setSession(sessionData.session);
-          setUser(sessionData.session.user);
+      // If we got AAL2 tokens from the server, use them directly
+      if (data.access_token && data.refresh_token) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
+        
+        if (sessionError) {
+          console.error('Failed to set AAL2 session:', sessionError);
+          // Fallback to refresh
+          const { data: refreshData } = await supabase.auth.refreshSession();
+          if (refreshData.session) {
+            setSession(refreshData.session);
+            setUser(refreshData.session.user);
+          }
+        } else {
+          // Session was set, get the updated session
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session) {
+            setSession(sessionData.session);
+            setUser(sessionData.session.user);
+          }
         }
-      } else if (refreshData.session) {
-        setSession(refreshData.session);
-        setUser(refreshData.session.user);
+      } else {
+        // Fallback: refresh session to get AAL2 token
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError) {
+          console.error('Session refresh error:', refreshError);
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session) {
+            setSession(sessionData.session);
+            setUser(sessionData.session.user);
+          }
+        } else if (refreshData.session) {
+          setSession(refreshData.session);
+          setUser(refreshData.session.user);
+        }
       }
 
       return { error: null };
