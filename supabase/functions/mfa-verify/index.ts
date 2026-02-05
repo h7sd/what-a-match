@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { error: verifyError } = await supabase.auth.mfa.verify({
+    const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
       factorId,
       challengeId: challengeData.id,
       code,
@@ -186,7 +186,13 @@ Deno.serve(async (req) => {
 
     resetRateLimit(userId);
     await randomDelay();
-    return new Response(JSON.stringify({ success: true }), {
+    
+    // Return the new AAL2 session tokens so client can update its session
+    return new Response(JSON.stringify({ 
+      success: true,
+      access_token: verifyData?.session?.access_token,
+      refresh_token: verifyData?.session?.refresh_token,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
