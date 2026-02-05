@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { action, redirect_uri } = await req.json();
+    const { action, redirect_uri, frontend_origin } = await req.json();
     
     const DISCORD_CLIENT_ID = Deno.env.get('DISCORD_CLIENT_ID');
     
@@ -20,8 +20,12 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'get_auth_url') {
-      // Generate Discord OAuth URL
-      const state = crypto.randomUUID();
+      // Encode frontend_origin in state for callback to use
+      const stateData = {
+        nonce: crypto.randomUUID(),
+        origin: frontend_origin || 'https://uservault.cc'
+      };
+      const state = btoa(JSON.stringify(stateData));
       const scope = 'identify email guilds';
       
       const authUrl = new URL('https://discord.com/api/oauth2/authorize');
@@ -32,7 +36,7 @@ Deno.serve(async (req) => {
       authUrl.searchParams.set('state', state);
       authUrl.searchParams.set('prompt', 'consent');
 
-      console.log('Generated Discord OAuth URL');
+      console.log('Generated Discord OAuth URL for origin:', stateData.origin);
 
       return new Response(JSON.stringify({ 
         url: authUrl.toString(),
