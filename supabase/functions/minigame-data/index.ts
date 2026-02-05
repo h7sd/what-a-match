@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -376,7 +376,7 @@ function startBlackjack(bet: number): {
 
 // ============ REQUEST HANDLER ============
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -521,7 +521,6 @@ serve(async (req) => {
         }
         
         // Create Supabase client for database access
-        const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         const supabase = createClient(supabaseUrl, supabaseKey);
@@ -610,7 +609,6 @@ serve(async (req) => {
 
       // ============ Get Commands for Help ============
       case "get_bot_commands": {
-        const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         const supabase = createClient(supabaseUrl, supabaseKey);
