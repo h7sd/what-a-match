@@ -710,6 +710,215 @@ class MinesView(discord.ui.View):
         return embed
 
 
+# ============ HIGHER OR LOWER GAME ============
+
+CARD_VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+CARD_SUITS = ['♠️', '♥️', '♦️', '♣️']
+
+def get_card_value(card: str) -> int:
+    """Get numeric value of a card (2-14)."""
+    value = card.split()[0]  # "10 ♥️" -> "10"
+    if value == 'A':
+        return 14
+    elif value == 'K':
+        return 13
+    elif value == 'Q':
+        return 12
+    elif value == 'J':
+        return 11
+    else:
+        return int(value)
+
+def draw_random_card() -> str:
+    """Draw a random card."""
+    value = random.choice(CARD_VALUES)
+    suit = random.choice(CARD_SUITS)
+    return f"{value} {suit}"
+
+def card_display(card: str) -> str:
+    """Display card with emoji."""
+    return f"🃏 **{card}**"
+
+
+class HigherLowerButton(discord.ui.Button):
+    """Button for Higher or Lower choice."""
+    
+    def __init__(self, choice: str, hl_view: "HigherLowerView"):
+        emoji = "⬆️" if choice == "higher" else "⬇️"
+        label = "Higher" if choice == "higher" else "Lower"
+        super().__init__(style=discord.ButtonStyle.primary, emoji=emoji, label=label, row=0)
+        self.choice = choice
+        self.hl_view = hl_view
+    
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.hl_view.user_id:
+            await interaction.response.send_message("❌ Das ist nicht dein Spiel!", ephemeral=True)
+            return
+        
+        if self.hl_view.game_over:
+            return
+        
+        # Draw next card
+        next_card = draw_random_card()
+        current_value = get_card_value(self.hl_view.current_card)
+        next_value = get_card_value(next_card)
+        
+        # Determine if guess was correct
+        if next_value == current_value:
+            # Tie counts as win
+            correct = True
+        elif self.choice == "higher":
+            correct = next_value > current_value
+        else:
+            correct = next_value < current_value
+        
+        self.hl_view.history.append(self.hl_view.current_card)
+        self.hl_view.current_card = next_card
+        
+        if correct:
+            self.hl_view.streak += 1
+            self.hl_view.update_multiplier()
+            embed = self.hl_view.create_embed()
+            await interaction.response.edit_message(embed=embed, view=self.hl_view)
+        else:
+            # Game over - lost
+            self.hl_view.game_over = True
+            self.hl_view.won = False
+            
+            # Disable all buttons
+            for item in self.hl_view.children:
+                item.disabled = True
+            
+            # Deduct bet
+            await self.hl_view.bot.api.send_reward(
+                str(interaction.user.id),
+                -self.hl_view.bet,
+                "higherlower",
+                f"Higher/Lower loss"
+            )
+            
+            embed = self.hl_view.create_embed(reveal_card=next_card)
+            await interaction.response.edit_message(embed=embed, view=self.hl_view)
+            self.hl_view.stop()
+
+
+class HigherLowerCashoutButton(discord.ui.Button):
+    """Cashout button for Higher or Lower."""
+    
+    def __init__(self, hl_view: "HigherLowerView"):
+        super().__init__(
+            style=discord.ButtonStyle.success,
+            label="💰 Cashout",
+            row=1
+        )
+        self.hl_view = hl_view
+    
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.hl_view.user_id:
+            await interaction.response.send_message("❌ Das ist nicht dein Spiel!", ephemeral=True)
+            return
+        
+        if self.hl_view.game_over:
+            return
+        
+        if self.hl_view.streak == 0:
+            await interaction.response.send_message("❌ Du musst mindestens eine richtige Wahl treffen!", ephemeral=True)
+            return
+        
+        self.hl_view.game_over = True
+        self.hl_view.won = True
+        self.hl_view.cashed_out = True
+        
+        # Disable all buttons
+        for item in self.hl_view.children:
+            item.disabled = True
+        
+        # Calculate winnings
+        winnings = int(self.hl_view.bet * self.hl_view.multiplier)
+        
+        embed = self.hl_view.create_embed()
+        await interaction.response.edit_message(embed=embed, view=self.hl_view)
+        
+        # Award winnings (net profit = winnings - bet)
+        net_profit = winnings - self.hl_view.bet
+        if net_profit > 0:
+            await self.hl_view.bot.api.send_reward(
+                str(interaction.user.id),
+                net_profit,
+                "higherlower",
+                f"Higher/Lower cashout x{self.hl_view.multiplier:.2f}"
+            )
+        
+        self.hl_view.stop()
+
+
+class HigherLowerView(discord.ui.View):
+    """View for Higher or Lower game."""
+    
+    def __init__(self, bot, user_id: int, bet: int):
+        super().__init__(timeout=300)  # 5 minute timeout
+        self.bot = bot
+        self.user_id = user_id
+        self.bet = bet
+        self.current_card = draw_random_card()
+        self.history: List[str] = []
+        self.streak = 0
+        self.multiplier = 1.0
+        self.game_over = False
+        self.won = False
+        self.cashed_out = False
+        
+        # Add buttons
+        self.add_item(HigherLowerButton("higher", self))
+        self.add_item(HigherLowerButton("lower", self))
+        self.add_item(HigherLowerCashoutButton(self))
+    
+    def update_multiplier(self):
+        """Calculate multiplier based on streak."""
+        # Each correct guess multiplies by ~1.5
+        self.multiplier = round(1.0 + (self.streak * 0.5), 2)
+    
+    def create_embed(self, reveal_card: str = None) -> discord.Embed:
+        """Create the game embed."""
+        if self.game_over:
+            if self.won:
+                winnings = int(self.bet * self.multiplier)
+                title = "💰 Ausgezahlt!"
+                description = f"Du hast **{winnings} UC** gewonnen!\n\n**Streak:** {self.streak} richtige"
+                color = discord.Color.gold()
+            else:
+                title = "❌ Falsch geraten!"
+                prev_card = self.history[-1] if self.history else "?"
+                description = (
+                    f"Die Karte war {card_display(reveal_card)}\n"
+                    f"Vorherige Karte: {card_display(prev_card)}\n\n"
+                    f"**-{self.bet} UC**"
+                )
+                color = discord.Color.red()
+        else:
+            title = "🃏 Higher or Lower"
+            potential = int(self.bet * self.multiplier)
+            
+            history_display = ""
+            if self.history:
+                history_cards = " → ".join(self.history[-5:])  # Show last 5 cards
+                history_display = f"\n**Historie:** {history_cards}"
+            
+            description = (
+                f"**Aktuelle Karte:** {card_display(self.current_card)}\n\n"
+                f"Wird die nächste Karte **höher** oder **niedriger**?{history_display}\n\n"
+                f"**Einsatz:** {self.bet} UC\n"
+                f"**Streak:** {self.streak}\n"
+                f"**Multiplikator:** x{self.multiplier:.2f}\n"
+                f"**Potenzieller Gewinn:** {potential} UC"
+            )
+            color = discord.Color.blurple()
+        
+        embed = discord.Embed(title=title, description=description, color=color)
+        embed.set_footer(text="Rate ob die nächste Karte höher oder niedriger ist!")
+        return embed
+
+
 class UserVaultBot(commands.Bot):
     """Main Discord bot class."""
     
@@ -1494,6 +1703,33 @@ class UserVaultPrefixCommands(commands.Cog):
             await message.reply(embed=embed, view=view)
             return
 
+        # ===== ?higherlower / ?hl - Higher or Lower game =====
+        if lowered.startswith("?higherlower") or lowered.startswith("?hl"):
+            parts = content.split()
+            bet = 50  # Default bet
+            if len(parts) > 1:
+                try:
+                    bet = int(parts[1])
+                except ValueError:
+                    await message.reply("❌ Ungültiger Einsatz! Nutze: `?higherlower <einsatz>` oder `?hl <einsatz>`")
+                    return
+            
+            if bet < 10:
+                await message.reply("❌ Minimum Einsatz ist 10 UC!")
+                return
+            
+            # Check balance (no max limit - only balance dependent)
+            balance_result = await self.client.api.get_balance(str(message.author.id))  # type: ignore[attr-defined]
+            current_balance = balance_result.get("balance", 0)
+            if current_balance < bet:
+                await message.reply(f"❌ Nicht genug Guthaben! Du hast {current_balance} UC.")
+                return
+            
+            view = HigherLowerView(self.client, message.author.id, bet)
+            embed = view.create_embed()
+            await message.reply(embed=embed, view=view)
+            return
+
         if lowered.startswith("?lookup"):
             parts = content.split(maxsplit=1)
             if len(parts) < 2 or not parts[1].strip():
@@ -1570,7 +1806,8 @@ class UserVaultPrefixCommands(commands.Cog):
                 known_cmds = {
                     "helping", "commands", "reload", "lookup", "apistats",
                     "balance", "daily", "slots", "coin", "rps", "blackjack",
-                    "guess", "trivia", "link", "unlink", "profile", "mines", "ping"
+                    "guess", "trivia", "link", "unlink", "profile", "mines", "ping",
+                    "higherlower", "hl"
                 }
                 if cmd_part not in known_cmds:
                     # Check if it's in the database
