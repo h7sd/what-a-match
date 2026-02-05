@@ -43,6 +43,9 @@ print(f"📁 .env exists: {env_path.exists()}")
 BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 WEBHOOK_SECRET = os.getenv("DISCORD_WEBHOOK_SECRET")
 
+# Flag to check if we're being loaded as extension vs standalone
+_RUNNING_AS_EXTENSION = False
+
 # IMPORTANT:
 # If you run this bot against a different backend (e.g. Lovable Cloud),
 # set one of these in your .env:
@@ -74,11 +77,13 @@ print(f"📡 Using bot-command-notifications: {NOTIFICATIONS_API}")
 # Channel for command update notifications
 COMMAND_UPDATES_CHANNEL_ID = int(os.getenv("COMMAND_UPDATES_CHANNEL_ID", "1468730139012628622"))
 
-# Validate configuration
-if not BOT_TOKEN:
-    raise ValueError("DISCORD_BOT_TOKEN is required!")
-if not WEBHOOK_SECRET:
-    raise ValueError("DISCORD_WEBHOOK_SECRET is required!")
+# Only validate in standalone mode - extensions get config from host bot
+def _validate_standalone_config():
+    """Validate configuration only when running standalone."""
+    if not BOT_TOKEN:
+        raise ValueError("DISCORD_BOT_TOKEN is required!")
+    if not WEBHOOK_SECRET:
+        raise ValueError("DISCORD_WEBHOOK_SECRET is required!")
 
 
 class RequestLogger:
@@ -1301,6 +1306,8 @@ async def send_notification_embed(client: commands.Bot, channel, notif: dict):
 # ============ RUN BOT ============
 
 if __name__ == "__main__":
+    # Only validate config when running standalone
+    _validate_standalone_config()
     print("🚀 Starting UserVault Bot...")
     print(f"📡 API URL: {FUNCTIONS_BASE_URL}")
     bot.run(BOT_TOKEN)
