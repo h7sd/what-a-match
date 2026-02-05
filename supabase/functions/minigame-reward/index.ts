@@ -320,6 +320,57 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ============ GET ALL REGISTERED USERS (Admin Only) ============
+    if (action === "get_all_users") {
+      // Check if Discord user is admin
+      const { data: adminProfile } = await supabase
+        .from("profiles")
+        .select("user_id, username")
+        .eq("discord_user_id", discordUserId)
+        .single();
+
+      if (!adminProfile) {
+        return new Response(
+          JSON.stringify({ error: "Discord not linked" }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      const { data: isAdmin } = await supabase.rpc("has_role", {
+        _user_id: adminProfile.user_id,
+        _role: "admin",
+      });
+
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Admin access required" }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      // Fetch all profiles with username and uid
+      const { data: allUsers, error: usersError } = await supabase
+        .from("profiles")
+        .select("username, uid_number")
+        .order("uid_number", { ascending: true });
+
+      if (usersError) {
+        return new Response(
+          JSON.stringify({ error: "Failed to fetch users" }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          users: allUsers || [],
+          count: allUsers?.length || 0,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // ============ GET PROFILE ============
     if (action === "get_profile") {
       const { data: profile } = await supabase

@@ -424,6 +424,10 @@ class UserVaultAPI:
         """Claim daily reward."""
         return await self.reward_api("daily_reward", discord_user_id)
     
+    async def get_all_users(self, discord_user_id: str) -> dict:
+        """Get all registered users (admin only)."""
+        return await self.reward_api("get_all_users", discord_user_id)
+    
     # ============ COMMAND NOTIFICATIONS ============
     
     async def get_pending_notifications(self) -> dict:
@@ -1434,41 +1438,111 @@ class UserVaultPrefixCommands(commands.Cog):
         )
 
     @commands.command(name="slots")
-    async def slots_prefix(self, ctx: commands.Context):
+    async def slots_prefix(self, ctx: commands.Context, bet: int = 20):
+        """Spin the slot machine. Usage: ?slots [bet]"""
+        # Validate bet
+        if bet < 10:
+            await ctx.send("❌ Minimum bet is 10 UC!")
+            return
+        if bet > 500:
+            await ctx.send("❌ Maximum bet is 500 UC!")
+            return
+        
+        # Check balance first
+        balance_result = await ctx.bot.api.get_balance(str(ctx.author.id))  # type: ignore[attr-defined]
+        if balance_result.get("error"):
+            await ctx.send(f"❌ {balance_result['error']}")
+            return
+        current_balance = safe_int_balance(balance_result.get("balance", 0))
+        if current_balance < bet:
+            await ctx.send(f"❌ Insufficient balance! You have {current_balance} UC, but need {bet} UC.")
+            return
+        
         result = await ctx.bot.api.spin_slots()  # type: ignore[attr-defined]
         payout = result.get("payout", 0)
         display = result.get("display", "🎰 🎰 🎰")
-        result_text = f"🎉 **WIN! +{payout} UC**" if payout > 0 else "❌ No match"
-        await ctx.send(f"🎰 **Slots**\n\n{display}\n\n{result_text}")
+        
+        # Calculate net result (payout already includes multiplier of bet in the API)
+        # If payout > 0, win = payout (e.g. 50, 100, etc.) minus bet
+        # If payout = 0, lose = bet
         if payout > 0:
-            await ctx.bot.api.send_reward(str(ctx.author.id), payout, "slots", "Slots win")  # type: ignore[attr-defined]
+            # Win - payout is the total winnings, so net profit = payout
+            await ctx.bot.api.send_reward(str(ctx.author.id), payout, "slots", f"Slots win ({payout} UC)")  # type: ignore[attr-defined]
+            result_text = f"🎉 **WIN! +{payout} UC**"
+        else:
+            # Lose - deduct bet
+            await ctx.bot.api.send_reward(str(ctx.author.id), -bet, "slots", f"Slots loss ({bet} UC)")  # type: ignore[attr-defined]
+            result_text = f"❌ No match! **-{bet} UC**"
+        
+        await ctx.send(f"🎰 **Slots** (Bet: {bet} UC)\n\n{display}\n\n{result_text}")
 
     @commands.command(name="coin")
-    async def coin_prefix(self, ctx: commands.Context, choice: str):
+    async def coin_prefix(self, ctx: commands.Context, choice: str, bet: int = 10):
+        """Coinflip game with bet. Usage: ?coin heads [bet] or ?coin tails [bet]"""
         choice = choice.lower().strip()
         if choice not in {"heads", "tails"}:
-            await ctx.send("❌ Usage: `?coin heads` oder `?coin tails`")
+            await ctx.send("❌ Usage: `?coin heads [bet]` oder `?coin tails [bet]`")
             return
+        
+        # Validate bet
+        if bet < 10:
+            await ctx.send("❌ Minimum bet is 10 UC!")
+            return
+        if bet > 500:
+            await ctx.send("❌ Maximum bet is 500 UC!")
+            return
+        
+        # Check balance first
+        balance_result = await ctx.bot.api.get_balance(str(ctx.author.id))  # type: ignore[attr-defined]
+        if balance_result.get("error"):
+            await ctx.send(f"❌ {balance_result['error']}")
+            return
+        current_balance = safe_int_balance(balance_result.get("balance", 0))
+        if current_balance < bet:
+            await ctx.send(f"❌ Insufficient balance! You have {current_balance} UC, but need {bet} UC.")
+            return
+        
         result = await ctx.bot.api.flip_coin()  # type: ignore[attr-defined]
         won = result.get("result") == choice
         emoji = result.get("emoji", "🪙")
         content = (
-            "🪙 **Coinflip**\n\n"
+            f"🪙 **Coinflip** (Bet: {bet} UC)\n\n"
             f"{emoji} The coin landed on **{result.get('result', 'unknown')}**!\n\n"
         )
         if won:
-            content += "🎉 **You won! +10 UC**"
-            await ctx.bot.api.send_reward(str(ctx.author.id), 10, "coinflip", "Coinflip win")  # type: ignore[attr-defined]
+            content += f"🎉 **You won! +{bet} UC**"
+            await ctx.bot.api.send_reward(str(ctx.author.id), bet, "coinflip", f"Coinflip win ({bet} UC)")  # type: ignore[attr-defined]
         else:
-            content += "❌ Better luck next time!"
+            content += f"❌ You lost! **-{bet} UC**"
+            await ctx.bot.api.send_reward(str(ctx.author.id), -bet, "coinflip", f"Coinflip loss ({bet} UC)")  # type: ignore[attr-defined]
         await ctx.send(content)
 
     @commands.command(name="rps")
-    async def rps_prefix(self, ctx: commands.Context, choice: str):
+    async def rps_prefix(self, ctx: commands.Context, choice: str, bet: int = 15):
+        """Rock Paper Scissors with bet. Usage: ?rps rock|paper|scissors [bet]"""
         choice = choice.lower().strip()
         if choice not in {"rock", "paper", "scissors"}:
-            await ctx.send("❌ Usage: `?rps rock|paper|scissors`")
+            await ctx.send("❌ Usage: `?rps rock|paper|scissors [bet]`")
             return
+        
+        # Validate bet
+        if bet < 10:
+            await ctx.send("❌ Minimum bet is 10 UC!")
+            return
+        if bet > 500:
+            await ctx.send("❌ Maximum bet is 500 UC!")
+            return
+        
+        # Check balance first
+        balance_result = await ctx.bot.api.get_balance(str(ctx.author.id))  # type: ignore[attr-defined]
+        if balance_result.get("error"):
+            await ctx.send(f"❌ {balance_result['error']}")
+            return
+        current_balance = safe_int_balance(balance_result.get("balance", 0))
+        if current_balance < bet:
+            await ctx.send(f"❌ Insufficient balance! You have {current_balance} UC, but need {bet} UC.")
+            return
+        
         result = await ctx.bot.api.play_rps(choice)  # type: ignore[attr-defined]
         if result.get("error"):
             await ctx.send(f"❌ Error: {result['error']}")
@@ -1476,15 +1550,15 @@ class UserVaultPrefixCommands(commands.Cog):
         game_result = result.get("result", "tie")
         player_emoji = result.get("playerEmoji", "❓")
         bot_emoji = result.get("botEmoji", "❓")
-        content = f"✂️ **Rock Paper Scissors**\n\nYou: {player_emoji}  vs  Bot: {bot_emoji}\n\n"
+        content = f"✂️ **Rock Paper Scissors** (Bet: {bet} UC)\n\nYou: {player_emoji}  vs  Bot: {bot_emoji}\n\n"
         if game_result == "win":
-            reward = result.get("reward", 15)
-            content += f"🎉 **You won! +{reward} UC**"
-            await ctx.bot.api.send_reward(str(ctx.author.id), reward, "rps", "RPS win")  # type: ignore[attr-defined]
+            content += f"🎉 **You won! +{bet} UC**"
+            await ctx.bot.api.send_reward(str(ctx.author.id), bet, "rps", f"RPS win ({bet} UC)")  # type: ignore[attr-defined]
         elif game_result == "lose":
-            content += "❌ You lost!"
+            content += f"❌ You lost! **-{bet} UC**"
+            await ctx.bot.api.send_reward(str(ctx.author.id), -bet, "rps", f"RPS loss ({bet} UC)")  # type: ignore[attr-defined]
         else:
-            content += "🤝 It's a tie!"
+            content += "🤝 It's a tie! No UC won or lost."
         await ctx.send(content)
 
     @commands.command(name="blackjack")
@@ -1705,6 +1779,54 @@ class UserVaultPrefixCommands(commands.Cog):
         embed.set_footer(text=f"uservault.cc/{username}")
         
         await ctx.send(embed=embed)
+
+    @commands.command(name="users")
+    async def users_prefix(self, ctx: commands.Context):
+        """Admin command to list all registered UserVault users."""
+        # Check if user is admin
+        admin_check = await ctx.bot.api.check_admin(str(ctx.author.id))  # type: ignore[attr-defined]
+        if not admin_check.get("is_admin"):
+            await ctx.send("❌ Admin access required!")
+            return
+        
+        # Fetch all users
+        result = await ctx.bot.api.get_all_users(str(ctx.author.id))  # type: ignore[attr-defined]
+        
+        if result.get("error"):
+            await ctx.send(f"❌ {result['error']}")
+            return
+        
+        users = result.get("users", [])
+        count = result.get("count", 0)
+        
+        if not users:
+            await ctx.send("📋 No registered users found.")
+            return
+        
+        # Create paginated embeds (25 users per page)
+        pages = []
+        per_page = 25
+        for i in range(0, len(users), per_page):
+            page_users = users[i:i + per_page]
+            embed = discord.Embed(
+                title=f"📋 Registered Users ({count} total)",
+                description="\n".join([
+                    f"**#{u.get('uid_number', '?')}** — {u.get('username', 'Unknown')}"
+                    for u in page_users
+                ]),
+                color=discord.Color.blurple()
+            )
+            page_num = (i // per_page) + 1
+            total_pages = (len(users) + per_page - 1) // per_page
+            embed.set_footer(text=f"Page {page_num}/{total_pages} • uservault.cc")
+            pages.append(embed)
+        
+        # Send first page (could add pagination buttons later)
+        await ctx.send(embed=pages[0])
+        
+        # If more pages, send a note
+        if len(pages) > 1:
+            await ctx.send(f"ℹ️ Showing first {per_page} of {count} users.")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
