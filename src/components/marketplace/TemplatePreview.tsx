@@ -329,17 +329,22 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
             {previewUsername}
           </p>
 
-          {/* User's REAL badges - larger, no pill background like image 2 */}
-          <div className="flex flex-wrap justify-center items-center gap-3 mb-5">
+          {/* User's REAL badges in pill container - EXACT like real profile */}
+          <div 
+            className={cn(
+              "flex flex-wrap justify-center items-center gap-2 mb-5 px-4 py-2 rounded-full",
+              !styles.transparentBadges && "bg-black/40 backdrop-blur-sm"
+            )}
+          >
             <TooltipProvider delayDuration={0}>
               {userBadges.length > 0 ? (
                 userBadges.slice(0, 6).map((badge) => (
                   <Tooltip key={badge.id}>
                     <TooltipTrigger asChild>
                       <div 
-                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 cursor-pointer overflow-hidden"
+                        className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-transform hover:scale-110 cursor-pointer"
                         style={{ 
-                          boxShadow: styles.glowBadges ? `0 0 12px ${badge.custom_color || badge.color || accentColor}50` : undefined
+                          boxShadow: styles.glowBadges ? `0 0 10px ${badge.custom_color || badge.color || accentColor}40` : undefined
                         }}
                       >
                         {badge.icon_url ? (
@@ -367,9 +372,9 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
                 [1, 2, 3].map(i => (
                   <div 
                     key={i}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full"
                     style={{ 
-                      backgroundColor: `${accentColor}60`,
+                      backgroundColor: `${accentColor}40`,
                     }}
                   />
                 ))
