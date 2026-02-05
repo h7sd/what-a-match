@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -7,7 +6,9 @@ const webhookSecret = Deno.env.get("DISCORD_WEBHOOK_SECRET")!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-webhook-signature, x-webhook-timestamp",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-webhook-signature, x-webhook-timestamp, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Max-Age": "86400",
 };
 
 let loggedWebhookFingerprint = false;
@@ -73,7 +74,7 @@ async function verifySignature(
   return { ok: provided === expectedSignature, expected: expectedSignature };
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -263,6 +264,45 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           message: `Account data for ${linkedProfile.username} has been deleted` 
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // ============ CHECK ADMIN ============
+    if (action === "check_admin") {
+      // Check if Discord user is admin on UserVault
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("user_id, username")
+        .eq("discord_user_id", discordUserId)
+        .single();
+
+      if (!profile) {
+        return new Response(
+          JSON.stringify({ is_admin: false, error: "Discord not linked" }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      // Check if user has admin role using the has_role RPC function
+      const { data: hasAdminRole, error: roleError } = await supabase.rpc("has_role", {
+        _user_id: profile.user_id,
+        _role: "admin",
+      });
+
+      if (roleError) {
+        console.error("Error checking admin role:", roleError);
+        return new Response(
+          JSON.stringify({ is_admin: false, error: "Failed to check role" }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          is_admin: hasAdminRole === true,
+          username: profile.username 
         }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );

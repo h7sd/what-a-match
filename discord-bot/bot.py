@@ -352,6 +352,10 @@ class UserVaultAPI:
         """Delete a user's linked UserVault account data."""
         return await self.reward_api("delete_account", discord_user_id)
 
+    async def check_admin(self, discord_user_id: str) -> dict:
+        """Check if a Discord user is a UserVault admin."""
+        return await self.reward_api("check_admin", discord_user_id)
+
     async def get_bot_commands(self) -> dict:
         """Get all enabled bot commands from database."""
         return await self.game_api("get_bot_commands")
@@ -1786,7 +1790,7 @@ class UserVaultPrefixCommands(commands.Cog):
 
         # ===== ?reload - Admin only extension reload =====
         if lowered == "?reload":
-            # Check if user is bot owner or in admin list
+            # Check if user is bot owner, in env admin list, or a UserVault admin
             admin_ids_str = os.getenv("ADMIN_USER_IDS", "")
             admin_ids = {int(x.strip()) for x in admin_ids_str.split(",") if x.strip().isdigit()}
             
@@ -1796,8 +1800,19 @@ class UserVaultPrefixCommands(commands.Cog):
             
             is_admin = message.author.id in admin_ids or message.author.id == owner_id
             
+            # Also check UserVault admin role if not already admin
             if not is_admin:
-                await message.reply("❌ Admin only command.")
+                api = getattr(self.client, "api", None)
+                if api:
+                    try:
+                        result = await api.check_admin(str(message.author.id))
+                        if result.get("is_admin"):
+                            is_admin = True
+                    except Exception as e:
+                        print(f"⚠️ Could not check UserVault admin status: {e}")
+            
+            if not is_admin:
+                await message.reply("❌ Admin only command. You need to be a UserVault admin.")
                 return
             
             try:
