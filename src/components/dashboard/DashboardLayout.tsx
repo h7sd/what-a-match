@@ -16,7 +16,8 @@ import {
   Save,
   Loader2,
   Sparkles,
-  ShoppingBag
+  ShoppingBag,
+  HeadphonesIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const FaultyTerminal = lazy(() => import('@/components/ui/FaultyTerminal'));
 const Aurora = lazy(() => import('@/components/ui/Aurora'));
 
-type TabType = 'overview' | 'profile' | 'appearance' | 'links' | 'badges' | 'marketplace' | 'admin' | 'settings';
+export type TabType = 'overview' | 'profile' | 'appearance' | 'links' | 'badges' | 'marketplace' | 'owner' | 'supporter' | 'settings';
 
 const baseNavItems: { icon: React.ElementType; label: string; tab: TabType }[] = [
   { icon: LayoutDashboard, label: 'Overview', tab: 'overview' },
@@ -47,6 +48,7 @@ interface DashboardLayoutProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   isAdmin: boolean;
+  isSupporter?: boolean;
   isPremium: boolean;
   username: string;
   onSignOut: () => void;
@@ -59,6 +61,7 @@ export function DashboardLayout({
   activeTab,
   onTabChange,
   isAdmin,
+  isSupporter = false,
   isPremium,
   username,
   onSignOut,
@@ -70,7 +73,10 @@ export function DashboardLayout({
 
   const navItems = [
     ...baseNavItems,
-    ...(isAdmin ? [{ icon: Shield, label: 'Admin', tab: 'admin' as TabType }] : []),
+    // Supporter panel - visible to supporters and admins
+    ...((isSupporter || isAdmin) ? [{ icon: HeadphonesIcon, label: 'Supporter', tab: 'supporter' as TabType }] : []),
+    // Owner panel - visible only to admins
+    ...(isAdmin ? [{ icon: Shield, label: 'Owner Panel', tab: 'owner' as TabType }] : []),
   ];
 
   const SidebarContent = () => (
@@ -220,10 +226,12 @@ export function DashboardLayout({
     </div>
   );
 
+  const isOwnerTab = activeTab === 'owner';
+
   return (
     <div className="min-h-screen bg-[#0a0a0b] flex">
-      {/* Global Aurora Background for all tabs except admin */}
-      {activeTab !== 'admin' && (
+      {/* Global Aurora Background for all tabs except owner */}
+      {!isOwnerTab && (
         <Suspense fallback={null}>
           <div className="fixed inset-0 z-0 opacity-40">
             <Aurora
@@ -236,8 +244,8 @@ export function DashboardLayout({
         </Suspense>
       )}
 
-      {/* Admin Terminal Background - optimized for mobile */}
-      {activeTab === 'admin' && !isMobile && (
+      {/* Owner Terminal Background - optimized for mobile */}
+      {isOwnerTab && !isMobile && (
         <Suspense fallback={null}>
           <div className="fixed inset-0 z-0">
             <FaultyTerminal
@@ -263,8 +271,8 @@ export function DashboardLayout({
         </Suspense>
       )}
       
-      {/* Mobile admin background - simple gradient instead of heavy terminal */}
-      {activeTab === 'admin' && isMobile && (
+      {/* Mobile owner background - simple gradient instead of heavy terminal */}
+      {isOwnerTab && isMobile && (
         <div className="fixed inset-0 z-0 bg-gradient-to-br from-[#0a0a0b] via-[#0d1a15] to-[#0a0a0b]">
           <div className="absolute inset-0 opacity-30">
             <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(0deg,transparent_24%,rgba(0,217,165,0.03)_25%,rgba(0,217,165,0.03)_26%,transparent_27%,transparent_74%,rgba(0,217,165,0.03)_75%,rgba(0,217,165,0.03)_76%,transparent_77%)] bg-[length:50px_50px]" />
@@ -386,4 +394,4 @@ export function DashboardLayout({
   );
 }
 
-export type { TabType };
+
