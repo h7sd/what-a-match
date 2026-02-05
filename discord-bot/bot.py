@@ -2240,6 +2240,48 @@ class UserVaultPrefixCommands(commands.Cog):
                 )
             return
 
+        # ===== ?users - Admin only list registered users =====
+        if lowered == "?users" or lowered.startswith("?users "):
+            # Check admin
+            admin_check = await self.client.api.check_admin(str(message.author.id))  # type: ignore[attr-defined]
+            if not admin_check.get("is_admin"):
+                await message.reply("❌ Admin access required!")
+                return
+
+            result = await self.client.api.get_all_users(str(message.author.id))  # type: ignore[attr-defined]
+            if result.get("error"):
+                await message.reply(f"❌ {result['error']}")
+                return
+
+            users = result.get("users", [])
+            count = int(result.get("count", 0) or 0)
+
+            if not users:
+                await message.reply("📋 No registered users found.")
+                return
+
+            # Show first 25 users (avoid spam)
+            per_page = 25
+            page_users = users[:per_page]
+            lines = [
+                f"**#{u.get('uid_number', '?')}** — {u.get('username', 'Unknown')}"
+                for u in page_users
+            ]
+
+            embed = discord.Embed(
+                title=f"📋 Registered Users ({count} total)",
+                description="\n".join(lines)[:4000],
+                color=discord.Color.blurple(),
+            )
+            embed.set_footer(text=f"Showing first {min(per_page, len(users))} of {count} • uservault.cc")
+
+            try:
+                await message.reply(embed=embed)
+            except discord.Forbidden:
+                await message.reply("\n".join(lines))
+
+            return
+
         # ===== Unknown command detection =====
         if lowered.startswith("?") and len(lowered) > 1:
             # Extract command name
