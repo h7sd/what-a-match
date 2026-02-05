@@ -1,8 +1,10 @@
- import { useState } from 'react';
+ import { useState, useMemo } from 'react';
  import { Link } from 'react-router-dom';
  import { motion, AnimatePresence } from 'framer-motion';
  import { Button } from '@/components/ui/button';
  import { Input } from '@/components/ui/input';
+ import { ScrollArea } from '@/components/ui/scroll-area';
+ import { Skeleton } from '@/components/ui/skeleton';
  import { 
    Coins, 
    Search, 
@@ -20,15 +22,16 @@
    useMarketplaceItems, 
    useMyMarketplaceItems, 
    useMyPurchases, 
-   useUCTransactions 
+   useUCTransactions,
+   MarketplaceItem
  } from '@/hooks/useMarketplace';
- import { MarketplaceGrid } from './MarketplaceGrid';
+ import { MarketplaceBadgeCard } from './MarketplaceBadgeCard';
+ import { MarketplaceTemplateCard } from './MarketplaceTemplateCard';
  import { CreateListingDialog } from './CreateListingDialog';
  import { TransactionHistory } from './TransactionHistory';
  import { cn } from '@/lib/utils';
  import { formatUC } from '@/lib/uc';
  
- type ItemFilter = 'all' | 'badge' | 'template';
  type TabValue = 'browse' | 'my-items' | 'purchases' | 'history';
  
  const tabs: { value: TabValue; label: string; icon: React.ReactNode }[] = [
@@ -41,7 +44,6 @@
  export function MarketplacePage() {
    const [searchQuery, setSearchQuery] = useState('');
    const [showCreateDialog, setShowCreateDialog] = useState(false);
-   const [itemFilter, setItemFilter] = useState<ItemFilter>('all');
    const [activeTab, setActiveTab] = useState<TabValue>('browse');
    
    const { data: balance } = useUserBalance();
@@ -50,19 +52,32 @@
    const { data: myPurchases } = useMyPurchases();
    const { data: transactions } = useUCTransactions();
  
-   const filteredItems = items?.filter(item => {
-     const name = item.item_type === 'badge' ? item.badge_name : item.template_name;
-     const matchesSearch = !searchQuery ||
-       name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-       item.seller_username?.toLowerCase().includes(searchQuery.toLowerCase());
-     const matchesType = itemFilter === 'all' || item.item_type === itemFilter;
-     return matchesSearch && matchesType;
-   });
+   // Filter and split items
+   const { badges, templates } = useMemo(() => {
+     const sourceItems = activeTab === 'browse' 
+       ? items 
+       : activeTab === 'my-items' 
+         ? myItems 
+         : activeTab === 'purchases'
+           ? myPurchases?.map(p => p.item as MarketplaceItem)
+           : [];
  
-   const stats = {
-     badges: items?.filter(i => i.item_type === 'badge').length || 0,
-     templates: items?.filter(i => i.item_type === 'template').length || 0,
-   };
+     const filtered = (sourceItems || []).filter(item => {
+       if (!searchQuery) return true;
+       const name = item.item_type === 'badge' ? item.badge_name : item.template_name;
+       return name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         item.seller_username?.toLowerCase().includes(searchQuery.toLowerCase());
+     });
+ 
+     return {
+       badges: filtered.filter(i => i.item_type === 'badge'),
+       templates: filtered.filter(i => i.item_type === 'template'),
+     };
+   }, [items, myItems, myPurchases, activeTab, searchQuery]);
+ 
+   const userBalance = balance?.balance ?? 0n;
+   const isOwner = activeTab === 'my-items';
+   const isPurchased = activeTab === 'purchases';
  
    return (
      <div className="space-y-4">
@@ -75,7 +90,7 @@
            <div>
              <h1 className="text-lg font-semibold">Marketplace</h1>
              <p className="text-xs text-muted-foreground">
-               {stats.badges} badges · {stats.templates} templates
+               {items?.filter(i => i.item_type === 'badge').length || 0} badges · {items?.filter(i => i.item_type === 'template').length || 0} templates
              </p>
            </div>
          </div>
@@ -129,33 +144,15 @@
            ))}
          </div>
  
-         {/* Search + Filter */}
-         <div className="flex items-center gap-2">
-           <div className="relative">
-             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-             <Input
-               placeholder="Search..."
-               value={searchQuery}
-               onChange={(e) => setSearchQuery(e.target.value)}
-               className="pl-8 h-8 w-40 text-xs bg-muted/50"
-             />
-           </div>
-           <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-muted/50">
-             {(['all', 'badge', 'template'] as ItemFilter[]).map((filter) => (
-               <button
-                 key={filter}
-                 onClick={() => setItemFilter(filter)}
-                 className={cn(
-                   "px-2 py-1 text-[10px] font-medium rounded transition-all",
-                   itemFilter === filter
-                     ? "bg-background text-foreground shadow-sm"
-                     : "text-muted-foreground hover:text-foreground"
-                 )}
-               >
-                 {filter === 'all' ? 'All' : filter === 'badge' ? <Sparkles className="w-3 h-3" /> : <Package className="w-3 h-3" />}
-               </button>
-             ))}
-           </div>
+         {/* Search */}
+         <div className="relative">
+           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+           <Input
+             placeholder="Search..."
+             value={searchQuery}
+             onChange={(e) => setSearchQuery(e.target.value)}
+             className="pl-8 h-8 w-48 text-xs bg-muted/50"
+           />
          </div>
        </div>
  
@@ -168,42 +165,7 @@
            exit={{ opacity: 0, y: -8 }}
            transition={{ duration: 0.15 }}
          >
-           {activeTab === 'browse' && (
-             <MarketplaceGrid 
-               items={filteredItems || []} 
-               isLoading={itemsLoading}
-               userBalance={balance?.balance ?? 0n}
-               emptyMessage="No items found"
-               emptyAction={() => setShowCreateDialog(true)}
-               emptyActionLabel="List first item"
-               showCategories={itemFilter === 'all'}
-             />
-           )}
- 
-           {activeTab === 'my-items' && (
-             <MarketplaceGrid 
-               items={myItems || []} 
-               isLoading={false}
-               userBalance={balance?.balance ?? 0n}
-               isOwner
-               emptyMessage="No listings yet"
-               emptyAction={() => setShowCreateDialog(true)}
-               emptyActionLabel="Create listing"
-             />
-           )}
- 
-           {activeTab === 'purchases' && (
-             <MarketplaceGrid 
-               items={myPurchases?.map(p => p.item as any) || []} 
-               isLoading={false}
-               userBalance={balance?.balance ?? 0n}
-               isPurchased
-               emptyMessage="No purchases yet"
-               showCategories
-             />
-           )}
- 
-           {activeTab === 'history' && (
+           {activeTab === 'history' ? (
              <div className="space-y-3">
                <div className="flex items-center justify-between text-sm">
                  <span className="text-muted-foreground">Transaction History</span>
@@ -214,11 +176,156 @@
                </div>
                <TransactionHistory transactions={transactions || []} />
              </div>
+           ) : (
+             <TwoColumnLayout
+               badges={badges}
+               templates={templates}
+               userBalance={userBalance}
+               isLoading={itemsLoading && activeTab === 'browse'}
+               isOwner={isOwner}
+               isPurchased={isPurchased}
+               onCreateListing={() => setShowCreateDialog(true)}
+             />
            )}
          </motion.div>
        </AnimatePresence>
  
        <CreateListingDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
+     </div>
+   );
+ }
+ 
+ interface TwoColumnLayoutProps {
+   badges: MarketplaceItem[];
+   templates: MarketplaceItem[];
+   userBalance: bigint;
+   isLoading: boolean;
+   isOwner: boolean;
+   isPurchased: boolean;
+   onCreateListing: () => void;
+ }
+ 
+ function TwoColumnLayout({ 
+   badges, 
+   templates, 
+   userBalance, 
+   isLoading, 
+   isOwner, 
+   isPurchased,
+   onCreateListing 
+ }: TwoColumnLayoutProps) {
+   if (isLoading) {
+     return (
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+         <div className="space-y-2">
+           <Skeleton className="h-5 w-20" />
+           {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+         </div>
+         <div className="space-y-2">
+           <Skeleton className="h-5 w-24" />
+           <div className="grid grid-cols-2 gap-2">
+             {[1, 2].map(i => <Skeleton key={i} className="h-36 rounded-xl" />)}
+           </div>
+         </div>
+       </div>
+     );
+   }
+ 
+   const isEmpty = badges.length === 0 && templates.length === 0;
+ 
+   if (isEmpty) {
+     return (
+       <motion.div 
+         initial={{ opacity: 0, y: 10 }}
+         animate={{ opacity: 1, y: 0 }}
+         className="flex flex-col items-center justify-center py-16 text-center"
+       >
+         <div className="w-12 h-12 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
+           <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+         </div>
+         <p className="text-sm text-muted-foreground mb-3">No items found</p>
+         <Button variant="outline" size="sm" onClick={onCreateListing}>
+           List first item
+         </Button>
+       </motion.div>
+     );
+   }
+ 
+   return (
+     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+       {/* Badges Column */}
+       <div className="space-y-3">
+         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground sticky top-0 bg-background/80 backdrop-blur-sm py-1 z-10">
+           <Sparkles className="w-4 h-4" />
+           <span>Badges</span>
+           <span className="text-xs text-muted-foreground/60">({badges.length})</span>
+         </div>
+         
+         {badges.length === 0 ? (
+           <div className="py-8 text-center text-xs text-muted-foreground/60">
+             No badges available
+           </div>
+         ) : (
+           <ScrollArea className="max-h-[400px] pr-2">
+             <motion.div 
+               className="space-y-2"
+               initial="hidden"
+               animate="visible"
+               variants={{
+                 hidden: {},
+                 visible: { transition: { staggerChildren: 0.03 } }
+               }}
+             >
+               {badges.map((item) => (
+                 <MarketplaceBadgeCard
+                   key={item.id}
+                   item={item}
+                   userBalance={userBalance}
+                   isOwner={isOwner}
+                   isPurchased={isPurchased}
+                 />
+               ))}
+             </motion.div>
+           </ScrollArea>
+         )}
+       </div>
+ 
+       {/* Templates Column */}
+       <div className="space-y-3">
+         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground sticky top-0 bg-background/80 backdrop-blur-sm py-1 z-10">
+           <Package className="w-4 h-4" />
+           <span>Templates</span>
+           <span className="text-xs text-muted-foreground/60">({templates.length})</span>
+         </div>
+         
+         {templates.length === 0 ? (
+           <div className="py-8 text-center text-xs text-muted-foreground/60">
+             No templates available
+           </div>
+         ) : (
+           <ScrollArea className="max-h-[400px] pr-2">
+             <motion.div 
+               className="grid grid-cols-2 gap-2"
+               initial="hidden"
+               animate="visible"
+               variants={{
+                 hidden: {},
+                 visible: { transition: { staggerChildren: 0.05 } }
+               }}
+             >
+               {templates.map((item) => (
+                 <MarketplaceTemplateCard
+                   key={item.id}
+                   item={item}
+                   userBalance={userBalance}
+                   isOwner={isOwner}
+                   isPurchased={isPurchased}
+                 />
+               ))}
+             </motion.div>
+           </ScrollArea>
+         )}
+       </div>
      </div>
    );
  }
