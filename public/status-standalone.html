@@ -153,6 +153,7 @@
       { id: 'cloudflare', name: 'Cloudflare', description: 'CDN & DDoS Protection', icon: 'cloud', status: 'checking' },
       { id: 'database', name: 'Database', description: 'Data storage & retrieval', icon: 'database', status: 'checking' },
       { id: 'auth', name: 'Authentication', description: 'User login & security', icon: 'shield', status: 'checking' },
+      { id: 'login-register', name: 'Login & Register', description: 'User sign-in & registration', icon: 'shield', status: 'checking' },
       { id: 'discord-bot', name: 'Discord Bot', description: 'Discord integration & presence', icon: 'message', status: 'checking' },
       { id: 'edge-functions', name: 'Edge Functions', description: 'Backend serverless functions', icon: 'server', status: 'checking' },
     ];
@@ -304,42 +305,63 @@
         updateService('auth', 'outage');
       }
 
-      // Check Discord Bot via presence table
+      // Check Login & Register + Discord Bot + Edge Functions (via health endpoint)
+      const healthStart = performance.now();
       try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/discord_presence?select=updated_at&order=updated_at.desc&limit=1`, {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/health`, {
+          method: 'GET',
           headers: {
             'apikey': SUPABASE_ANON_KEY,
             'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
           }
         });
-        const data = await response.json();
-        if (!response.ok || !data || data.length === 0) {
+
+        const healthTime = Math.round(performance.now() - healthStart);
+
+        if (!response.ok) {
+          updateService('login-register', 'degraded');
           updateService('discord-bot', 'degraded');
+          updateService('edge-functions', response.status < 500 ? 'degraded' : 'outage', healthTime);
         } else {
-          const lastUpdate = new Date(data[0].updated_at);
-          const minutesAgo = (Date.now() - lastUpdate.getTime()) / 1000 / 60;
-          updateService('discord-bot', minutesAgo < 10 ? 'operational' : 'degraded');
+          const data = await response.json();
+
+          const overall =
+            data?.status === 'healthy' ? 'operational' :
+            data?.status === 'degraded' ? 'degraded' :
+            data?.status === 'unhealthy' ? 'outage' :
+            'degraded';
+
+          updateService('edge-functions', overall, healthTime);
+
+          const loginOk = data?.checks?.login_endpoint?.status === 'ok';
+          const registerOk = data?.checks?.register_endpoint?.status === 'ok';
+          const loginStatus = (loginOk && registerOk)
+            ? 'operational'
+            : (loginOk || registerOk)
+            ? 'degraded'
+            : 'outage';
+
+          const loginTime = Math.max(
+            data?.checks?.login_endpoint?.latency_ms || 0,
+            data?.checks?.register_endpoint?.latency_ms || 0
+          ) || undefined;
+
+          updateService('login-register', loginStatus, loginTime);
+
+          const bot = data?.checks?.discord_bot;
+          const botStatus = bot?.status === 'ok'
+            ? (bot?.error ? 'degraded' : 'operational')
+            : bot?.status === 'error'
+            ? 'outage'
+            : 'degraded';
+
+          updateService('discord-bot', botStatus, bot?.latency_ms);
         }
       } catch {
+        const healthTime = Math.round(performance.now() - healthStart);
+        updateService('login-register', 'outage');
         updateService('discord-bot', 'outage');
-      }
-
-      // Check Edge Functions
-      const edgeStart = performance.now();
-      try {
-        const response = await fetch(`${SUPABASE_URL}/functions/v1/health`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ source: 'status-page' })
-        });
-        const edgeTime = Math.round(performance.now() - edgeStart);
-        updateService('edge-functions', 'operational', edgeTime);
-      } catch {
-        const edgeTime = Math.round(performance.now() - edgeStart);
-        updateService('edge-functions', edgeTime < 5000 ? 'operational' : 'outage', edgeTime);
+        updateService('edge-functions', healthTime < 5000 ? 'degraded' : 'outage', healthTime);
       }
 
       document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
