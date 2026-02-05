@@ -1263,6 +1263,36 @@ async def setup(client: commands.Bot):
     Setup function for loading as a discord.py extension/cog.
     Required when using bot.load_extension('bot') or similar.
     """
+    # ===== CHECK HOST BOT CONFIGURATION =====
+    # Prefix commands require the host bot to have:
+    # 1. command_prefix set to include "?"
+    # 2. message_content intent enabled
+    
+    # Check if prefix includes "?"
+    prefix = getattr(client, "command_prefix", None)
+    prefix_ok = False
+    if callable(prefix):
+        # Could be when_mentioned_or or similar - assume OK if it's a function
+        prefix_ok = True
+        print("ℹ️ [UserVault] Host bot uses a callable prefix - assuming '?' is included")
+    elif isinstance(prefix, (list, tuple)):
+        prefix_ok = "?" in prefix
+    elif isinstance(prefix, str):
+        prefix_ok = prefix == "?"
+    
+    if not prefix_ok and prefix is not None:
+        print("⚠️ [UserVault] WARNING: Host bot prefix does not include '?'!")
+        print(f"   Current prefix: {prefix}")
+        print("   Prefix commands (?trivia, ?lookup, etc.) will NOT work!")
+        print("   Fix: Set command_prefix=commands.when_mentioned_or('?') in your host bot")
+    
+    # Check message_content intent
+    if hasattr(client, "intents") and not client.intents.message_content:
+        print("⚠️ [UserVault] WARNING: message_content intent is DISABLED!")
+        print("   Prefix commands (?trivia, ?lookup, etc.) will NOT work!")
+        print("   Fix: Enable 'Message Content Intent' in Discord Developer Portal")
+        print("   AND set intents.message_content = True in your host bot")
+
     # Register slash commands only if enabled
     if ENABLE_SLASH_COMMANDS:
         client.tree.add_command(trivia)
