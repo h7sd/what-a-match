@@ -263,6 +263,20 @@ serve(async (req) => {
       if (currentBalance) {
         // Update existing balance by ADDING the amount
         const newBalanceValue = currentBalance.balance + amount;
+        
+        // CRITICAL: Prevent negative balance
+        if (newBalanceValue < 0) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "Insufficient balance - cannot go negative",
+              currentBalance: currentBalance.balance,
+              requested: amount,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+        
         const newTotalEarned = amount > 0 
           ? currentBalance.total_earned + amount 
           : currentBalance.total_earned;

@@ -1687,9 +1687,6 @@ class UserVaultPrefixCommands(commands.Cog):
             if bet < 10:
                 await message.reply("❌ Minimum Einsatz ist 10 UC!")
                 return
-            if bet > 1000:
-                await message.reply("❌ Maximum Einsatz ist 1000 UC!")
-                return
             
             # Check balance
             balance_result = await self.client.api.get_balance(str(message.author.id))  # type: ignore[attr-defined]
@@ -2035,19 +2032,20 @@ async def setup(client: commands.Bot):
 
     # Prefix commands + message listener (needed for '?guess')
     if not hasattr(client, "_uservault_prefix_cog_loaded"):
-         cog = UserVaultPrefixCommands(client)
-         await client.add_cog(cog)
-         client._uservault_prefix_cog_loaded = True
-         print("📦 [UserVault] Prefix commands cog loaded")
-     else:
-         # Reload scenario: remove old cog and add new one
-         old_cog = client.get_cog("UserVaultPrefixCommands")
-         if old_cog:
-             await client.remove_cog("UserVaultPrefixCommands")
-             print("🔄 [UserVault] Removed old prefix cog for reload")
-         cog = UserVaultPrefixCommands(client)
-         await client.add_cog(cog)
-         print("📦 [UserVault] Prefix commands cog reloaded")
+        cog = UserVaultPrefixCommands(client)
+        await client.add_cog(cog)
+        client._uservault_prefix_cog_loaded = True
+        print("📦 [UserVault] Prefix commands cog loaded")
+    else:
+        # Reload scenario: remove old cog and add new one
+        old_cog = client.get_cog("UserVaultPrefixCommands")
+        if old_cog:
+            await client.remove_cog("UserVaultPrefixCommands")
+            print("🔄 [UserVault] Removed old prefix cog for reload")
+        cog = UserVaultPrefixCommands(client)
+        await client.add_cog(cog)
+        client._uservault_prefix_cog_loaded = True  # Fix: Set flag after reload too
+        print("📦 [UserVault] Prefix commands cog reloaded")
     
     # Start notification polling if not already running
     if not hasattr(client, '_uservault_notification_task') or client._uservault_notification_task is None or client._uservault_notification_task.done():
