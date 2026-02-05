@@ -77,6 +77,9 @@ print(f"📡 Using bot-command-notifications: {NOTIFICATIONS_API}")
 # Channel for command update notifications
 COMMAND_UPDATES_CHANNEL_ID = int(os.getenv("COMMAND_UPDATES_CHANNEL_ID", "1468730139012628622"))
 
+# Slash commands are optional. If you want ONLY prefix commands (?), keep this false.
+ENABLE_SLASH_COMMANDS = os.getenv("ENABLE_SLASH_COMMANDS", "false").strip().lower() in {"1", "true", "yes"}
+
 # Only validate in standalone mode - extensions get config from host bot
 def _validate_standalone_config():
     """Validate configuration only when running standalone."""
@@ -525,25 +528,28 @@ class UserVaultBot(commands.Bot):
         except Exception as e:
             print(f"⚠️ Could not fetch commands from API: {e}")
         
-        # Register all commands (game commands)
-        self.tree.add_command(trivia)
-        self.tree.add_command(slots)
-        self.tree.add_command(coin)
-        self.tree.add_command(rps)
-        self.tree.add_command(blackjack)
-        self.tree.add_command(guess)
-        self.tree.add_command(balance)
-        self.tree.add_command(daily)
-        
-        # Register utility commands
-        self.tree.add_command(link)
-        self.tree.add_command(unlink)
-        self.tree.add_command(profile)
-        self.tree.add_command(apistats)
-        
-        # Sync commands
-        await self.tree.sync()
-        print("✅ Commands synced!")
+        if ENABLE_SLASH_COMMANDS:
+            # Register all commands (slash)
+            self.tree.add_command(trivia)
+            self.tree.add_command(slots)
+            self.tree.add_command(coin)
+            self.tree.add_command(rps)
+            self.tree.add_command(blackjack)
+            self.tree.add_command(guess)
+            self.tree.add_command(balance)
+            self.tree.add_command(daily)
+            
+            # Register utility commands
+            self.tree.add_command(link)
+            self.tree.add_command(unlink)
+            self.tree.add_command(profile)
+            self.tree.add_command(apistats)
+            
+            # Sync commands
+            await self.tree.sync()
+            print("✅ Slash commands synced!")
+        else:
+            print("ℹ️ Slash commands disabled (prefix-only mode: ?) ")
     
     async def on_ready(self):
         print(f"🤖 Bot ready: {self.user}")
@@ -598,9 +604,15 @@ class UserVaultBot(commands.Bot):
             "deleted": "🗑️",
         }
         
+        usage = None
+        # Prefer explicit usage if the backend included it in change payload
+        if isinstance(changes, dict):
+            usage = changes.get("usage")
+
+        shown = usage or f"?{command_name}"
         embed = discord.Embed(
             title=f"{emojis.get(action, '📋')} Command {action.capitalize()}",
-            description=f"**`/{command_name}`** was {action}",
+            description=f"**`{shown}`** was {action}",
             color=colors.get(action, 0x6366f1),
             timestamp=discord.utils.utcnow()
         )
@@ -623,7 +635,7 @@ class UserVaultBot(commands.Bot):
         
         try:
             await channel.send(embed=embed)
-            print(f"📤 Sent notification: {action} /{command_name}")
+            print(f"📤 Sent notification: {action} {shown}")
         except Exception as e:
             print(f"❌ Failed to send notification: {e}")
     
@@ -1251,19 +1263,20 @@ async def setup(client: commands.Bot):
     Setup function for loading as a discord.py extension/cog.
     Required when using bot.load_extension('bot') or similar.
     """
-    # Register all commands to the client's command tree
-    client.tree.add_command(trivia)
-    client.tree.add_command(slots)
-    client.tree.add_command(coin)
-    client.tree.add_command(rps)
-    client.tree.add_command(blackjack)
-    client.tree.add_command(guess)
-    client.tree.add_command(balance)
-    client.tree.add_command(daily)
-    client.tree.add_command(link)
-    client.tree.add_command(unlink)
-    client.tree.add_command(profile)
-    client.tree.add_command(apistats)
+    # Register slash commands only if enabled
+    if ENABLE_SLASH_COMMANDS:
+        client.tree.add_command(trivia)
+        client.tree.add_command(slots)
+        client.tree.add_command(coin)
+        client.tree.add_command(rps)
+        client.tree.add_command(blackjack)
+        client.tree.add_command(guess)
+        client.tree.add_command(balance)
+        client.tree.add_command(daily)
+        client.tree.add_command(link)
+        client.tree.add_command(unlink)
+        client.tree.add_command(profile)
+        client.tree.add_command(apistats)
     
     # If the client has an API attribute, use it; otherwise create one
     _ensure_uservault_client_state(client)
@@ -1327,8 +1340,13 @@ async def send_notification_embed(client: commands.Bot, channel, notif: dict):
         "deleted": "🗑️",
     }
     
+    usage = None
+    if isinstance(changes, dict):
+        usage = changes.get("usage")
+    shown = usage or f"?{command_name}"
+
     embed = discord.Embed(
-        title=f"{emojis.get(action, '📋')} Command {action.capitalize()}: /{command_name}",
+        title=f"{emojis.get(action, '📋')} Command {action.capitalize()}: {shown}",
         color=colors.get(action, discord.Color.greyple()),
         timestamp=discord.utils.utcnow()
     )
