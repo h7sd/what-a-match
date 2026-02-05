@@ -61,6 +61,13 @@ export default function Status() {
       status: 'checking',
     },
     {
+      id: 'login-register',
+      name: 'Login & Register',
+      description: 'User sign-in & registration',
+      icon: Shield,
+      status: 'checking',
+    },
+    {
       id: 'discord-bot',
       name: 'Discord Bot',
       description: 'Discord integration & presence',
@@ -124,47 +131,56 @@ export default function Status() {
       updateService('auth', 'outage');
     }
 
-    // Check Discord Bot via presence table
+    // Check Login & Register + Discord Bot + Edge Functions (via health endpoint)
+    const healthStart = performance.now();
     try {
-      const { data, error } = await supabase
-        .from('discord_presence')
-        .select('updated_at')
-        .order('updated_at', { ascending: false })
-        .limit(1);
-      
-      if (error || !data || data.length === 0) {
-        updateService('discord-bot', 'degraded');
-      } else {
-        const lastUpdate = new Date(data[0].updated_at);
-        const minutesAgo = (Date.now() - lastUpdate.getTime()) / 1000 / 60;
-        // If last update was within 10 minutes, bot is operational
-        updateService('discord-bot', minutesAgo < 10 ? 'operational' : 'degraded');
-      }
-    } catch {
-      updateService('discord-bot', 'outage');
-    }
-
-    // Check Edge Functions
-    const edgeStart = performance.now();
-    try {
-      // Invoke a lightweight health function.
-      // This avoids calling security-sensitive functions (like Turnstile verification)
-      // with dummy payloads that are expected to return 4xx.
-      await supabase.functions.invoke('health', {
+      const { data, error } = await supabase.functions.invoke('health', {
         body: { source: 'status-page' }
       });
-      const edgeTime = Math.round(performance.now() - edgeStart);
-      updateService('edge-functions', 'operational', edgeTime);
-    } catch (e: any) {
-      const edgeTime = Math.round(performance.now() - edgeStart);
-      // Network errors or complete failures - but if we got a response fast enough, 
-      // edge functions might still be working
-      if (edgeTime < 5000) {
-        // Got a response quickly, might be a caught error from the function itself
-        updateService('edge-functions', 'operational', edgeTime);
+
+      const healthTime = Math.round(performance.now() - healthStart);
+
+      if (error || !data) {
+        updateService('login-register', 'degraded');
+        updateService('discord-bot', 'degraded');
+        updateService('edge-functions', 'degraded', healthTime);
       } else {
-        updateService('edge-functions', 'outage');
+        const overall: ServiceStatus =
+          data.status === 'healthy' ? 'operational' :
+          data.status === 'degraded' ? 'degraded' :
+          data.status === 'unhealthy' ? 'outage' :
+          'degraded';
+
+        updateService('edge-functions', overall, healthTime);
+
+        const loginOk = data?.checks?.login_endpoint?.status === 'ok';
+        const registerOk = data?.checks?.register_endpoint?.status === 'ok';
+        const loginStatus: ServiceStatus = (loginOk && registerOk)
+          ? 'operational'
+          : (loginOk || registerOk)
+          ? 'degraded'
+          : 'outage';
+
+        const loginTime = Math.max(
+          data?.checks?.login_endpoint?.latency_ms || 0,
+          data?.checks?.register_endpoint?.latency_ms || 0
+        ) || undefined;
+
+        updateService('login-register', loginStatus, loginTime);
+
+        const bot = data?.checks?.discord_bot;
+        const botStatus: ServiceStatus = bot?.status === 'ok'
+          ? (bot?.error ? 'degraded' : 'operational')
+          : bot?.status === 'error'
+          ? 'outage'
+          : 'degraded';
+
+        updateService('discord-bot', botStatus, bot?.latency_ms);
       }
+    } catch {
+      updateService('login-register', 'outage');
+      updateService('discord-bot', 'outage');
+      updateService('edge-functions', 'outage');
     }
 
     setLastRefresh(new Date());
