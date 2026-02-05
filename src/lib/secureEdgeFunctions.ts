@@ -5,8 +5,8 @@
  * - Calls functions via PUBLIC_API_URL (derived from the backend project id)
  */
 
-import { supabase } from '@/integrations/supabase/client';
-import { PUBLIC_API_URL } from '@/lib/supabase-proxy-client';
+import { supabase } from '../integrations/supabase/client';
+import { PUBLIC_API_URL } from './supabase-proxy-client';
 
 interface InvokeOptions {
   body?: Record<string, unknown>;
