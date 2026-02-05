@@ -31,10 +31,25 @@ Deno.serve(async (req) => {
     let user_id: string | null = null;
     let frontend_origin: string = 'https://uservault.cc'; // Default
 
+    // Helper to extract origin from state
+    const extractOriginFromState = (stateParam: string | null): string => {
+      if (!stateParam) return 'https://uservault.cc';
+      try {
+        const decoded = JSON.parse(atob(stateParam));
+        return decoded.origin || 'https://uservault.cc';
+      } catch {
+        return 'https://uservault.cc';
+      }
+    };
+
     if (req.method === 'GET') {
       // Redirect callback from Discord
       code = url.searchParams.get('code');
       state = url.searchParams.get('state');
+      
+      // Extract origin from state
+      frontend_origin = extractOriginFromState(state);
+      console.log('GET callback - redirecting to:', frontend_origin);
       
       // For GET requests, redirect to frontend with the code
       if (code && state) {

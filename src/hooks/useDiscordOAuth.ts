@@ -34,7 +34,8 @@ export function useDiscordOAuth() {
       const { data, error } = await supabase.functions.invoke('discord-oauth', {
         body: { 
           action: 'get_auth_url',
-          redirect_uri: getRedirectUri()
+          redirect_uri: getRedirectUri(),
+          frontend_origin: window.location.origin // Pass current origin for redirect
         }
       });
 
@@ -65,7 +66,8 @@ export function useDiscordOAuth() {
       const { data, error } = await supabase.functions.invoke('discord-oauth', {
         body: { 
           action: 'get_auth_url',
-          redirect_uri: getRedirectUri()
+          redirect_uri: getRedirectUri(),
+          frontend_origin: window.location.origin // Pass current origin for redirect
         }
       });
 
