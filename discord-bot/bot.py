@@ -1445,6 +1445,9 @@ class UserVaultPrefixCommands(commands.Cog):
         # Check balance
         balance_result = await ctx.bot.api.get_balance(str(ctx.author.id))  # type: ignore[attr-defined]
         current_balance = balance_result.get("balance", 0)
+        # Balance might be string from BigInt - convert to int
+        if isinstance(current_balance, str):
+            current_balance = int(current_balance) if current_balance.isdigit() else 0
         if current_balance < bet:
             await ctx.send(f"❌ Insufficient balance! You have {current_balance} UC.")
             return
@@ -1497,7 +1500,10 @@ class UserVaultPrefixCommands(commands.Cog):
             await ctx.send("⏱️ Timeout – keine Antwort erhalten.")
 
     @commands.command(name="link")
-    async def link_prefix(self, ctx: commands.Context, username: str):
+    async def link_prefix(self, ctx: commands.Context, username: str = None):
+        if not username:
+            await ctx.send("❌ Usage: `?link <username>`\nBeispiel: `?link MeinName`")
+            return
         result = await ctx.bot.api.link_account(str(ctx.author.id), username)  # type: ignore[attr-defined]
         if result.get("error"):
             await ctx.send(f"❌ {result['error']}")
@@ -1776,6 +1782,9 @@ class UserVaultPrefixCommands(commands.Cog):
             # Check balance
             balance_result = await self.client.api.get_balance(str(message.author.id))  # type: ignore[attr-defined]
             current_balance = balance_result.get("balance", 0)
+            # Balance might be string from BigInt - convert to int
+            if isinstance(current_balance, str):
+                current_balance = int(current_balance) if current_balance.isdigit() else 0
             if current_balance < bet:
                 await message.reply(f"❌ Nicht genug Guthaben! Du hast {current_balance} UC.")
                 return
@@ -1803,6 +1812,9 @@ class UserVaultPrefixCommands(commands.Cog):
             # Check balance (no max limit - only balance dependent)
             balance_result = await self.client.api.get_balance(str(message.author.id))  # type: ignore[attr-defined]
             current_balance = balance_result.get("balance", 0)
+            # Balance might be string from BigInt - convert to int
+            if isinstance(current_balance, str):
+                current_balance = int(current_balance) if current_balance.isdigit() else 0
             if current_balance < bet:
                 await message.reply(f"❌ Nicht genug Guthaben! Du hast {current_balance} UC.")
                 return
@@ -1868,6 +1880,9 @@ class UserVaultPrefixCommands(commands.Cog):
             # Check balance
             balance_result = await self.client.api.get_balance(str(message.author.id))  # type: ignore[attr-defined]
             current_balance = balance_result.get("balance", 0)
+            # Balance might be string from BigInt - convert to int
+            if isinstance(current_balance, str):
+                current_balance = int(current_balance) if current_balance.isdigit() else 0
             if current_balance < bet:
                 await message.reply(f"❌ Nicht genug Guthaben! Du hast {current_balance} UC.")
                 return
