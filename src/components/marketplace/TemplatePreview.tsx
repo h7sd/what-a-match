@@ -1,14 +1,18 @@
 import { useMemo, memo } from 'react';
+import { motion } from 'framer-motion';
 import { Eye, MapPin, Briefcase, AtSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TemplatePreviewProps {
   templateData: Record<string, unknown> | null;
   mini?: boolean;
 }
 
-// Memoized component for performance - NO heavy animations on mobile
+// Memoized component - reduced animations on mobile for performance
 export const TemplatePreview = memo(function TemplatePreview({ templateData, mini = false }: TemplatePreviewProps) {
+  const isMobile = useIsMobile();
+  
   // Extract style properties from template data - this is a STATIC snapshot
   const styles = useMemo(() => {
     if (!templateData) return {};
@@ -36,6 +40,8 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
       bio: templateData.bio as string | undefined,
       location: templateData.location as string | undefined,
       occupation: templateData.occupation as string | undefined,
+      displayNameAnimation: templateData.display_name_animation as string | undefined,
+      effectsConfig: templateData.effects_config as Record<string, boolean> | undefined,
     };
   }, [templateData]);
 
@@ -51,7 +57,7 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
     return classes[styles.avatarShape || 'circle'] || 'rounded-full';
   }, [styles.avatarShape]);
 
-  // Mini thumbnail version - simplified for performance
+  // Mini thumbnail version - simplified for grid display
   if (mini) {
     return (
       <div 
@@ -85,12 +91,21 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
               <div className="flex flex-col items-center gap-1.5">
                 {/* Avatar */}
                 {styles.avatarUrl ? (
-                  <img 
-                    src={styles.avatarUrl} 
-                    alt=""
-                    loading="lazy"
-                    className={cn("w-8 h-8 object-cover", avatarShapeClass)}
-                  />
+                  <div className="relative">
+                    <img 
+                      src={styles.avatarUrl} 
+                      alt=""
+                      loading="lazy"
+                      className={cn("w-8 h-8 object-cover", avatarShapeClass)}
+                    />
+                    {/* Mini glow ring */}
+                    <div
+                      className={cn("absolute inset-[-2px] pointer-events-none", avatarShapeClass)}
+                      style={{
+                        background: `conic-gradient(from 0deg, ${accentColor}40, transparent, ${accentColor}40)`,
+                      }}
+                    />
+                  </div>
                 ) : (
                   <div 
                     className={cn("w-8 h-8 bg-muted", avatarShapeClass)}
@@ -102,7 +117,8 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
                   className="text-[8px] font-bold truncate max-w-full"
                   style={{ 
                     color: styles.textColor || '#fff',
-                    fontFamily: styles.nameFont || 'Inter'
+                    fontFamily: styles.nameFont || 'Inter',
+                    textShadow: styles.glowUsername ? `0 0 8px ${accentColor}` : undefined,
                   }}
                 >
                   {styles.displayName || 'Name'}
@@ -116,6 +132,7 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
                       style={{ 
                         backgroundColor: `${accentColor}40`,
                         border: `1px solid ${accentColor}60`,
+                        boxShadow: styles.glowBadges ? `0 0 4px ${accentColor}40` : undefined,
                       }}
                     />
                   ))}
@@ -128,7 +145,7 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
     );
   }
 
-  // Full preview - optimized, no heavy framer-motion animations
+  // Full preview - exact ProfileCard replica with optimized mobile performance
   return (
     <div 
       className="w-full h-full relative overflow-hidden"
@@ -139,27 +156,64 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
         backgroundPosition: 'center',
       }}
     >
-      {/* Background video - only in full preview */}
-      {styles.backgroundVideoUrl && (
+      {/* Background video - optimized: no video on mobile in preview to save resources */}
+      {styles.backgroundVideoUrl && !isMobile && (
         <video
           src={styles.backgroundVideoUrl}
           autoPlay
           loop
           muted
           playsInline
+          preload="metadata"
           className="absolute inset-0 w-full h-full object-cover"
+          style={{
+            willChange: 'transform',
+            transform: 'translateZ(0)',
+          }}
+        />
+      )}
+      
+      {/* Static background image fallback for mobile when video exists */}
+      {styles.backgroundVideoUrl && isMobile && (
+        <div 
+          className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60"
+          style={{
+            backgroundColor: styles.backgroundColor || '#0a0a0a',
+          }}
         />
       )}
 
       <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
-        <div className="relative w-full max-w-sm mx-auto animate-fade-in">
-          {/* Glow effect - CSS only, no JS animation */}
-          <div
-            className="absolute -inset-1 rounded-2xl opacity-50 blur-xl"
-            style={{
-              background: `linear-gradient(135deg, ${accentColor}, ${accentColor}80, ${accentColor}40)`,
-            }}
-          />
+        <motion.div 
+          className="relative w-full max-w-sm mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Animated glow effect behind card - simplified on mobile */}
+          {isMobile ? (
+            <div
+              className="absolute -inset-1 rounded-2xl opacity-50 blur-xl"
+              style={{
+                background: `linear-gradient(135deg, ${accentColor}, ${accentColor}80, ${accentColor}40)`,
+              }}
+            />
+          ) : (
+            <motion.div
+              className="absolute -inset-1 rounded-2xl opacity-60 blur-xl"
+              style={{
+                background: `linear-gradient(135deg, ${accentColor}, ${accentColor}80, ${accentColor}40)`,
+              }}
+              animate={{
+                opacity: [0.4, 0.6, 0.4],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            />
+          )}
 
           {/* Main card */}
           <div
@@ -171,11 +225,34 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
                 : undefined,
             }}
           >
-            {/* Corner decorations - static */}
-            <div className="absolute top-4 right-4 text-lg opacity-60" style={{ color: accentColor }}>✦</div>
-            <div className="absolute bottom-4 right-4 text-lg opacity-60" style={{ color: accentColor }}>✦</div>
+            {/* Corner sparkle decorations - static on mobile */}
+            {isMobile ? (
+              <>
+                <div className="absolute top-4 right-4 text-lg opacity-60" style={{ color: accentColor }}>✦</div>
+                <div className="absolute bottom-4 right-4 text-lg opacity-60" style={{ color: accentColor }}>✦</div>
+              </>
+            ) : (
+              <>
+                <motion.div
+                  className="absolute top-4 right-4 text-lg"
+                  animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1, 0.8] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{ color: accentColor }}
+                >
+                  ✦
+                </motion.div>
+                <motion.div
+                  className="absolute bottom-4 right-4 text-lg"
+                  animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1, 0.8] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+                  style={{ color: accentColor }}
+                >
+                  ✦
+                </motion.div>
+              </>
+            )}
 
-            {/* Gradient overlay */}
+            {/* Gradient border glow */}
             <div
               className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
               style={{
@@ -184,28 +261,79 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
             />
 
             <div className="relative z-10 flex flex-col items-center text-center">
-              {/* Avatar with simple glow ring */}
+              {/* Avatar with OrbitingAvatar-style glow ring */}
               {styles.avatarUrl && (
-                <div className="mb-4 sm:mb-6 relative" style={{ width: 100, height: 100 }}>
-                  {/* Glow ring - CSS animation only */}
-                  <div
-                    className="absolute inset-[-4px] animate-spin pointer-events-none"
-                    style={{
-                      borderRadius: styles.avatarShape === 'circle' ? '50%' : '24px',
-                      background: `conic-gradient(from 0deg, ${accentColor}40, transparent, ${accentColor}40)`,
-                      animationDuration: '8s',
-                    }}
-                  />
-                  <img
-                    src={styles.avatarUrl}
-                    alt={styles.displayName || 'Avatar'}
-                    loading="lazy"
-                    className={cn("w-full h-full object-cover relative z-10", avatarShapeClass)}
-                  />
+                <div className="mb-4 sm:mb-6 relative" style={{ width: 120, height: 120 }}>
+                  {/* Orbiting particle - only on desktop */}
+                  {!isMobile && (
+                    <motion.div
+                      className="absolute inset-[-4px] pointer-events-none"
+                      style={{
+                        borderRadius: styles.avatarShape === 'circle' ? '50%' : '24px',
+                      }}
+                    >
+                      <motion.div
+                        className="absolute w-3 h-3 rounded-full"
+                        style={{
+                          background: `radial-gradient(circle, ${accentColor}, transparent)`,
+                          boxShadow: `0 0 10px ${accentColor}`,
+                          filter: 'blur(1px)',
+                        }}
+                        animate={{
+                          rotate: 360,
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: 'linear',
+                        }}
+                        initial={{ x: 54, y: -6 }}
+                      />
+                    </motion.div>
+                  )}
+
+                  {/* Glow ring - CSS animation on mobile, framer on desktop */}
+                  {isMobile ? (
+                    <div
+                      className="absolute inset-[-4px] pointer-events-none animate-spin"
+                      style={{
+                        borderRadius: styles.avatarShape === 'circle' ? '50%' : '24px',
+                        background: `conic-gradient(from 0deg, ${accentColor}40, transparent, ${accentColor}40)`,
+                        animationDuration: '8s',
+                      }}
+                    />
+                  ) : (
+                    <motion.div
+                      className="absolute inset-[-4px] pointer-events-none"
+                      style={{
+                        borderRadius: styles.avatarShape === 'circle' ? '50%' : '24px',
+                        background: `conic-gradient(from 0deg, ${accentColor}40, transparent, ${accentColor}40)`,
+                      }}
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+                    />
+                  )}
+
+                  {/* Avatar image */}
+                  <motion.div
+                    className={cn("relative w-full h-full overflow-hidden", avatarShapeClass)}
+                    whileHover={isMobile ? undefined : { scale: 1.05 }}
+                    transition={{ type: 'spring', stiffness: 300 }}
+                  >
+                    <img
+                      src={styles.avatarUrl}
+                      alt={styles.displayName || 'Avatar'}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  </motion.div>
+
                   {/* Inner glow */}
                   <div
                     className={cn("absolute inset-0 pointer-events-none", avatarShapeClass)}
-                    style={{ boxShadow: `inset 0 0 20px ${accentColor}20` }}
+                    style={{
+                      boxShadow: `inset 0 0 30px ${accentColor}20`,
+                    }}
                   />
                 </div>
               )}
@@ -292,7 +420,7 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

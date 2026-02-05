@@ -78,71 +78,69 @@ import { Skeleton } from '@/components/ui/skeleton';
    const isPurchased = activeTab === 'purchases';
  
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="space-y-3 sm:space-y-4 pb-4">
       {/* Compact Header - Mobile optimized */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <ShoppingBag className="w-4 h-4 text-primary" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-semibold truncate">Marketplace</h1>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">
+            <p className="text-[10px] text-muted-foreground hidden xs:block">
               {items?.filter(i => i.item_type === 'badge').length || 0} badges · {items?.filter(i => i.item_type === 'template').length || 0} templates
             </p>
           </div>
         </div>
         
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-            <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
-            <span className="font-semibold text-amber-500 text-xs sm:text-sm">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <Coins className="w-3.5 h-3.5 text-amber-500" />
+            <span className="font-semibold text-amber-500 text-xs">
               {formatUC(balance?.balance)}
             </span>
           </div>
-          <Button size="sm" onClick={() => setShowCreateDialog(true)} className="h-7 sm:h-8 px-2 sm:px-3 gap-1 sm:gap-1.5 text-xs">
-            <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span className="hidden xs:inline">Sell</span>
+          <Button size="sm" onClick={() => setShowCreateDialog(true)} className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:gap-1.5">
+            <Plus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline text-xs">Sell</span>
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:flex" asChild>
             <Link to="/marketplace">
-              <ExternalLink className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           </Button>
         </div>
       </div>
 
       {/* Tabs + Search Row - Mobile optimized */}
-      <div className="flex flex-col gap-2 sm:gap-3">
-        {/* Tab Pills - Scrollable on mobile */}
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 overflow-x-auto no-scrollbar">
+      <div className="space-y-2">
+        {/* Tab Pills - Horizontally scrollable */}
+        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 overflow-x-auto no-scrollbar -mx-1 px-1">
           {tabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
               className={cn(
-                "relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-colors whitespace-nowrap min-h-[36px] min-w-[44px] justify-center",
+                "relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap min-h-[40px] flex-shrink-0",
                 activeTab === tab.value
                   ? "text-foreground bg-background shadow-sm"
                   : "text-muted-foreground hover:text-foreground active:bg-background/50"
               )}
             >
-              <span className="flex items-center gap-1 sm:gap-1.5">
-                {tab.icon}
-                <span className="hidden xs:inline sm:inline">{tab.label}</span>
-              </span>
+              {tab.icon}
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
 
-        {/* Search - Full width on mobile */}
-        <div className="relative w-full sm:w-auto sm:max-w-[160px]">
+        {/* Search - Full width */}
+        <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search..."
+            placeholder="Search items..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-9 sm:h-8 w-full text-xs bg-muted/50"
+            className="pl-8 h-10 w-full text-sm bg-muted/50"
           />
         </div>
       </div>
@@ -173,10 +171,10 @@ import { Skeleton } from '@/components/ui/skeleton';
         )}
       </div>
  
-       <CreateListingDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
-     </div>
-   );
- }
+      <CreateListingDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
+    </div>
+  );
+}
  
  interface TwoColumnLayoutProps {
    badges: MarketplaceItem[];
@@ -231,19 +229,19 @@ import { Skeleton } from '@/components/ui/skeleton';
     }
  
     return (
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-5 sm:space-y-6">
         {/* Badges Section */}
-        <div className="space-y-2 sm:space-y-3">
-          <div className="flex items-center gap-2 py-1.5 border-b border-border/30">
-            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="font-semibold text-sm sm:text-base text-foreground">Badges</span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 py-2 border-b border-border/30">
+            <Sparkles className="w-4 h-4" />
+            <span className="font-semibold text-sm text-foreground">Badges</span>
+            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
               {badges.length}
             </span>
           </div>
           
           {badges.length === 0 ? (
-            <div className="py-6 sm:py-8 text-center text-xs text-muted-foreground/60">
+            <div className="py-8 text-center text-xs text-muted-foreground/60">
               No badges available
             </div>
           ) : (
@@ -267,22 +265,22 @@ import { Skeleton } from '@/components/ui/skeleton';
         </div>
 
         {/* Templates Section */}
-        <div className="space-y-2 sm:space-y-3">
-          <div className="flex items-center gap-2 py-1.5 border-b border-border/30">
-            <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="font-semibold text-sm sm:text-base text-foreground">Templates</span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 py-2 border-b border-border/30">
+            <Package className="w-4 h-4" />
+            <span className="font-semibold text-sm text-foreground">Templates</span>
+            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
               {templates.length}
             </span>
           </div>
           
           {templates.length === 0 ? (
-            <div className="py-6 sm:py-8 text-center text-xs text-muted-foreground/60">
+            <div className="py-8 text-center text-xs text-muted-foreground/60">
               No templates available
             </div>
           ) : (
-            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-              {templates.slice(0, 9).map((item) => (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {templates.slice(0, 6).map((item) => (
                 <MarketplaceTemplateCard
                   key={item.id}
                   item={item}
@@ -291,9 +289,9 @@ import { Skeleton } from '@/components/ui/skeleton';
                   isPurchased={isPurchased}
                 />
               ))}
-              {templates.length > 9 && (
+              {templates.length > 6 && (
                 <div className="col-span-full text-xs text-muted-foreground text-center py-2">
-                  +{templates.length - 9} more templates
+                  +{templates.length - 6} more templates
                 </div>
               )}
             </div>
