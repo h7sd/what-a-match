@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth';
 import { useCurrentUserProfile, useUpdateProfile, useSocialLinks, useCreateSocialLink, useDeleteSocialLink } from '@/hooks/useProfile';
-import { useIsAdmin, useUserBadges, useGlobalBadges, useClaimBadge } from '@/hooks/useBadges';
+import { useIsAdmin, useIsSupporter, useUserBadges, useGlobalBadges, useClaimBadge } from '@/hooks/useBadges';
 import { BanAppealScreen } from '@/components/auth/BanAppealScreen';
 import { FileUploader } from '@/components/dashboard/FileUploader';
 import { supabase } from '@/integrations/supabase/client';
@@ -84,7 +84,7 @@ import { AccountSettings } from '@/components/dashboard/AccountSettings';
 import { LiveProfilePreview } from '@/components/dashboard/LiveProfilePreview';
 import { AliasRequestsSection } from '@/components/dashboard/AliasRequestsSection';
 import { AliasRequestsBell } from '@/components/dashboard/AliasRequestsBell';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { DashboardLayout, type TabType } from '@/components/dashboard/DashboardLayout';
 import { ProfileCommentsViewer } from '@/components/dashboard/ProfileCommentsViewer';
 import { FriendBadgesManager } from '@/components/dashboard/FriendBadgesManager';
 import { AdminEventController } from '@/components/admin/AdminEventController';
@@ -93,9 +93,11 @@ import { AdminMarketplaceManager } from '@/components/admin/AdminMarketplaceMana
 import { MarketplacePage } from '@/components/marketplace/MarketplacePage';
 import { GlobalBadgeColorSettings } from '@/components/dashboard/GlobalBadgeColorSettings';
 import { StreakDisplay } from '@/components/dashboard/StreakDisplay';
+import { SupporterPanel } from '@/components/supporter/SupporterPanel';
+import { SupporterManager } from '@/components/admin/SupporterManager';
 import { cn } from '@/lib/utils';
 
-type TabType = 'overview' | 'profile' | 'appearance' | 'links' | 'badges' | 'marketplace' | 'admin' | 'settings';
+// Removed local TabType - using exported type from DashboardLayout
 
 // Secret DB viewer (super-admin only)
 const SECRET_DB_VIEWER_PATH =
@@ -117,6 +119,7 @@ export default function Dashboard() {
   const { data: profile, isLoading: profileLoading } = useCurrentUserProfile();
   const { data: socialLinks = [] } = useSocialLinks(profile?.id || '');
   const { data: isAdmin = false } = useIsAdmin();
+  const { data: isSupporter = false } = useIsSupporter();
   const { data: userBadges = [] } = useUserBadges(user?.id || '');
   const { data: globalBadges = [] } = useGlobalBadges();
   const claimBadge = useClaimBadge();
@@ -127,10 +130,11 @@ export default function Dashboard() {
   const location = useLocation();
   const { toast } = useToast();
 
-  // Build nav items based on admin status
+  // Build nav items based on admin/supporter status
   const navItems = [
     ...baseNavItems,
-    ...(isAdmin ? [{ icon: Shield, label: 'Admin', tab: 'admin' as TabType }] : []),
+    ...((isSupporter || isAdmin) ? [{ icon: Shield, label: 'Supporter', tab: 'supporter' as TabType }] : []),
+    ...(isAdmin ? [{ icon: Shield, label: 'Owner Panel', tab: 'owner' as TabType }] : []),
   ];
 
   // Get active tab from hash
@@ -849,6 +853,7 @@ export default function Dashboard() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         isAdmin={isAdmin}
+        isSupporter={isSupporter}
         isPremium={(profile as any)?.is_premium ?? false}
         username={profile.username}
         onSignOut={handleSignOut}
@@ -1394,9 +1399,27 @@ export default function Dashboard() {
               <MarketplacePage />
             )}
 
-            {/* Admin Tab */}
-            {activeTab === 'admin' && isAdmin && (
+            {/* Supporter Tab */}
+            {activeTab === 'supporter' && (isSupporter || isAdmin) && (
+              <SupporterPanel />
+            )}
+
+            {/* Owner Panel Tab */}
+            {activeTab === 'owner' && isAdmin && (
               <div className="space-y-4 max-w-6xl">
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30">
+                    <Shield className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold">Owner Panel</h1>
+                    <p className="text-sm text-muted-foreground">
+                      Full administrative control over the platform
+                    </p>
+                  </div>
+                </div>
+
                 {/* Secret DB Viewer shortcut (super-admin by UID) */}
                 {SECRET_DB_ALLOWED_UIDS.includes((profile?.uid_number as any) ?? -1) && (
                   <div className="glass-card p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1416,6 +1439,11 @@ export default function Dashboard() {
                     </Button>
                   </div>
                 )}
+
+                {/* Supporter Manager - Add/Remove Supporters */}
+                <div className="glass-card p-6">
+                  <SupporterManager />
+                </div>
 
                 {/* Live Notification Sender */}
                 <div className="glass-card p-6">
@@ -1468,16 +1496,6 @@ export default function Dashboard() {
                   <div className="glass-card p-5">
                     <AdminBadgeRemover />
                   </div>
-                </div>
-
-                {/* Live Chat - Full Width */}
-                <div className="glass-card p-6">
-                  <AdminLiveChat />
-                </div>
-
-                {/* Support Tickets - Full Width */}
-                <div className="glass-card p-6">
-                  <AdminSupportTickets />
                 </div>
 
                 {/* Marketplace Approvals */}

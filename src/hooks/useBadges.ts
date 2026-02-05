@@ -66,7 +66,39 @@ export function useIsAdmin() {
   });
 }
 
-// Get all global badges (uses secure RPC to hide created_by from non-admins)
+// Check if user is supporter - SECURITY: This is for UI display only!
+// Actual permissions are enforced by RLS policies in the database.
+export function useIsSupporter() {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['isSupporter', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData?.session?.user || sessionData.session.user.id !== user.id) {
+        return false;
+      }
+      
+      const { data, error } = await supabase
+        .rpc('has_role', { _user_id: user.id, _role: 'supporter' });
+      
+      if (error) {
+        console.error('Error checking supporter status:', error);
+        return false;
+      }
+      
+      return data === true;
+    },
+    enabled: !!user?.id,
+    staleTime: 30000,
+    gcTime: 60000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  });
+}
+
 export function useGlobalBadges() {
   const { user } = useAuth();
   const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin();
