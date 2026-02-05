@@ -1,5 +1,4 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -148,54 +147,61 @@ Deno.serve(async (req) => {
         });
       }
 
-      const resend = new Resend(RESEND_API_KEY);
       const maskedEmail = maskEmail(userEmail);
 
-      const { error: emailError } = await resend.emails.send({
-        from: "UserVault Security <noreply@uservault.cc>",
-        to: [userEmail],
-        subject: "Your Login Verification Code",
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
-              <tr><td align="center">
-                <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#111;border-radius:16px;border:1px solid #222;overflow:hidden;">
-                  <tr><td align="center" style="padding:36px 40px 18px;">
-                    <div style="width:64px;height:64px;background:linear-gradient(135deg,#00D9A5,#00B4D8);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
-                      <span style="color:#0a0a0a;font-size:28px;font-weight:800;">UV</span>
-                    </div>
-                    <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">Login Verification Code</h1>
-                  </td></tr>
-                  <tr><td style="padding:0 40px 24px;">
-                    <p style="color:#a0a0a0;font-size:15px;line-height:1.6;margin:0 0 18px;text-align:center;">
-                      Use this code to complete your login. It expires in 10 minutes.
-                    </p>
-                    <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:22px;text-align:center;margin-bottom:18px;">
-                      <span style="color:#00D9A5;font-size:34px;font-weight:800;letter-spacing:8px;font-family:monospace;">${otpCode}</span>
-                    </div>
-                    <p style="color:#666;font-size:12px;line-height:1.5;margin:0;text-align:center;">
-                      If you didn't request this code, you can ignore this email.
-                    </p>
-                  </td></tr>
-                  <tr><td style="padding:18px 40px;border-top:1px solid #222;">
-                    <p style="color:#444;font-size:12px;margin:0;text-align:center;">UserVault Security • Automated message</p>
-                  </td></tr>
-                </table>
-              </td></tr>
-            </table>
-          </body>
-          </html>
-        `,
+      const emailRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: "UserVault Security <noreply@uservault.cc>",
+          to: [userEmail],
+          subject: "Your Login Verification Code",
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
+                <tr><td align="center">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#111;border-radius:16px;border:1px solid #222;overflow:hidden;">
+                    <tr><td align="center" style="padding:36px 40px 18px;">
+                      <div style="width:64px;height:64px;background:linear-gradient(135deg,#00D9A5,#00B4D8);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+                        <span style="color:#0a0a0a;font-size:28px;font-weight:800;">UV</span>
+                      </div>
+                      <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">Login Verification Code</h1>
+                    </td></tr>
+                    <tr><td style="padding:0 40px 24px;">
+                      <p style="color:#a0a0a0;font-size:15px;line-height:1.6;margin:0 0 18px;text-align:center;">
+                        Use this code to complete your login. It expires in 10 minutes.
+                      </p>
+                      <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:22px;text-align:center;margin-bottom:18px;">
+                        <span style="color:#00D9A5;font-size:34px;font-weight:800;letter-spacing:8px;font-family:monospace;">${otpCode}</span>
+                      </div>
+                      <p style="color:#666;font-size:12px;line-height:1.5;margin:0;text-align:center;">
+                        If you didn't request this code, you can ignore this email.
+                      </p>
+                    </td></tr>
+                    <tr><td style="padding:18px 40px;border-top:1px solid #222;">
+                      <p style="color:#444;font-size:12px;margin:0;text-align:center;">UserVault Security • Automated message</p>
+                    </td></tr>
+                  </table>
+                </td></tr>
+              </table>
+            </body>
+            </html>
+          `,
+        }),
       });
 
-      if (emailError) {
-        console.error("Email send error:", emailError);
+      if (!emailRes.ok) {
+        const errorText = await emailRes.text();
+        console.error("Email send error:", errorText);
         await randomDelay();
         return new Response(JSON.stringify({ error: "Failed to send email" }), {
           status: 500,
