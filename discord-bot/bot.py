@@ -1441,28 +1441,28 @@ class UserVaultPrefixCommands(commands.Cog):
                     await message.reply("⚠️ Cannot reload in standalone mode. Restart the bot instead.")
                     return
                 
-                 # Clear the flag so the cog gets re-added on reload
-                 if hasattr(self.client, "_uservault_prefix_cog_loaded"):
-                     del self.client._uservault_prefix_cog_loaded
-                 
-                 # Cancel notification task if running (will restart on reload)
-                 if hasattr(self.client, "_uservault_notification_task"):
-                     task = self.client._uservault_notification_task
-                     if task and not task.done():
-                         task.cancel()
-                     del self.client._uservault_notification_task
-                 
-                 await message.reply("🔄 Reloading extension...")
-                 await self.client.reload_extension(ext_name)
-                 # Note: This message won't be sent if reload succeeds because the cog is replaced
+                # Clear the flag so the cog gets re-added on reload
+                if hasattr(self.client, "_uservault_prefix_cog_loaded"):
+                    del self.client._uservault_prefix_cog_loaded
+                
+                # Cancel notification task if running (will restart on reload)
+                if hasattr(self.client, "_uservault_notification_task"):
+                    task = self.client._uservault_notification_task
+                    if task and not task.done():
+                        task.cancel()
+                    del self.client._uservault_notification_task
+                
+                await message.reply("🔄 Reloading extension...")
+                await self.client.reload_extension(ext_name)
+                # Note: This message won't be sent if reload succeeds because the cog is replaced
             except Exception as e:
                 await message.reply(f"❌ Reload failed: {e}")
             return
- 
-         # ===== ?ping - Simple connectivity test =====
-         if lowered == "?ping":
-             await message.reply("🏓 Pong! Bot is responding.")
-             return
+
+        # ===== ?ping - Simple connectivity test =====
+        if lowered == "?ping":
+            await message.reply("🏓 Pong! Bot is responding.")
+            return
 
         # ===== ?mines - Minesweeper game =====
         if lowered.startswith("?mines"):
