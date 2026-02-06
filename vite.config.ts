@@ -13,11 +13,8 @@ export default {
   plugins: [react()],
   resolve: {
     alias: {
-      "@/integrations/supabase/client": path.resolve(
-        process.cwd(),
-        "src/lib/supabase-proxy-client.ts"
-      ),
-      "@": path.resolve(process.cwd(), "src"),
+      "@/integrations/supabase/client": path.resolve("src/lib/supabase-proxy-client.ts"),
+      "@": path.resolve("src"),
     },
   },
 };

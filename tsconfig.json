@@ -20,7 +20,7 @@
     "strictNullChecks": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*", "./src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],
