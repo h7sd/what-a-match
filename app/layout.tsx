@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "What A Match - Find Your Perfect Match",
-  description: "Connect with people who share your interests",
+  title: "UserVault - Your Digital Identity",
+  description:
+    "Create stunning bio pages with live Discord status, immersive effects, and seamless social connections. All in one link.",
 };
 
 export default function RootLayout({
