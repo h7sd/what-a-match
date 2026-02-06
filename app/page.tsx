@@ -1,24 +1,25 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, MessageCircle, Sparkles } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+    <div className="min-h-screen bg-background mesh-gradient">
       {/* Hero Section */}
-      <div className="flex items-center justify-center min-h-[80vh] p-8">
+      <div className="flex items-center justify-center min-h-[85vh] p-8">
         <div className="max-w-4xl text-center space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-6xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          <div className="space-y-5">
+            <h1 className="text-7xl font-bold tracking-tight gradient-text text-balance">
               What A Match
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed text-pretty">
               Find your perfect match and connect with people who share your interests. 
               Build meaningful relationships in a vibrant community.
             </p>
           </div>
           
           <div className="flex gap-4 justify-center flex-wrap">
-            <Button size="lg" asChild>
+            <Button size="lg" className="glow-sm" asChild>
               <a href="/dashboard">Get Started</a>
             </Button>
             <Button size="lg" variant="outline" asChild>
@@ -29,11 +30,12 @@ export default function Home() {
       </div>
 
       {/* Features Section */}
-      <div className="container mx-auto px-8 py-16">
+      <div className="container mx-auto px-8 pb-24">
         <div className="grid md:grid-cols-3 gap-6">
-          <Card>
+          <Card className="glass-card border-border/50 hover:border-primary/30 transition-colors">
             <CardHeader>
-              <CardTitle>Connect</CardTitle>
+              <Users className="h-8 w-8 text-primary mb-2" />
+              <CardTitle className="text-foreground">Connect</CardTitle>
               <CardDescription>
                 Find people who share your interests and values
               </CardDescription>
@@ -45,9 +47,10 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border-border/50 hover:border-accent/30 transition-colors">
             <CardHeader>
-              <CardTitle>Engage</CardTitle>
+              <MessageCircle className="h-8 w-8 text-accent mb-2" />
+              <CardTitle className="text-foreground">Engage</CardTitle>
               <CardDescription>
                 Build authentic relationships through conversations
               </CardDescription>
@@ -59,9 +62,10 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border-border/50 hover:border-primary/30 transition-colors">
             <CardHeader>
-              <CardTitle>Thrive</CardTitle>
+              <Sparkles className="h-8 w-8 text-primary mb-2" />
+              <CardTitle className="text-foreground">Thrive</CardTitle>
               <CardDescription>
                 Create lasting memories with your matches
               </CardDescription>
