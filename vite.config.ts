@@ -37,6 +37,7 @@ const aliasResolverPlugin = {
 
 // Export a plain object so the v0 wrapper can spread it correctly
 export default {
+  root: "/vercel/share/v0-project",
   server: {
     host: "::",
     port: 8080,
