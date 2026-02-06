@@ -21,10 +21,10 @@ export default function App() {
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
         }}>
-          What A Match
+          UserVault
         </h1>
         <p style={{ fontSize: 18, color: "#7a8fa0", marginBottom: 40, lineHeight: 1.7 }}>
-          Find your perfect match. Connect with people who share your interests.
+          Your digital identity. Create stunning bio pages with live effects.
         </p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" as const }}>
           <a href="/dashboard" style={{
