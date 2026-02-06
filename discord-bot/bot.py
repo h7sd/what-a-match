@@ -1290,7 +1290,8 @@ class UserVaultBot(commands.Bot):
         intents.message_content = True
         # Prefix commands are optional, but requested by admins.
         # Note: when loaded as an extension, the host bot's prefix configuration is used.
-        super().__init__(command_prefix=commands.when_mentioned_or("?"), intents=intents)
+        # Disable default help command to use our custom one
+        super().__init__(command_prefix=commands.when_mentioned_or("?"), intents=intents, help_command=None)
         
         self.api = UserVaultAPI(WEBHOOK_SECRET)
         self.active_guess_games: Dict[int, dict] = {}
