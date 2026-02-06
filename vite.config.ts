@@ -1,12 +1,8 @@
-import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default {
   server: {
     host: "::",
     port: 8080,
@@ -16,15 +12,12 @@ export default defineConfig({
   },
   plugins: [react()],
   resolve: {
-    alias: [
-      {
-        find: "@/integrations/supabase/client",
-        replacement: path.resolve(__dirname, "./src/lib/supabase-proxy-client.ts"),
-      },
-      {
-        find: "@",
-        replacement: path.resolve(__dirname, "./src"),
-      },
-    ],
+    alias: {
+      "@/integrations/supabase/client": path.resolve(
+        process.cwd(),
+        "src/lib/supabase-proxy-client.ts"
+      ),
+      "@": path.resolve(process.cwd(), "src"),
+    },
   },
-});
+};
