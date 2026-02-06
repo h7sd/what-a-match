@@ -1,9 +1,15 @@
-import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+// Resolve the actual project source directory
+// In v0 build env, __dirname may be the build dir, but source lives in v0-project
+const projectSrc = fs.existsSync("/vercel/share/v0-project/src")
+  ? "/vercel/share/v0-project/src"
+  : path.resolve(__dirname, "./src");
+
+// Export a plain object so the v0 wrapper can spread it correctly
+export default {
   server: {
     host: "::",
     port: 8080,
@@ -13,17 +19,15 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [react()],
   resolve: {
-    // IMPORTANT: Ensure all backend traffic goes through the public API domain
-    // so the underlying provider URL is never visible in browser devtools.
     alias: [
       {
         find: "@/integrations/supabase/client",
-        replacement: path.resolve(__dirname, "./src/lib/supabase-proxy-client.ts"),
+        replacement: path.resolve(projectSrc, "./lib/supabase-proxy-client.ts"),
       },
       {
         find: "@",
-        replacement: path.resolve(__dirname, "./src"),
+        replacement: projectSrc,
       },
     ],
   },
-}));
+};
