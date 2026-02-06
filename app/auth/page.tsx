@@ -115,6 +115,11 @@ function AuthPage() {
       if (codeParam) setVerificationCode(codeParam)
     }
 
+    if (type === "signup_confirmed") {
+      setMessage("Email verified! You can now sign in.")
+      setView("login")
+    }
+
     // Handle Supabase native recovery flow (hash-based tokens)
     const hash = window.location.hash
     if (hash && hash.includes("type=recovery")) {
@@ -232,23 +237,64 @@ function AuthPage() {
     }
 
     try {
-      // Generate verification code via Edge Function
-      const res = await fetch(`${functionsUrl}/generate-verification-code`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          type: "signup",
-        }),
-      })
+      let useEdgeFunction = false
 
-      const data = await res.json()
-      if (!res.ok || data.error) {
-        throw new Error(data.error || "Failed to send verification code")
+      // Try Edge Function first (custom verification code flow)
+      try {
+        const res = await fetch(`${functionsUrl}/generate-verification-code`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            type: "signup",
+          }),
+        })
+        const data = await res.json()
+        if (res.ok && !data.error) {
+          useEdgeFunction = true
+          setMessage("A verification code has been sent to your email.")
+          setView("verify-email")
+        }
+      } catch {
+        // Edge Function not available, continue with native flow
       }
 
-      setMessage("A verification code has been sent to your email.")
-      setView("verify-email")
+      // Fallback: Use Supabase native signup (sends confirmation email automatically)
+      if (!useEdgeFunction) {
+        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+          email: email.trim().toLowerCase(),
+          password,
+          options: {
+            data: {
+              username: username.trim().toLowerCase(),
+              display_name: username.trim(),
+            },
+            emailRedirectTo: `${window.location.origin}/auth?type=signup_confirmed`,
+          },
+        })
+
+        if (signUpErr) throw signUpErr
+
+        if (signUpData.user && !signUpData.user.identities?.length) {
+          throw new Error("An account with this email already exists")
+        }
+
+        // If the user is auto-confirmed (no email confirmation required), create profile and redirect
+        if (signUpData.session) {
+          await supabase.from("profiles").upsert({
+            user_id: signUpData.user!.id,
+            username: username.trim().toLowerCase(),
+            display_name: username.trim(),
+            email_verified: true,
+          })
+          router.push("/dashboard")
+          return
+        }
+
+        // Otherwise, show message that confirmation email was sent
+        setMessage("A confirmation email has been sent. Please check your inbox and click the link to verify your account.")
+        setView("verify-email")
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Signup failed"
       setError(msg)
@@ -257,58 +303,66 @@ function AuthPage() {
     }
   }
 
-  // Verify email code and complete signup
+  // Verify email code and complete signup (Edge Function flow)
   async function handleVerifyEmail(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError("")
 
     try {
-      // Verify the code
-      const verifyRes = await fetch(`${functionsUrl}/verify-code`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          code: verificationCode,
-          type: "signup",
-        }),
-      })
-
-      const verifyData = await verifyRes.json()
-      if (!verifyRes.ok || verifyData.error) {
-        throw new Error(verifyData.error || "Invalid verification code")
-      }
-
-      // Code verified, now create the actual account
-      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: {
-          data: {
-            username: username.trim().toLowerCase(),
-            display_name: username.trim(),
-          },
-        },
-      })
-
-      if (signUpErr) throw signUpErr
-
-      if (signUpData.user) {
-        // Create profile
-        await supabase.from("profiles").insert({
-          user_id: signUpData.user.id,
-          username: username.trim().toLowerCase(),
-          display_name: username.trim(),
-          email_verified: true,
+      if (verificationCode) {
+        // Edge Function code verification flow
+        const verifyRes = await fetch(`${functionsUrl}/verify-code`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            code: verificationCode,
+            type: "signup",
+          }),
         })
 
-        // Sign in
+        const verifyData = await verifyRes.json()
+        if (!verifyRes.ok || verifyData.error) {
+          throw new Error(verifyData.error || "Invalid verification code")
+        }
+
+        // Code verified, now create the actual account
+        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+          email: email.trim().toLowerCase(),
+          password,
+          options: {
+            data: {
+              username: username.trim().toLowerCase(),
+              display_name: username.trim(),
+            },
+          },
+        })
+
+        if (signUpErr) throw signUpErr
+
+        if (signUpData.user) {
+          await supabase.from("profiles").upsert({
+            user_id: signUpData.user.id,
+            username: username.trim().toLowerCase(),
+            display_name: username.trim(),
+            email_verified: true,
+          })
+
+          const { error: loginErr } = await supabase.auth.signInWithPassword({
+            email: email.trim().toLowerCase(),
+            password,
+          })
+
+          if (loginErr) throw loginErr
+          router.push("/dashboard")
+        }
+      } else {
+        // Native Supabase flow: user clicked email link, just try to sign in
         const { error: loginErr } = await supabase.auth.signInWithPassword({
           email: email.trim().toLowerCase(),
           password,
         })
-
         if (loginErr) throw loginErr
         router.push("/dashboard")
       }
@@ -320,50 +374,54 @@ function AuthPage() {
     }
   }
 
-  // Forgot password - send reset code
+  // Forgot password - send reset email
   async function handleForgotPassword(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError("")
 
     try {
-      // Try the custom Edge Function first
-      const res = await fetch(`${functionsUrl}/generate-verification-code`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          type: "password_reset",
-        }),
-      })
+      let sent = false
 
-      const data = await res.json()
-      console.log("[v0] generate-verification-code response:", res.status, data)
+      // Try the custom Edge Function first (uses Resend + verification_codes table)
+      try {
+        const res = await fetch(`${functionsUrl}/generate-verification-code`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            type: "password_reset",
+          }),
+        })
+        const data = await res.json()
+        if (res.ok && !data.error) {
+          sent = true
+          setMessage("A reset code has been sent to your email. Enter it below.")
+          setView("reset-password")
+        }
+      } catch {
+        // Edge Function not available
+      }
 
-      if (!res.ok || data.error) {
-        // If Edge Function fails, fallback to Supabase native password reset
-        console.log("[v0] Edge function failed, trying Supabase native resetPasswordForEmail")
+      // Fallback: Use Supabase native password reset
+      if (!sent) {
         const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
           email.trim().toLowerCase(),
           { redirectTo: `${window.location.origin}/auth?type=recovery&email=${encodeURIComponent(email.trim().toLowerCase())}` }
         )
-        if (resetErr) {
-          console.log("[v0] Supabase native reset also failed:", resetErr)
-          throw resetErr
-        }
+        if (resetErr) throw resetErr
+        setMessage("A password reset link has been sent to your email. Check your inbox.")
+        setView("reset-password")
       }
-
-      setMessage("If an account exists with that email, a password reset link has been sent.")
-      setView("reset-password")
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to send reset code"
+      const msg = err instanceof Error ? err.message : "Failed to send reset email"
       setError(msg)
     } finally {
       setLoading(false)
     }
   }
 
-  // Reset password with code
+  // Reset password with code or native recovery
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -377,7 +435,7 @@ function AuthPage() {
 
     try {
       if (verificationCode) {
-        // Try the Edge Function with code
+        // Edge Function flow: verify code + reset password via admin API
         const res = await fetch(`${functionsUrl}/reset-password`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -389,12 +447,11 @@ function AuthPage() {
         })
 
         const data = await res.json()
-        console.log("[v0] reset-password response:", res.status, data)
         if (!res.ok || data.error) {
           throw new Error(data.error || "Password reset failed")
         }
       } else {
-        // Use Supabase native updateUser (for recovery link flow)
+        // Supabase native flow: user clicked recovery link, session is active
         const { error: updateErr } = await supabase.auth.updateUser({
           password: newPassword,
         })
@@ -757,31 +814,50 @@ function AuthPage() {
           <>
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold gradient-text">Verify Email</CardTitle>
-              <CardDescription>Enter the 6-digit code sent to {email}</CardDescription>
+              <CardDescription>
+                {message?.includes("confirmation email")
+                  ? "Check your inbox and click the confirmation link"
+                  : `Enter the 6-digit code sent to ${email}`}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleVerifyEmail} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4">
                 {error && <div className="text-sm text-destructive bg-destructive/10 rounded-lg p-3">{error}</div>}
                 {message && <div className="text-sm text-primary bg-primary/10 rounded-lg p-3">{message}</div>}
 
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="verify-code" className="text-sm font-medium text-foreground">Verification Code</label>
-                  <input
-                    id="verify-code"
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="000000"
-                    required
-                    className="w-full h-12 rounded-lg border border-input bg-secondary/50 px-4 text-center text-xl font-mono tracking-[0.5em] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
+                {/* Only show code input if we're using Edge Function flow */}
+                {!message?.includes("confirmation email") && (
+                  <form onSubmit={handleVerifyEmail} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="verify-code" className="text-sm font-medium text-foreground">Verification Code</label>
+                      <input
+                        id="verify-code"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
+                        placeholder="000000"
+                        required
+                        className="w-full h-12 rounded-lg border border-input bg-secondary/50 px-4 text-center text-xl font-mono tracking-[0.5em] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
 
-                <Button type="submit" className="w-full glow-sm" disabled={loading || verificationCode.length !== 6}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & Create Account"}
-                </Button>
+                    <Button type="submit" className="w-full glow-sm" disabled={loading || verificationCode.length !== 6}>
+                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & Create Account"}
+                    </Button>
+                  </form>
+                )}
+
+                {/* For native flow, show a "try to login" button */}
+                {message?.includes("confirmation email") && (
+                  <Button
+                    className="w-full glow-sm"
+                    onClick={() => { resetForm(); setView("login") }}
+                  >
+                    Go to Login
+                  </Button>
+                )}
 
                 <button
                   type="button"
@@ -791,7 +867,7 @@ function AuthPage() {
                   <ArrowLeft className="h-4 w-4" />
                   Back to signup
                 </button>
-              </form>
+              </div>
             </CardContent>
           </>
         )}
@@ -824,7 +900,7 @@ function AuthPage() {
                 </div>
 
                 <Button type="submit" className="w-full glow-sm" disabled={loading}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Reset Code"}
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Reset Email"}
                 </Button>
 
                 <button
