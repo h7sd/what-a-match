@@ -43,7 +43,7 @@ print(f"📁 Looking for .env at: {env_path}")
 print(f"📁 .env exists: {env_path.exists()}")
 
 # Configuration
-BOT_CODE_VERSION = "2026-02-06-keno-fix-v1"
+BOT_CODE_VERSION = "2026-02-06-no-impl-check-v1"
 BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 WEBHOOK_SECRET = os.getenv("DISCORD_WEBHOOK_SECRET")
 
@@ -3133,61 +3133,10 @@ class UserVaultPrefixCommands(commands.Cog):
 
             return
 
-        # ===== Unknown command detection =====
-        if lowered.startswith("?") and len(lowered) > 1:
-            # Extract command name
-            cmd_part = lowered[1:].split()[0] if lowered[1:] else ""
-            if cmd_part:
-                # Build implemented command set dynamically.
-                # IMPORTANT: do NOT cache this across reloads; otherwise new commands may
-                # be incorrectly flagged as "not yet implemented".
-                implemented_cmds: set[str] = set()
-
-                # 1) Commands registered with discord.py's command system
-                try:
-                    for cmd in getattr(self.client, "commands", []):
-                        name = getattr(cmd, "name", None)
-                        if name:
-                            implemented_cmds.add(str(name).lower())
-                        for alias in getattr(cmd, "aliases", []) or []:
-                            implemented_cmds.add(str(alias).lower())
-                except Exception:
-                    pass
-
-                # 2) Commands handled manually in THIS on_message via string checks
-                # Patterns we support:
-                #   lowered.startswith("?foo")
-                #   lowered == "?foo"
-                #
-                # NOTE: `inspect.getsource()` can fail in some reload/extension scenarios.
-                # To avoid false positives ("registered but not yet implemented"), prefer
-                # reading the module source from disk and only fall back to inspect.
-                try:
-                    src = ""
-                    try:
-                        src = Path(__file__).read_text(encoding="utf-8", errors="ignore")
-                    except Exception:
-                        src = inspect.getsource(self.__class__.on_message)
-
-                    for pat in (
-                        r'lowered\.startswith\(\s*[\'\"]\?([a-z0-9]+)',
-                        r'lowered\s*==\s*[\'\"]\?([a-z0-9]+)',
-                    ):
-                        for m in re.finditer(pat, src, flags=re.IGNORECASE):
-                            implemented_cmds.add(m.group(1).lower())
-                except Exception:
-                    pass
-
-                if cmd_part not in implemented_cmds:
-                    # Check if it's in the cached commands from API
-                    # Use the cached commands for faster lookups (no API call needed)
-                    if is_command_registered(cmd_part):
-                        await message.reply(
-                            f"⚠️ `?{cmd_part}` is registered but not yet implemented."
-                            f"\n(Version: {BOT_CODE_VERSION})\n"
-                            f"Use `?help` to see available commands."
-                        )
-                        return
+        # ===== Unknown command handling removed =====
+        # Commands that are registered in the API but have no handler in the bot
+        # will simply not respond. This avoids false "not implemented" warnings
+        # and allows dynamic command deployment without bot code changes.
 
         active_guess_games = getattr(self.client, "active_guess_games", {})
         game = active_guess_games.get(message.author.id)
