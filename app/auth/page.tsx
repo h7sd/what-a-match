@@ -380,40 +380,33 @@ function AuthPage() {
     setLoading(true)
     setError("")
 
+    const trimmedEmail = email.trim().toLowerCase()
+    console.log("[v0] handleForgotPassword called for:", trimmedEmail)
+    console.log("[v0] Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log("[v0] Functions URL:", functionsUrl)
+
     try {
-      let sent = false
+      // Skip Edge Function entirely - go straight to Supabase native
+      // Edge Functions require verification_codes table + RESEND_API_KEY which may not be set up
+      const redirectUrl = `${window.location.origin}/auth?type=recovery&email=${encodeURIComponent(trimmedEmail)}`
+      console.log("[v0] Calling resetPasswordForEmail with redirectTo:", redirectUrl)
 
-      // Try the custom Edge Function first (uses Resend + verification_codes table)
-      try {
-        const res = await fetch(`${functionsUrl}/generate-verification-code`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: email.trim().toLowerCase(),
-            type: "password_reset",
-          }),
-        })
-        const data = await res.json()
-        if (res.ok && !data.error) {
-          sent = true
-          setMessage("A reset code has been sent to your email. Enter it below.")
-          setView("reset-password")
-        }
-      } catch {
-        // Edge Function not available
+      const { data, error: resetErr } = await supabase.auth.resetPasswordForEmail(
+        trimmedEmail,
+        { redirectTo: redirectUrl }
+      )
+
+      console.log("[v0] resetPasswordForEmail response - data:", data, "error:", resetErr)
+
+      if (resetErr) {
+        console.log("[v0] resetPasswordForEmail error details:", JSON.stringify(resetErr))
+        throw resetErr
       }
 
-      // Fallback: Use Supabase native password reset
-      if (!sent) {
-        const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
-          email.trim().toLowerCase(),
-          { redirectTo: `${window.location.origin}/auth?type=recovery&email=${encodeURIComponent(email.trim().toLowerCase())}` }
-        )
-        if (resetErr) throw resetErr
-        setMessage("A password reset link has been sent to your email. Check your inbox.")
-        setView("reset-password")
-      }
+      setMessage("A password reset link has been sent to your email. Check your inbox (and spam folder).")
+      setView("reset-password")
     } catch (err: unknown) {
+      console.log("[v0] handleForgotPassword catch:", err)
       const msg = err instanceof Error ? err.message : "Failed to send reset email"
       setError(msg)
     } finally {
