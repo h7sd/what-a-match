@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
+
 /**
  * Share redirect page - redirects /s/:username to the share edge function
  * This ensures Discord/Twitter bots get proper OG meta tags

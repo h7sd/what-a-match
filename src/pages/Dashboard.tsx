@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth';
+
 import { useCurrentUserProfile, useUpdateProfile, useSocialLinks, useCreateSocialLink, useDeleteSocialLink } from '@/hooks/useProfile';
 import { useIsAdmin, useIsSupporter, useUserBadges, useGlobalBadges, useClaimBadge } from '@/hooks/useBadges';
 import { BanAppealScreen } from '@/components/auth/BanAppealScreen';

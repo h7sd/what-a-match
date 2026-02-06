@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ModernHeader } from "@/components/landing/ModernHeader";
 import { HeroSection } from "@/components/landing/HeroSection";

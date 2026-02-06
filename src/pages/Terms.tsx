@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { FadeIn } from '@/components/landing/FadeIn';
 
+
 export default function Terms() {
   return (
     <div className="min-h-screen bg-background">

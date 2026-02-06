@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+
 import { FadeIn } from "@/components/landing/FadeIn";
 
 export default function Imprint() {

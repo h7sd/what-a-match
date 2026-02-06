@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader2, ArrowLeft, Ban } from 'lucide-react';
 import { useRecordProfileView } from '@/hooks/useProfile';
+
 import { getPublicProfile, getPublicProfileByAlias, getProfileLinks, getProfileBadges, PublicProfile, PublicLink, PublicBadge } from '@/lib/api';
 import { ProfileCard } from '@/components/profile/ProfileCard';
 import { SocialLinks } from '@/components/profile/SocialLinks';
