@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Database, Shield, Lock, AlertTriangle, Search, RefreshCw, Download } from 'lucide-react';
+import { Loader2, Database, Shield, Lock, AlertTriangle, Search, RefreshCw, Download, FileArchive } from 'lucide-react';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -69,6 +69,7 @@ export default function SecretDatabaseViewer() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadMfaCode, setDownloadMfaCode] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadType, setDownloadType] = useState<'sql' | 'all'>('sql');
   const [error, setError] = useState<string | null>(null);
 
   // Check authentication and authorization
@@ -292,6 +293,44 @@ export default function SecretDatabaseViewer() {
     return lines.join('\n');
   };
 
+  // Generate JSON export for all tables
+  const generateJsonExport = (): string => {
+    const exportData: Record<string, unknown[]> = {};
+    for (const tableName of TABLE_NAMES) {
+      exportData[tableName] = tableData[tableName] || [];
+    }
+    return JSON.stringify(exportData, null, 2);
+  };
+
+  // Create a simple text-based bundle (no external zip library needed)
+  const downloadAllFormats = () => {
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    // Download SQL
+    const sqlContent = generateSqlExport();
+    const sqlBlob = new Blob([sqlContent], { type: 'application/sql' });
+    const sqlUrl = URL.createObjectURL(sqlBlob);
+    const sqlLink = document.createElement('a');
+    sqlLink.href = sqlUrl;
+    sqlLink.download = `database-export-${timestamp}.sql`;
+    document.body.appendChild(sqlLink);
+    sqlLink.click();
+    document.body.removeChild(sqlLink);
+    URL.revokeObjectURL(sqlUrl);
+
+    // Download JSON
+    const jsonContent = generateJsonExport();
+    const jsonBlob = new Blob([jsonContent], { type: 'application/json' });
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+    const jsonLink = document.createElement('a');
+    jsonLink.href = jsonUrl;
+    jsonLink.download = `database-export-${timestamp}.json`;
+    document.body.appendChild(jsonLink);
+    jsonLink.click();
+    document.body.removeChild(jsonLink);
+    URL.revokeObjectURL(jsonUrl);
+  };
+
   // Verify 2FA and trigger download
   const handleDownloadWithMfa = async () => {
     if (!mfaFactorId || downloadMfaCode.length !== 6) return;
@@ -312,22 +351,31 @@ export default function SecretDatabaseViewer() {
 
       if (verifyError) throw verifyError;
 
-      // Generate and download SQL
-      const sqlContent = generateSqlExport();
-      const blob = new Blob([sqlContent], { type: 'application/sql' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `database-export-${new Date().toISOString().split('T')[0]}.sql`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (downloadType === 'all') {
+        // Download both SQL and JSON
+        downloadAllFormats();
+        toast({
+          title: 'Downloads gestartet',
+          description: 'SQL und JSON Dateien werden heruntergeladen.'
+        });
+      } else {
+        // Generate and download SQL only
+        const sqlContent = generateSqlExport();
+        const blob = new Blob([sqlContent], { type: 'application/sql' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `database-export-${new Date().toISOString().split('T')[0]}.sql`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-      toast({
-        title: 'Download gestartet',
-        description: 'Die SQL-Datei wird heruntergeladen.'
-      });
+        toast({
+          title: 'Download gestartet',
+          description: 'Die SQL-Datei wird heruntergeladen.'
+        });
+      }
 
       setShowDownloadModal(false);
       setDownloadMfaCode('');
@@ -492,7 +540,22 @@ export default function SecretDatabaseViewer() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowDownloadModal(true)}
+                onClick={() => {
+                  setDownloadType('all');
+                  setShowDownloadModal(true);
+                }}
+                disabled={isLoading || Object.keys(tableData).length === 0}
+              >
+                <FileArchive className="h-4 w-4 mr-1" />
+                Alles downloaden
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setDownloadType('sql');
+                  setShowDownloadModal(true);
+                }}
                 disabled={isLoading || Object.keys(tableData).length === 0}
               >
                 <Download className="h-4 w-4 mr-1" />
@@ -643,10 +706,10 @@ export default function SecretDatabaseViewer() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5 text-purple-500" />
-              SQL Export bestätigen
+              {downloadType === 'all' ? 'Kompletter Export' : 'SQL Export'} bestätigen
             </DialogTitle>
             <DialogDescription className="text-zinc-400">
-              Gib deinen 6-stelligen 2FA-Code ein, um die gesamte Datenbank als SQL-Datei herunterzuladen.
+              Gib deinen 6-stelligen 2FA-Code ein, um {downloadType === 'all' ? 'SQL + JSON Dateien' : 'die SQL-Datei'} herunterzuladen.
             </DialogDescription>
           </DialogHeader>
           
@@ -670,7 +733,10 @@ export default function SecretDatabaseViewer() {
             </div>
 
             <div className="text-xs text-zinc-500 text-center">
-              Die exportierte Datei enthält alle {TABLE_NAMES.length} Tabellen als PostgreSQL INSERT-Statements.
+              {downloadType === 'all' 
+                ? `Export enthält alle ${TABLE_NAMES.length} Tabellen als SQL + JSON Dateien.`
+                : `Die exportierte Datei enthält alle ${TABLE_NAMES.length} Tabellen als PostgreSQL INSERT-Statements.`
+              }
             </div>
 
             <Button 
