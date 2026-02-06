@@ -13,6 +13,7 @@ import { GlobalAdminNotification } from "@/components/notifications/GlobalAdminN
 import { useIsMobile } from "@/hooks/use-mobile";
 import MaintenanceOverlay from "@/components/landing/MaintenanceOverlay";
 import { supabase } from "@/integrations/supabase/client";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 // Maintenance mode flag - set to false to disable
 const MAINTENANCE_MODE = true;
@@ -170,6 +171,7 @@ function MaintenanceRouter() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+        <SpeedInsights />
       </>
     );
   }
@@ -211,6 +213,7 @@ function MaintenanceRouter() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        <SpeedInsights />
       </>
     );
   }
@@ -243,6 +246,7 @@ function MaintenanceRouter() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      <SpeedInsights />
     </>
   );
 }
@@ -303,6 +307,7 @@ const App = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
+            <SpeedInsights />
           </TooltipProvider>
         </AuthProvider>
       </BrowserRouter>
