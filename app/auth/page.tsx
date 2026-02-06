@@ -114,6 +114,17 @@ function AuthPage() {
       setEmail(emailParam)
       if (codeParam) setVerificationCode(codeParam)
     }
+
+    // Handle Supabase native recovery flow (hash-based tokens)
+    const hash = window.location.hash
+    if (hash && hash.includes("type=recovery")) {
+      supabase.auth.onAuthStateChange((event) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setView("reset-password")
+          if (emailParam) setEmail(emailParam)
+        }
+      })
+    }
   }, [searchParams, handleDiscordCallback])
 
   // Login with email/password
@@ -316,6 +327,7 @@ function AuthPage() {
     setError("")
 
     try {
+      // Try the custom Edge Function first
       const res = await fetch(`${functionsUrl}/generate-verification-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -326,11 +338,22 @@ function AuthPage() {
       })
 
       const data = await res.json()
+      console.log("[v0] generate-verification-code response:", res.status, data)
+
       if (!res.ok || data.error) {
-        throw new Error(data.error || "Failed to send reset code")
+        // If Edge Function fails, fallback to Supabase native password reset
+        console.log("[v0] Edge function failed, trying Supabase native resetPasswordForEmail")
+        const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
+          email.trim().toLowerCase(),
+          { redirectTo: `${window.location.origin}/auth?type=recovery&email=${encodeURIComponent(email.trim().toLowerCase())}` }
+        )
+        if (resetErr) {
+          console.log("[v0] Supabase native reset also failed:", resetErr)
+          throw resetErr
+        }
       }
 
-      setMessage("If an account exists with that email, a reset code has been sent.")
+      setMessage("If an account exists with that email, a password reset link has been sent.")
       setView("reset-password")
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to send reset code"
@@ -353,19 +376,29 @@ function AuthPage() {
     }
 
     try {
-      const res = await fetch(`${functionsUrl}/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          code: verificationCode,
-          newPassword,
-        }),
-      })
+      if (verificationCode) {
+        // Try the Edge Function with code
+        const res = await fetch(`${functionsUrl}/reset-password`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            code: verificationCode,
+            newPassword,
+          }),
+        })
 
-      const data = await res.json()
-      if (!res.ok || data.error) {
-        throw new Error(data.error || "Password reset failed")
+        const data = await res.json()
+        console.log("[v0] reset-password response:", res.status, data)
+        if (!res.ok || data.error) {
+          throw new Error(data.error || "Password reset failed")
+        }
+      } else {
+        // Use Supabase native updateUser (for recovery link flow)
+        const { error: updateErr } = await supabase.auth.updateUser({
+          password: newPassword,
+        })
+        if (updateErr) throw updateErr
       }
 
       setMessage("Password updated! You can now log in.")
@@ -812,14 +845,15 @@ function AuthPage() {
           <>
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold gradient-text">New Password</CardTitle>
-              <CardDescription>Enter the code and your new password</CardDescription>
+              <CardDescription>Enter your new password{verificationCode ? " and the code from your email" : ""}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleResetPassword} className="flex flex-col gap-4">
                 {error && <div className="text-sm text-destructive bg-destructive/10 rounded-lg p-3">{error}</div>}
+                {message && <div className="text-sm text-primary bg-primary/10 rounded-lg p-3">{message}</div>}
 
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="reset-code" className="text-sm font-medium text-foreground">Reset Code</label>
+                  <label htmlFor="reset-code" className="text-sm font-medium text-foreground">Reset Code (from email)</label>
                   <input
                     id="reset-code"
                     type="text"
@@ -828,7 +862,6 @@ function AuthPage() {
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
                     placeholder="000000"
-                    required
                     className="w-full h-12 rounded-lg border border-input bg-secondary/50 px-4 text-center text-xl font-mono tracking-[0.5em] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
@@ -858,7 +891,7 @@ function AuthPage() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full glow-sm" disabled={loading || verificationCode.length !== 6}>
+                <Button type="submit" className="w-full glow-sm" disabled={loading}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reset Password"}
                 </Button>
 
