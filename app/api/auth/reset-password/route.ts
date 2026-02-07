@@ -43,26 +43,26 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Found valid code, expires_at:", codes[0].expires_at)
 
-    // Query profiles table to get user_id by email
-    console.log("[v0] Looking up user_id from profiles table for:", normalizedEmail)
+    // Get user from auth by email using SQL query on auth.users
+    console.log("[v0] Looking up user from auth.users for:", normalizedEmail)
     
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("user_id")
+    const { data: users, error: usersError } = await supabaseAdmin
+      .from("auth.users")
+      .select("id")
       .eq("email", normalizedEmail)
       .single()
     
-    if (profileError || !profile) {
-      console.log("[v0] Profile not found:", profileError)
+    if (usersError || !users) {
+      console.log("[v0] User not found in auth.users:", usersError)
       return NextResponse.json({ error: "Invalid or expired reset code" }, { status: 400 })
     }
 
-    console.log("[v0] Found user_id from profile:", profile.user_id)
+    console.log("[v0] Found user_id:", users.id)
 
     // Update password using admin API
-    console.log("[v0] Updating password for user_id:", profile.user_id)
+    console.log("[v0] Updating password for user_id:", users.id)
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      profile.user_id,
+      users.id,
       { password: newPassword }
     )
 
@@ -87,8 +87,8 @@ export async function POST(req: NextRequest) {
 
     // Invalidate all sessions
     try {
-      console.log("[v0] Signing out all sessions for user:", profile.user_id)
-      await supabaseAdmin.auth.admin.signOut(profile.user_id, "global")
+      console.log("[v0] Signing out all sessions for user:", users.id)
+      await supabaseAdmin.auth.admin.signOut(users.id, "global")
     } catch (e) {
       console.log("[v0] Session signout failed (non-critical):", e)
     }
