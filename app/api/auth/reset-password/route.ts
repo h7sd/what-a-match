@@ -43,80 +43,28 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Found valid code, expires_at:", codes[0].expires_at)
 
-    // Mark code as used
-    console.log("[v0] Marking code as used")
-    const { error: updateCodeError } = await supabaseAdmin
-      .from("verification_codes")
-      .update({ used_at: new Date().toISOString() })
-      .eq("id", codes[0].id)
-
-    if (updateCodeError) {
-      console.log("[v0] Error marking code as used:", updateCodeError)
-    }
-
-    // Find user by email using getUserByEmail (more efficient)
+    // Find user by email - query auth.users directly via RPC
     console.log("[v0] Looking up user by email:", normalizedEmail)
     
-    let foundUser = null
-    try {
-      // Try direct lookup first - Supabase might support this
-      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserByEmail(normalizedEmail)
-      
-      if (userError) {
-        console.log("[v0] getUserByEmail failed, falling back to listUsers:", userError.message)
-      } else {
-        foundUser = userData.user
-        console.log("[v0] Found user via getUserByEmail:", foundUser?.id)
-      }
-    } catch (e) {
-      console.log("[v0] getUserByEmail not available, using listUsers")
+    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+    
+    if (listError) {
+      console.log("[v0] listUsers error:", listError)
+      return NextResponse.json({ error: "Failed to reset password" }, { status: 500 })
     }
 
-    // Fallback to pagination if direct lookup failed
-    if (!foundUser) {
-      console.log("[v0] Starting user pagination lookup")
-      let page = 1
-      const perPage = 1000
-
-      while (!foundUser) {
-        console.log("[v0] Fetching page", page)
-        const { data: pageData, error: pageError } = await supabaseAdmin.auth.admin.listUsers({
-          page,
-          perPage,
-        })
-
-        if (pageError) {
-          console.log("[v0] listUsers error:", pageError)
-          return NextResponse.json({ error: "Invalid or expired reset code" }, { status: 400 })
-        }
-
-        console.log("[v0] Page", page, "returned", pageData.users.length, "users")
-        foundUser = pageData.users.find(u => u.email?.toLowerCase() === normalizedEmail)
-
-        if (foundUser) {
-          console.log("[v0] Found user on page", page)
-          break
-        }
-        if (pageData.users.length < perPage) {
-          console.log("[v0] Reached last page")
-          break
-        }
-        page++
-        if (page > 10) {
-          console.log("[v0] Max pages reached")
-          break
-        }
-      }
-    }
+    console.log("[v0] Total users found:", users.length)
+    const foundUser = users.find(u => u.email?.toLowerCase() === normalizedEmail)
 
     if (!foundUser) {
       console.log("[v0] User not found in auth system")
       return NextResponse.json({ error: "Invalid or expired reset code" }, { status: 400 })
     }
 
-    console.log("[v0] Found user, updating password for:", foundUser.id)
+    console.log("[v0] Found user:", foundUser.id)
 
     // Update password using admin API
+    console.log("[v0] Updating password...")
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       foundUser.id,
       { password: newPassword }
@@ -129,10 +77,17 @@ export async function POST(req: NextRequest) {
           error: "Password is too weak. Please choose a stronger password."
         }, { status: 400 })
       }
-      throw new Error("Failed to update password")
+      return NextResponse.json({ error: "Failed to update password" }, { status: 500 })
     }
 
     console.log("[v0] Password updated successfully")
+
+    // Mark code as used (after successful password update)
+    console.log("[v0] Marking code as used")
+    await supabaseAdmin
+      .from("verification_codes")
+      .update({ used_at: new Date().toISOString() })
+      .eq("id", codes[0].id)
 
     // Invalidate all sessions
     try {
