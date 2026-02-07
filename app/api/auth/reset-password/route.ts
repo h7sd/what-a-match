@@ -43,30 +43,26 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Found valid code, expires_at:", codes[0].expires_at)
 
-    // Find user by email - query auth.users directly via RPC
-    console.log("[v0] Looking up user by email:", normalizedEmail)
+    // Query profiles table to get user_id by email
+    console.log("[v0] Looking up user_id from profiles table for:", normalizedEmail)
     
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id")
+      .eq("email", normalizedEmail)
+      .single()
     
-    if (listError) {
-      console.log("[v0] listUsers error:", listError)
-      return NextResponse.json({ error: "Failed to reset password" }, { status: 500 })
-    }
-
-    console.log("[v0] Total users found:", users.length)
-    const foundUser = users.find(u => u.email?.toLowerCase() === normalizedEmail)
-
-    if (!foundUser) {
-      console.log("[v0] User not found in auth system")
+    if (profileError || !profile) {
+      console.log("[v0] Profile not found:", profileError)
       return NextResponse.json({ error: "Invalid or expired reset code" }, { status: 400 })
     }
 
-    console.log("[v0] Found user:", foundUser.id)
+    console.log("[v0] Found user_id from profile:", profile.user_id)
 
     // Update password using admin API
-    console.log("[v0] Updating password...")
+    console.log("[v0] Updating password for user_id:", profile.user_id)
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      foundUser.id,
+      profile.user_id,
       { password: newPassword }
     )
 
@@ -91,8 +87,8 @@ export async function POST(req: NextRequest) {
 
     // Invalidate all sessions
     try {
-      console.log("[v0] Signing out all sessions")
-      await supabaseAdmin.auth.admin.signOut(foundUser.id, "global")
+      console.log("[v0] Signing out all sessions for user:", profile.user_id)
+      await supabaseAdmin.auth.admin.signOut(profile.user_id, "global")
     } catch (e) {
       console.log("[v0] Session signout failed (non-critical):", e)
     }
