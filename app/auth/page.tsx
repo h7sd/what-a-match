@@ -370,6 +370,7 @@ function AuthPage() {
     setError("")
 
     try {
+      console.log("[v0] Sending password reset request for:", email.trim().toLowerCase())
       const res = await fetch("/api/auth/generate-verification-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -380,6 +381,7 @@ function AuthPage() {
       })
 
       const data = await res.json()
+      console.log("[v0] Password reset response:", res.status, data)
       if (!res.ok || data.error) {
         throw new Error(data.error || "Failed to send reset code")
       }
@@ -387,6 +389,7 @@ function AuthPage() {
       setMessage("A password reset email has been sent. Check your inbox.")
       setView("reset-password")
     } catch (err: unknown) {
+      console.log("[v0] Password reset error:", err)
       const msg = err instanceof Error ? err.message : "Failed to send reset email"
       setError(msg)
     } finally {

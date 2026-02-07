@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY!
+// Use your verified domain sender, or fallback to Resend's test address
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "UserVault <onboarding@resend.dev>"
 
 function generateCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -15,7 +17,7 @@ async function sendSignupEmail(to: string, code: string) {
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "UserVault <noreply@uservault.cc>",
+      from: FROM_EMAIL,
       to: [to],
       subject: "Verify Your Email - UserVault",
       html: `
@@ -70,7 +72,7 @@ async function sendPasswordResetEmail(to: string, code: string, resetUrl: string
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "UserVault <noreply@uservault.cc>",
+      from: FROM_EMAIL,
       to: [to],
       subject: "Reset Your Password - UserVault",
       html: `
@@ -123,6 +125,10 @@ async function sendPasswordResetEmail(to: string, code: string, resetUrl: string
 export async function POST(req: NextRequest) {
   try {
     const { email, type } = await req.json()
+    console.log("[v0] generate-verification-code called:", { email, type })
+    console.log("[v0] RESEND_API_KEY set:", !!process.env.RESEND_API_KEY)
+    console.log("[v0] SUPABASE_SERVICE_ROLE_KEY set:", !!process.env.SUPABASE_SERVICE_ROLE_KEY)
+    console.log("[v0] NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
 
     if (!email || !type) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -143,6 +149,8 @@ export async function POST(req: NextRequest) {
       ? new Date(Date.now() + 15 * 60 * 1000).toISOString()
       : new Date(Date.now() + 60 * 60 * 1000).toISOString()
 
+    console.log("[v0] Generated code for", normalizedEmail, "type:", type, "expires:", expiresAt)
+
     // Insert verification code
     const { error: insertError } = await supabaseAdmin
       .from("verification_codes")
@@ -154,22 +162,28 @@ export async function POST(req: NextRequest) {
       })
 
     if (insertError) {
-      console.error("Error inserting verification code:", insertError)
-      return NextResponse.json({ error: "Failed to create verification code" }, { status: 500 })
+      console.error("[v0] DB INSERT ERROR:", JSON.stringify(insertError))
+      return NextResponse.json({ error: `Database error: ${insertError.message}` }, { status: 500 })
     }
+
+    console.log("[v0] Code inserted into DB successfully")
 
     // Send email
     if (type === "signup") {
+      console.log("[v0] Sending signup email to:", normalizedEmail)
       await sendSignupEmail(normalizedEmail, code)
+      console.log("[v0] Signup email sent successfully")
     } else {
       const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/[^/]*$/, "") || "https://uservault.cc"
       const resetUrl = `${origin}/auth?type=recovery&email=${encodeURIComponent(normalizedEmail)}&code=${code}`
+      console.log("[v0] Sending password reset email to:", normalizedEmail, "resetUrl:", resetUrl)
       await sendPasswordResetEmail(normalizedEmail, code, resetUrl)
+      console.log("[v0] Password reset email sent successfully")
     }
 
     return NextResponse.json({ success: true, message: "Verification code sent" })
   } catch (error: unknown) {
-    console.error("Error in generate-verification-code:", error)
+    console.error("[v0] CATCH ERROR in generate-verification-code:", error)
     const msg = error instanceof Error ? error.message : "Failed to send verification code"
     return NextResponse.json({ error: msg }, { status: 500 })
   }
