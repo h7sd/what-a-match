@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { supabase, getSupabaseFunctionsUrl } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Mail, Lock, User, ArrowLeft, Loader2, Eye, EyeOff, Shield } from "lucide-react"
@@ -53,15 +53,14 @@ function AuthPage() {
     refreshToken: string
   } | null>(null)
 
-  const functionsUrl = getSupabaseFunctionsUrl()
-
   // Handle Discord OAuth callback
   const handleDiscordCallback = useCallback(async (code: string, state: string) => {
     setLoading(true)
     setError("")
     try {
-      const redirectUri = `${functionsUrl}/discord-oauth-callback`
-      const res = await fetch(`${functionsUrl}/discord-oauth-callback`, {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      const redirectUri = `${supabaseUrl}/functions/v1/discord-oauth-callback`
+      const res = await fetch("/api/auth/discord-oauth-callback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, state, redirect_uri: redirectUri, mode: "login" }),
@@ -89,7 +88,7 @@ function AuthPage() {
     } finally {
       setLoading(false)
     }
-  }, [functionsUrl, router])
+  }, [router])
 
   // Handle URL params on mount
   useEffect(() => {
@@ -120,16 +119,6 @@ function AuthPage() {
       setView("login")
     }
 
-    // Handle Supabase native recovery flow (hash-based tokens)
-    const hash = window.location.hash
-    if (hash && hash.includes("type=recovery")) {
-      supabase.auth.onAuthStateChange((event) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setView("reset-password")
-          if (emailParam) setEmail(emailParam)
-        }
-      })
-    }
   }, [searchParams, handleDiscordCallback])
 
   // Login with email/password
@@ -140,7 +129,7 @@ function AuthPage() {
 
     try {
       // Check ban status first
-      const banRes = await fetch(`${functionsUrl}/check-ban-status`, {
+      const banRes = await fetch("/api/auth/check-ban-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: null, username: email }),
@@ -189,7 +178,7 @@ function AuthPage() {
             refreshToken: data.session.refresh_token,
           })
           // Send email OTP
-          await fetch(`${functionsUrl}/mfa-email-otp`, {
+          await fetch("/api/auth/mfa-email-otp", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -241,7 +230,7 @@ function AuthPage() {
 
       // Try Edge Function first (custom verification code flow)
       try {
-        const res = await fetch(`${functionsUrl}/generate-verification-code`, {
+        const res = await fetch("/api/auth/generate-verification-code", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -312,7 +301,7 @@ function AuthPage() {
     try {
       if (verificationCode) {
         // Edge Function code verification flow
-        const verifyRes = await fetch(`${functionsUrl}/verify-code`, {
+        const verifyRes = await fetch("/api/auth/verify-code", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -374,39 +363,30 @@ function AuthPage() {
     }
   }
 
-  // Forgot password - send reset email
+  // Forgot password - send reset code via Resend
   async function handleForgotPassword(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError("")
 
-    const trimmedEmail = email.trim().toLowerCase()
-    console.log("[v0] handleForgotPassword called for:", trimmedEmail)
-    console.log("[v0] Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.log("[v0] Functions URL:", functionsUrl)
-
     try {
-      // Skip Edge Function entirely - go straight to Supabase native
-      // Edge Functions require verification_codes table + RESEND_API_KEY which may not be set up
-      const redirectUrl = `${window.location.origin}/auth?type=recovery&email=${encodeURIComponent(trimmedEmail)}`
-      console.log("[v0] Calling resetPasswordForEmail with redirectTo:", redirectUrl)
+      const res = await fetch("/api/auth/generate-verification-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          type: "password_reset",
+        }),
+      })
 
-      const { data, error: resetErr } = await supabase.auth.resetPasswordForEmail(
-        trimmedEmail,
-        { redirectTo: redirectUrl }
-      )
-
-      console.log("[v0] resetPasswordForEmail response - data:", data, "error:", resetErr)
-
-      if (resetErr) {
-        console.log("[v0] resetPasswordForEmail error details:", JSON.stringify(resetErr))
-        throw resetErr
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Failed to send reset code")
       }
 
-      setMessage("A password reset link has been sent to your email. Check your inbox (and spam folder).")
+      setMessage("A password reset email has been sent. Check your inbox.")
       setView("reset-password")
     } catch (err: unknown) {
-      console.log("[v0] handleForgotPassword catch:", err)
       const msg = err instanceof Error ? err.message : "Failed to send reset email"
       setError(msg)
     } finally {
@@ -414,7 +394,7 @@ function AuthPage() {
     }
   }
 
-  // Reset password with code or native recovery
+  // Reset password with code
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -428,8 +408,8 @@ function AuthPage() {
 
     try {
       if (verificationCode) {
-        // Edge Function flow: verify code + reset password via admin API
-        const res = await fetch(`${functionsUrl}/reset-password`, {
+        // Verify code + reset password via API route
+        const res = await fetch("/api/auth/reset-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -473,7 +453,7 @@ function AuthPage() {
     try {
       if (!pendingSession) throw new Error("No pending session")
 
-      const res = await fetch(`${functionsUrl}/mfa-verify`, {
+      const res = await fetch("/api/auth/mfa-verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -517,7 +497,7 @@ function AuthPage() {
     try {
       if (!pendingSession) throw new Error("No pending session")
 
-      const res = await fetch(`${functionsUrl}/mfa-email-otp`, {
+      const res = await fetch("/api/auth/mfa-email-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -547,9 +527,10 @@ function AuthPage() {
 
     try {
       const frontendOrigin = window.location.origin
-      const redirectUri = `${functionsUrl}/discord-oauth-callback`
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      const redirectUri = `${supabaseUrl}/functions/v1/discord-oauth-callback`
 
-      const res = await fetch(`${functionsUrl}/discord-oauth`, {
+      const res = await fetch("/api/auth/discord-oauth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -914,7 +895,7 @@ function AuthPage() {
           <>
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold gradient-text">New Password</CardTitle>
-              <CardDescription>Enter your new password{verificationCode ? " and the code from your email" : ""}</CardDescription>
+              <CardDescription>Enter the code from your email and your new password</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleResetPassword} className="flex flex-col gap-4">
@@ -922,7 +903,7 @@ function AuthPage() {
                 {message && <div className="text-sm text-primary bg-primary/10 rounded-lg p-3">{message}</div>}
 
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="reset-code" className="text-sm font-medium text-foreground">Reset Code (from email)</label>
+                  <label htmlFor="reset-code" className="text-sm font-medium text-foreground">Reset Code</label>
                   <input
                     id="reset-code"
                     type="text"
@@ -960,7 +941,7 @@ function AuthPage() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full glow-sm" disabled={loading}>
+                <Button type="submit" className="w-full glow-sm" disabled={loading || verificationCode.length !== 6}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reset Password"}
                 </Button>
 
@@ -1068,7 +1049,7 @@ function AuthPage() {
                     if (!pendingSession) return
                     setLoading(true)
                     try {
-                      await fetch(`${functionsUrl}/mfa-email-otp`, {
+                      await fetch("/api/auth/mfa-email-otp", {
                         method: "POST",
                         headers: {
                           "Content-Type": "application/json",
