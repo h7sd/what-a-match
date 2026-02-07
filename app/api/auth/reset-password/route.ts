@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 export async function POST(req: NextRequest) {
   try {
     const { email, code, newPassword } = await req.json()
+    console.log("[v0] reset-password called with:", { email, code: code?.substring(0, 2) + "****", hasPassword: !!newPassword })
 
     if (!email || !code || !newPassword) {
       return NextResponse.json({ error: "Missing required fields: email, code, and newPassword" }, { status: 400 })
@@ -14,6 +15,7 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedEmail = email.toLowerCase().trim()
+    console.log("[v0] Querying verification_codes for:", { email: normalizedEmail, code, type: "password_reset" })
 
     // Verify the reset code
     const { data: codes, error: fetchError } = await supabaseAdmin
@@ -27,9 +29,19 @@ export async function POST(req: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(1)
 
-    if (fetchError || !codes || codes.length === 0) {
+    console.log("[v0] Query result:", { codesFound: codes?.length || 0, fetchError: fetchError?.message })
+
+    if (fetchError) {
+      console.log("[v0] DB fetch error:", JSON.stringify(fetchError))
       return NextResponse.json({ error: "Invalid or expired reset code" }, { status: 400 })
     }
+
+    if (!codes || codes.length === 0) {
+      console.log("[v0] No matching code found")
+      return NextResponse.json({ error: "Invalid or expired reset code" }, { status: 400 })
+    }
+
+    console.log("[v0] Found valid code, expires_at:", codes[0].expires_at)
 
     // Mark code as used
     await supabaseAdmin
