@@ -43,37 +43,17 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Found valid code, expires_at:", codes[0].expires_at)
 
-    // Find user by email using listUsers pagination
-    console.log("[v0] Fetching users to find user_id for:", normalizedEmail)
-    let userId: string | null = null
-    let page = 0
+    // Find user by email using PostgreSQL function (much faster than listUsers pagination)
+    console.log("[v0] Calling get_user_id_by_email RPC for:", normalizedEmail)
+    const { data: userId, error: rpcError } = await supabaseAdmin
+      .rpc("get_user_id_by_email", { user_email: normalizedEmail })
     
-    while (!userId && page < 20) {
-      const { data, error } = await supabaseAdmin.auth.admin.listUsers({
-        page: page + 1,
-        perPage: 100
-      })
-      
-      if (error) {
-        console.log("[v0] listUsers error:", error)
-        break
-      }
-      
-      const user = data.users.find(u => u.email?.toLowerCase() === normalizedEmail)
-      if (user) {
-        userId = user.id
-        console.log("[v0] Found user_id:", userId, "on page", page + 1)
-        break
-      }
-      
-      if (data.users.length < 100) break
-      page++
-    }
-    
-    if (!userId) {
-      console.log("[v0] User not found in auth system")
+    if (rpcError || !userId) {
+      console.log("[v0] RPC error or user not found:", rpcError)
       return NextResponse.json({ error: "Invalid or expired reset code" }, { status: 400 })
     }
+    
+    console.log("[v0] Found user_id via RPC:", userId)
 
     // Update password using admin API
     console.log("[v0] Updating password for user_id:", userId)
