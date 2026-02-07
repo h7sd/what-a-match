@@ -43,26 +43,57 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Found valid code, expires_at:", codes[0].expires_at)
 
-    // Get user from auth by email using SQL query on auth.users
-    console.log("[v0] Looking up user from auth.users for:", normalizedEmail)
+    // Sign in to verify user exists and get user_id
+    console.log("[v0] Signing in with provided email and new password (to verify user exists)")
     
-    const { data: users, error: usersError } = await supabaseAdmin
-      .from("auth.users")
-      .select("id")
-      .eq("email", normalizedEmail)
-      .single()
+    const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+      email: normalizedEmail,
+      password: newPassword,
+    })
     
-    if (usersError || !users) {
-      console.log("[v0] User not found in auth.users:", usersError)
+    // If sign in works, user already has this password - code is being reused
+    if (signInData?.user) {
+      console.log("[v0] User already has this password or code already used")
+      return NextResponse.json({ error: "Invalid or expired reset code" }, { status: 400 })
+    }
+    
+    // Now try with a dummy password to get the user_id from error
+    // Actually, let's use listUsers with pagination to find the user
+    console.log("[v0] Fetching users to find user_id for:", normalizedEmail)
+    let userId: string | null = null
+    let page = 0
+    
+    while (!userId && page < 20) {
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+        page: page + 1,
+        perPage: 100
+      })
+      
+      if (error) {
+        console.log("[v0] listUsers error:", error)
+        break
+      }
+      
+      const user = data.users.find(u => u.email?.toLowerCase() === normalizedEmail)
+      if (user) {
+        userId = user.id
+        console.log("[v0] Found user_id:", userId, "on page", page + 1)
+        break
+      }
+      
+      if (data.users.length < 100) break
+      page++
+    }
+    
+    if (!userId) {
+      console.log("[v0] User not found in auth system")
       return NextResponse.json({ error: "Invalid or expired reset code" }, { status: 400 })
     }
 
-    console.log("[v0] Found user_id:", users.id)
-
     // Update password using admin API
-    console.log("[v0] Updating password for user_id:", users.id)
+    console.log("[v0] Updating password for user_id:", userId)
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      users.id,
+      userId,
       { password: newPassword }
     )
 
@@ -87,8 +118,8 @@ export async function POST(req: NextRequest) {
 
     // Invalidate all sessions
     try {
-      console.log("[v0] Signing out all sessions for user:", users.id)
-      await supabaseAdmin.auth.admin.signOut(users.id, "global")
+      console.log("[v0] Signing out all sessions for user:", userId)
+      await supabaseAdmin.auth.admin.signOut(userId, "global")
     } catch (e) {
       console.log("[v0] Session signout failed (non-critical):", e)
     }
