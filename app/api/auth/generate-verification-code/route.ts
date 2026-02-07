@@ -4,12 +4,17 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 const RESEND_API_KEY = process.env.RESEND_API_KEY!
 // Use your verified domain sender, or fallback to Resend's test address
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "UserVault <onboarding@resend.dev>"
+// In test mode (no verified domain), Resend only allows sending to the account owner's email
+const TEST_MODE_EMAIL = "uservaultdev@gmail.com"
+const USE_TEST_MODE = !process.env.RESEND_FROM_EMAIL // If no custom from email, we're in test mode
 
 function generateCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
 async function sendSignupEmail(to: string, code: string) {
+  // In test mode, override recipient to the verified test email
+  const actualRecipient = USE_TEST_MODE ? TEST_MODE_EMAIL : to
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -18,8 +23,8 @@ async function sendSignupEmail(to: string, code: string) {
     },
     body: JSON.stringify({
       from: FROM_EMAIL,
-      to: [to],
-      subject: "Verify Your Email - UserVault",
+      to: [actualRecipient],
+      subject: `Verify Your Email - UserVault${USE_TEST_MODE ? ` (for ${to})` : ""}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -65,6 +70,8 @@ async function sendSignupEmail(to: string, code: string) {
 }
 
 async function sendPasswordResetEmail(to: string, code: string, resetUrl: string) {
+  // In test mode, override recipient to the verified test email
+  const actualRecipient = USE_TEST_MODE ? TEST_MODE_EMAIL : to
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -73,8 +80,8 @@ async function sendPasswordResetEmail(to: string, code: string, resetUrl: string
     },
     body: JSON.stringify({
       from: FROM_EMAIL,
-      to: [to],
-      subject: "Reset Your Password - UserVault",
+      to: [actualRecipient],
+      subject: `Reset Your Password - UserVault${USE_TEST_MODE ? ` (for ${to})` : ""}`,
       html: `
         <!DOCTYPE html>
         <html>
