@@ -92,14 +92,15 @@ async function sendPasswordResetEmail(to: string, code: string, resetUrl: string
                 </td></tr>
                 <tr><td style="background:linear-gradient(180deg,rgba(139,92,246,0.1) 0%,rgba(0,0,0,0.8) 100%);border:1px solid rgba(139,92,246,0.3);border-radius:20px;padding:40px;">
                   <h2 style="color:#ffffff;margin:0 0 16px 0;font-size:22px;text-align:center;">Reset Your Password</h2>
-                  <p style="color:#a1a1aa;margin:0 0 30px 0;font-size:16px;line-height:1.6;text-align:center;">Click the button below to reset your password:</p>
+                  <p style="color:#a1a1aa;margin:0 0 30px 0;font-size:16px;line-height:1.6;text-align:center;">Use this code to reset your password:</p>
                   <div style="text-align:center;margin-bottom:30px;">
-                    <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#8b5cf6,#a855f7);color:white;text-decoration:none;padding:16px 40px;border-radius:12px;font-weight:600;font-size:16px;">Reset Password</a>
+                    <span style="display:inline-block;background:linear-gradient(135deg,#8b5cf6,#a855f7);color:white;padding:16px 40px;border-radius:12px;font-weight:700;font-size:32px;letter-spacing:8px;">${code}</span>
                   </div>
-                  <p style="color:#71717a;margin:0 0 20px 0;font-size:14px;text-align:center;">This link is valid for <strong style="color:#a1a1aa;">1 hour</strong>.</p>
-                  <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:20px;">
-                    <p style="color:#52525b;font-size:12px;margin:0;text-align:center;">If the button doesn't work, copy this link:<br><a href="${resetUrl}" style="color:#8b5cf6;word-break:break-all;">${resetUrl}</a></p>
+                  <p style="color:#71717a;margin:0 0 30px 0;font-size:14px;text-align:center;">Or click the button below:</p>
+                  <div style="text-align:center;margin-bottom:30px;">
+                    <a href="${resetUrl}" style="display:inline-block;background:rgba(139,92,246,0.2);border:2px solid #8b5cf6;color:#a855f7;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:600;font-size:16px;">Reset Password</a>
                   </div>
+                  <p style="color:#71717a;margin:0;font-size:14px;text-align:center;">This code expires in <strong style="color:#a1a1aa;">1 hour</strong>.</p>
                 </td></tr>
                 <tr><td style="padding-top:30px;text-align:center;">
                   <p style="color:#52525b;font-size:12px;margin:0;">If you didn't request this email, you can safely ignore it.</p>
