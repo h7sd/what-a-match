@@ -43,22 +43,7 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Found valid code, expires_at:", codes[0].expires_at)
 
-    // Sign in to verify user exists and get user_id
-    console.log("[v0] Signing in with provided email and new password (to verify user exists)")
-    
-    const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
-      email: normalizedEmail,
-      password: newPassword,
-    })
-    
-    // If sign in works, user already has this password - code is being reused
-    if (signInData?.user) {
-      console.log("[v0] User already has this password or code already used")
-      return NextResponse.json({ error: "Invalid or expired reset code" }, { status: 400 })
-    }
-    
-    // Now try with a dummy password to get the user_id from error
-    // Actually, let's use listUsers with pagination to find the user
+    // Find user by email using listUsers pagination
     console.log("[v0] Fetching users to find user_id for:", normalizedEmail)
     let userId: string | null = null
     let page = 0
