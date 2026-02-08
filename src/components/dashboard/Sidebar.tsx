@@ -1,125 +1,121 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  User, 
-  Palette, 
-  Link2, 
-  Sparkles,
+import {
+  LayoutDashboard,
+  User,
+  Palette,
+  Link2,
+  Award,
   Settings,
   LogOut,
   Eye,
   Crown,
   ShoppingBag,
-  Bell
+  Bell,
+  Shield,
+  HeadphonesIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useNotifications } from '@/hooks/useNotifications';
-import { Badge } from '@/components/ui/badge';
+import Dock, { DockItemConfig } from './Dock';
 
 interface SidebarProps {
   username: string;
   onSignOut: () => void;
   isPremium?: boolean;
+  isAdmin?: boolean;
+  isSupporter?: boolean;
 }
 
-const navItems = [
-  { icon: LayoutDashboard, label: 'Overview', href: '/dashboard', tab: 'overview' },
-  { icon: User, label: 'Profile', href: '/dashboard', tab: 'profile' },
-  { icon: Palette, label: 'Appearance', href: '/dashboard', tab: 'appearance' },
-  { icon: Link2, label: 'Links', href: '/dashboard', tab: 'links' },
-  { icon: Sparkles, label: 'Effects', href: '/dashboard', tab: 'effects' },
-  { icon: Bell, label: 'Notifications', href: '/dashboard', tab: 'notifications' },
-  { icon: ShoppingBag, label: 'Marketplace', href: '/dashboard', tab: 'marketplace' },
-];
-
-export function Sidebar({ username, onSignOut, isPremium = false }: SidebarProps) {
+export function Sidebar({ username, onSignOut, isPremium = false, isAdmin = false, isSupporter = false }: SidebarProps) {
   const location = useLocation();
   const { unreadCount } = useNotifications();
 
+  const getCurrentTab = () => {
+    const hash = location.hash.replace('#', '');
+    return hash || 'overview';
+  };
+
+  const currentTab = getCurrentTab();
+
+  const baseNavItems = [
+    { icon: LayoutDashboard, label: 'Overview', tab: 'overview' },
+    { icon: User, label: 'Profile', tab: 'profile' },
+    { icon: Palette, label: 'Appearance', tab: 'appearance' },
+    { icon: Link2, label: 'Links', tab: 'links' },
+    { icon: Award, label: 'Badges', tab: 'badges' },
+    { icon: Bell, label: 'Notifications', tab: 'notifications' },
+    { icon: ShoppingBag, label: 'Marketplace', tab: 'marketplace' },
+    { icon: Settings, label: 'Settings', tab: 'settings' },
+  ];
+
+  const navItems = [...baseNavItems];
+  if (isSupporter) {
+    navItems.push({ icon: HeadphonesIcon, label: 'Supporter', tab: 'supporter' });
+  }
+  if (isAdmin) {
+    navItems.push({ icon: Shield, label: 'Owner', tab: 'owner' });
+  }
+
+  const dockItems: DockItemConfig[] = navItems.map((item) => {
+    const Icon = item.icon;
+    const isActive = currentTab === item.tab;
+
+    return {
+      icon: <Icon size={20} />,
+      label: item.label,
+      onClick: () => {
+        window.location.hash = item.tab;
+      },
+      className: isActive ? 'active' : '',
+    };
+  });
+
   return (
-    <aside className="w-64 min-h-screen bg-card border-r border-border flex flex-col">
-      {/* Logo */}
-      <div className="p-6 border-b border-border">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">UV</span>
+    <aside className="w-24 min-h-screen bg-background/50 backdrop-blur-sm border-r border-border/50 flex flex-col items-center">
+      <div className="p-4 border-b border-border/50 w-full flex justify-center">
+        <Link to="/" className="flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00B4D8] to-[#00D9A5] flex items-center justify-center shadow-lg">
+            <span className="text-white font-bold text-sm">UV</span>
           </div>
-          <span className="text-xl font-bold gradient-text">UserVault</span>
         </Link>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.hash === `#${item.tab}` || 
-            (location.hash === '' && item.tab === 'overview');
-          const showBadge = item.tab === 'notifications' && unreadCount > 0;
-          
-          return (
-            <Link
-              key={item.tab}
-              to={`${item.href}#${item.tab}`}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all',
-                isActive 
-                  ? 'bg-primary/10 text-primary border-l-2 border-primary' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-              )}
-            >
-              <Icon className="w-5 h-5" />
-              {item.label}
-              {showBadge && (
-                <Badge variant="default" className="ml-auto text-xs py-0 px-2">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </Badge>
-              )}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 w-full flex items-center justify-center py-8">
+        <Dock
+          items={dockItems}
+          panelWidth={80}
+          baseItemSize={48}
+          magnification={64}
+          distance={120}
+        />
       </nav>
 
-      {/* Bottom section */}
-      <div className="p-4 border-t border-border space-y-2">
-        {/* Premium Button */}
-        {!isPremium && (
-          <Button 
-            variant="outline" 
-            className="w-full justify-start gap-3 border-amber-500/50 text-amber-500 hover:bg-amber-500/10 hover:text-amber-400" 
-            asChild
-          >
-            <Link to="/premium">
-              <Crown className="w-4 h-4" />
-              Upgrade to Premium
-            </Link>
-          </Button>
-        )}
-        
+      <div className="p-4 border-t border-border/50 w-full space-y-3 flex flex-col items-center">
         {isPremium && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/30">
-            <Crown className="w-4 h-4 text-amber-500" />
-            <span className="text-sm font-medium text-amber-500">Premium</span>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 border border-amber-500/30 flex items-center justify-center">
+            <Crown className="w-5 h-5 text-amber-500" />
           </div>
         )}
-        
-        <Button 
-          variant="outline" 
-          className="w-full justify-start gap-3" 
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-12 h-12 rounded-xl border border-[#00B4D8]/30 hover:bg-[#00B4D8]/10 hover:border-[#00B4D8]/60"
           asChild
         >
           <Link to={`/${username}`} target="_blank">
-            <Eye className="w-4 h-4" />
-            View Profile
+            <Eye className="w-5 h-5 text-[#00B4D8]" />
           </Link>
         </Button>
-        
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-12 h-12 rounded-xl hover:bg-destructive/10 hover:border-destructive/30"
           onClick={onSignOut}
         >
-          <LogOut className="w-4 h-4" />
-          Sign Out
+          <LogOut className="w-5 h-5 text-muted-foreground hover:text-destructive" />
         </Button>
       </div>
     </aside>

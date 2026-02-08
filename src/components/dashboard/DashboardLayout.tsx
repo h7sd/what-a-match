@@ -1,15 +1,15 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { 
-  LayoutDashboard, 
-  User, 
-  Palette, 
-  Link2, 
-  Award, 
-  Settings, 
-  Shield, 
-  Crown, 
-  Eye, 
+import {
+  LayoutDashboard,
+  User,
+  Palette,
+  Link2,
+  Award,
+  Settings,
+  Shield,
+  Crown,
+  Eye,
   LogOut,
   Menu,
   X,
@@ -29,6 +29,7 @@ import { AdminChatNotificationBell } from '@/components/admin/AdminChatNotificat
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Badge } from '@/components/ui/badge';
+import Dock, { DockItemConfig } from './Dock';
 
 // Lazy load heavy components
 const FaultyTerminal = lazy(() => import('@/components/ui/FaultyTerminal'));
@@ -84,16 +85,84 @@ export function DashboardLayout({
     ...(isAdmin ? [{ icon: Shield, label: 'Owner Panel', tab: 'owner' as TabType }] : []),
   ];
 
+  const dockItems: DockItemConfig[] = navItems.map((item) => {
+    const Icon = item.icon;
+    const isActive = activeTab === item.tab;
+
+    return {
+      icon: <Icon size={20} />,
+      label: item.label,
+      onClick: () => {
+        onTabChange(item.tab);
+        setMobileMenuOpen(false);
+      },
+      className: isActive ? 'active' : '',
+    };
+  });
+
   const SidebarContent = () => (
+    <div className="flex flex-col h-full items-center">
+      <div className="p-4 border-b border-white/5 w-full flex justify-center">
+        <Link to="/" className="flex items-center justify-center group">
+          <div
+            className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-[#00B4D8] to-[#00D9A5] flex items-center justify-center overflow-hidden transition-transform duration-200 hover:scale-105 shadow-lg shadow-[#00B4D8]/20"
+          >
+            <div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"
+            />
+            <span className="relative text-white font-bold">UV</span>
+          </div>
+        </Link>
+      </div>
+
+      <nav className="flex-1 w-full flex items-center justify-center py-8">
+        <Dock
+          items={dockItems}
+          panelWidth={80}
+          baseItemSize={48}
+          magnification={64}
+          distance={120}
+        />
+      </nav>
+
+      <div className="p-4 border-t border-white/5 w-full space-y-3 flex flex-col items-center">
+        {isPremium && (
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 border border-amber-500/30 flex items-center justify-center transition-transform duration-200 hover:scale-105">
+            <Crown className="w-5 h-5 text-amber-500" />
+          </div>
+        )}
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-12 h-12 rounded-xl border border-[#00B4D8]/30 hover:bg-[#00B4D8]/10 hover:border-[#00B4D8]/60 transition-all duration-200"
+          asChild
+        >
+          <Link to={`/${username}`} target="_blank">
+            <Eye className="w-5 h-5 text-[#00B4D8]" />
+          </Link>
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-12 h-12 rounded-xl hover:bg-destructive/10 hover:border-destructive/30 transition-all duration-200"
+          onClick={onSignOut}
+        >
+          <LogOut className="w-5 h-5 text-muted-foreground hover:text-destructive" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  const MobileSidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Logo Section */}
       <div className="p-5 border-b border-white/5">
         <Link to="/" className="flex items-center gap-3 group">
-          <div 
-            className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center overflow-hidden transition-transform duration-200 hover:scale-105"
+          <div
+            className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-[#00B4D8] to-[#00D9A5] flex items-center justify-center overflow-hidden transition-transform duration-200 hover:scale-105 shadow-lg shadow-[#00B4D8]/20"
           >
-            {/* Subtle shine effect - CSS only */}
-            <div 
+            <div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"
             />
             <span className="relative text-white font-bold text-sm">UV</span>
@@ -105,13 +174,12 @@ export function DashboardLayout({
         </Link>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.tab;
           const showBadge = item.tab === 'notifications' && unreadCount > 0;
-          
+
           return (
             <button
               key={item.tab}
@@ -122,53 +190,53 @@ export function DashboardLayout({
               className={cn(
                 'w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm text-left relative overflow-hidden group',
                 'transition-all duration-200 ease-out',
-                isActive 
-                  ? 'text-white' 
-                  : 'text-white/50 hover:text-white/80 hover:bg-white/[0.03] hover:translate-x-1'
+                isActive
+                  ? 'text-white'
+                  : 'text-white/50 hover:text-white/80 hover:bg-white/[0.03]'
               )}
             >
-              {/* Active background with glow - CSS transition */}
-              <div 
+              <div
                 className={cn(
-                  'absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-xl',
+                  'absolute inset-0 bg-gradient-to-r from-[#00B4D8]/20 via-[#00D9A5]/10 to-transparent rounded-xl',
                   'transition-opacity duration-200',
                   isActive ? 'opacity-100' : 'opacity-0'
                 )}
               />
-              
-              {/* Active indicator line - CSS transition */}
-              <div 
+
+              <div
                 className={cn(
-                  'absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-7 bg-gradient-to-b from-primary via-primary to-accent rounded-r-full',
+                  'absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-7 bg-gradient-to-b from-[#00B4D8] to-[#00D9A5] rounded-r-full',
                   'transition-all duration-200',
                   isActive ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0'
                 )}
               />
 
-              <div className={cn(
-                'relative z-10 w-9 h-9 rounded-lg flex items-center justify-center',
-                'transition-all duration-200',
-                isActive 
-                  ? 'bg-primary/20' 
-                  : 'bg-white/5 group-hover:bg-white/10'
-              )}>
-                <Icon className={cn(
-                  'w-4 h-4 transition-colors duration-200',
-                  isActive ? 'text-primary' : 'text-white/60 group-hover:text-white/80'
-                )} />
+              <div
+                className={cn(
+                  'relative z-10 w-9 h-9 rounded-lg flex items-center justify-center',
+                  'transition-all duration-200',
+                  isActive ? 'bg-[#00B4D8]/20' : 'bg-white/5 group-hover:bg-white/10'
+                )}
+              >
+                <Icon
+                  className={cn(
+                    'w-4 h-4 transition-colors duration-200',
+                    isActive ? 'text-[#00B4D8]' : 'text-white/60 group-hover:text-white/80'
+                  )}
+                />
               </div>
-              
+
               <span className="relative z-10 font-medium">{item.label}</span>
-              
+
               {showBadge && (
                 <Badge variant="default" className="relative z-10 ml-auto text-xs py-0 px-2">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </Badge>
               )}
-              
+
               {isActive && !showBadge && (
                 <div className="relative z-10 ml-auto flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#00B4D8] animate-pulse" />
                 </div>
               )}
             </button>
@@ -176,14 +244,12 @@ export function DashboardLayout({
         })}
       </nav>
 
-      {/* Bottom Section */}
       <div className="p-3 border-t border-white/5 space-y-2">
-        {/* Premium Status */}
         {!isPremium ? (
           <div className="transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98]">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start gap-3 h-12 border-amber-500/20 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent text-amber-400 hover:bg-amber-500/15 hover:border-amber-500/30 hover:text-amber-300 rounded-xl transition-all" 
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3 h-12 border-amber-500/20 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent text-amber-400 hover:bg-amber-500/15 hover:border-amber-500/30 hover:text-amber-300 rounded-xl transition-all"
               asChild
             >
               <Link to="/premium">
@@ -209,10 +275,9 @@ export function DashboardLayout({
           </div>
         )}
 
-        {/* View Profile */}
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start gap-3 h-11 text-white/50 hover:text-white hover:bg-white/5 rounded-xl" 
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 h-11 text-white/50 hover:text-white hover:bg-white/5 rounded-xl"
           asChild
         >
           <Link to={`/${username}`} target="_blank">
@@ -222,10 +287,9 @@ export function DashboardLayout({
             <span className="text-sm">View Profile</span>
           </Link>
         </Button>
-        
-        {/* Sign Out */}
-        <Button 
-          variant="ghost" 
+
+        <Button
+          variant="ghost"
           className="w-full justify-start gap-3 h-11 text-white/30 hover:text-red-400 hover:bg-red-500/10 rounded-xl group"
           onClick={onSignOut}
         >
@@ -300,7 +364,7 @@ export function DashboardLayout({
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 min-h-screen bg-[#0d0d0e]/80 backdrop-blur-2xl border-r border-white/[0.04] flex-col fixed left-0 top-0 z-50">
+      <aside className="hidden md:flex w-24 min-h-screen bg-[#0d0d0e]/80 backdrop-blur-2xl border-r border-white/[0.04] flex-col fixed left-0 top-0 z-50">
         <SidebarContent />
       </aside>
 
@@ -340,7 +404,7 @@ export function DashboardLayout({
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0 bg-[#0d0d0e]/95 backdrop-blur-2xl border-white/[0.04]">
-                <SidebarContent />
+                <MobileSidebarContent />
               </SheetContent>
             </Sheet>
           </div>
@@ -348,7 +412,7 @@ export function DashboardLayout({
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-64 mt-14 md:mt-0 relative z-10">
+      <main className="flex-1 md:ml-24 mt-14 md:mt-0 relative z-10">
         {/* Desktop Header */}
         <header className="hidden md:block border-b border-white/[0.04] bg-[#0d0d0e]/50 backdrop-blur-xl sticky top-0 z-40">
           <div className="px-6 py-4 flex justify-between items-center">
