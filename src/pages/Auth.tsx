@@ -229,14 +229,14 @@ export default function Auth() {
       (step === 'login' && loginStepperStep === 3) ||
       (step === 'signup' && signupStepperStep === 4);
 
-    if (shouldRender && turnstileLoaded) {
+    if (shouldRender && turnstileLoaded && !turnstileToken) {
       // Small delay to ensure DOM is ready
       const timer = setTimeout(() => {
         renderTurnstile();
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [step, loginStepperStep, signupStepperStep, turnstileLoaded, renderTurnstile]);
+  }, [step, loginStepperStep, signupStepperStep, turnstileLoaded, turnstileToken, renderTurnstile]);
 
   // Handle password reset from email link or MFA required redirect
   useEffect(() => {
@@ -864,6 +864,9 @@ export default function Auth() {
                 onExternalBack={() => {
                   if (loginStepperStep > 1) {
                     setLoginStepperStep(loginStepperStep - 1);
+                    if (loginStepperStep === 3) {
+                      setTurnstileToken(null);
+                    }
                   }
                 }}
                 nextButtonProps={{
@@ -1018,6 +1021,9 @@ export default function Auth() {
                 onExternalBack={() => {
                   if (signupStepperStep > 1) {
                     setSignupStepperStep(signupStepperStep - 1);
+                    if (signupStepperStep === 4) {
+                      setTurnstileToken(null);
+                    }
                   }
                 }}
                 nextButtonProps={{
