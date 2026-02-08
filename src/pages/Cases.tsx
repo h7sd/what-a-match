@@ -18,13 +18,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/auth';
-import { useCases } from '@/hooks/useCases';
+import { useCases, useCaseItems, useOpenCase } from '@/hooks/useCases';
 import { useUserBalance } from '@/hooks/useMarketplace';
 import { formatUC } from '@/lib/uc';
 import { CaseCard } from '@/components/cases/CaseCard';
-import { CaseOpeningDialog } from '@/components/cases/CaseOpeningDialog';
+import { CaseOpeningAnimation } from '@/components/cases/CaseOpeningAnimation';
 import { InventoryView } from '@/components/cases/InventoryView';
 import { TransactionHistory } from '@/components/cases/TransactionHistory';
+import { LiveFeed } from '@/components/cases/LiveFeed';
 import { cn } from '@/lib/utils';
 
 export default function Cases() {
@@ -33,10 +34,20 @@ export default function Cases() {
   const { data: balance } = useUserBalance();
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [showOpenDialog, setShowOpenDialog] = useState(false);
+  const [wonItem, setWonItem] = useState<any>(null);
+  const { data: caseItems } = useCaseItems(selectedCaseId);
+  const openCaseMutation = useOpenCase();
 
-  const handleOpenCase = (caseId: string) => {
+  const handleOpenCase = async (caseId: string) => {
     setSelectedCaseId(caseId);
-    setShowOpenDialog(true);
+    setWonItem(null);
+
+    openCaseMutation.mutate(caseId, {
+      onSuccess: (data) => {
+        setWonItem(data.item);
+        setShowOpenDialog(true);
+      },
+    });
   };
 
   return (
@@ -198,45 +209,53 @@ export default function Cases() {
                 </TabsList>
 
                 <TabsContent value="cases" className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold">Available Cases</h2>
-                      <p className="text-sm text-muted-foreground">Choose a case to open and win exclusive items</p>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-2xl font-bold">Available Cases</h2>
+                          <p className="text-sm text-muted-foreground">Choose a case to open and win exclusive items</p>
+                        </div>
+                        <Badge variant="secondary" className="gap-1">
+                          <Info className="w-3 h-3" />
+                          Provably Fair
+                        </Badge>
+                      </div>
+
+                      {isLoading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="h-80 rounded-2xl bg-muted/50 animate-pulse" />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <AnimatePresence mode="popLayout">
+                            {cases?.map((caseItem, index) => (
+                              <CaseCard
+                                key={caseItem.id}
+                                case={caseItem}
+                                onOpen={handleOpenCase}
+                                userBalance={balance?.balance ?? 0n}
+                                index={index}
+                              />
+                            ))}
+                          </AnimatePresence>
+                        </div>
+                      )}
+
+                      {!isLoading && (!cases || cases.length === 0) && (
+                        <div className="text-center py-20">
+                          <Package className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
+                          <p className="text-muted-foreground">No cases available at the moment</p>
+                        </div>
+                      )}
                     </div>
-                    <Badge variant="secondary" className="gap-1">
-                      <Info className="w-3 h-3" />
-                      Provably Fair
-                    </Badge>
+
+                    <div className="lg:col-span-1">
+                      <LiveFeed />
+                    </div>
                   </div>
-
-                  {isLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="h-80 rounded-2xl bg-muted/50 animate-pulse" />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      <AnimatePresence mode="popLayout">
-                        {cases?.map((caseItem, index) => (
-                          <CaseCard
-                            key={caseItem.id}
-                            case={caseItem}
-                            onOpen={handleOpenCase}
-                            userBalance={balance?.balance ?? 0n}
-                            index={index}
-                          />
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                  )}
-
-                  {!isLoading && (!cases || cases.length === 0) && (
-                    <div className="text-center py-20">
-                      <Package className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
-                      <p className="text-muted-foreground">No cases available at the moment</p>
-                    </div>
-                  )}
                 </TabsContent>
 
                 <TabsContent value="inventory">
@@ -264,11 +283,17 @@ export default function Cases() {
 
       <ModernFooter />
 
-      {selectedCaseId && (
-        <CaseOpeningDialog
+      {selectedCaseId && wonItem && caseItems && (
+        <CaseOpeningAnimation
           caseId={selectedCaseId}
+          allItems={caseItems}
+          wonItem={wonItem}
           open={showOpenDialog}
-          onOpenChange={setShowOpenDialog}
+          onClose={() => {
+            setShowOpenDialog(false);
+            setSelectedCaseId(null);
+            setWonItem(null);
+          }}
         />
       )}
     </div>

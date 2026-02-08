@@ -163,6 +163,23 @@ Deno.serve(async (req: Request) => {
       badge: wonItem.badge,
     };
 
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('username, display_name')
+      .eq('id', user.id)
+      .single();
+
+    const displayUsername = userProfile?.display_name || userProfile?.username || 'Anonymous';
+
+    let itemName = '';
+    if (wonItem.item_type === 'coins') {
+      itemName = `${wonItem.coin_amount} Coins`;
+    } else if (wonItem.badge) {
+      itemName = wonItem.badge.name;
+    } else {
+      itemName = 'Mystery Item';
+    }
+
     await supabase
       .from('case_transactions')
       .insert({
@@ -171,6 +188,25 @@ Deno.serve(async (req: Request) => {
         transaction_type: 'open',
         items_won: [itemWonData],
         total_value: wonItem.display_value,
+      });
+
+    await supabase
+      .from('case_opening_history')
+      .insert({
+        user_id: user.id,
+        case_id: caseId,
+        coins_spent: parseInt(casePrice.toString()),
+      });
+
+    await supabase
+      .from('live_feed')
+      .insert({
+        user_id: user.id,
+        username: displayUsername,
+        case_name: caseData.name,
+        item_name: itemName,
+        item_rarity: wonItem.rarity,
+        item_value: wonItem.display_value,
       });
 
     return new Response(

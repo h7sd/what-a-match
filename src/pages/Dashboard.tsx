@@ -97,6 +97,7 @@ import { StreakDisplay } from '@/components/dashboard/StreakDisplay';
 import { SupporterPanel } from '@/components/supporter/SupporterPanel';
 import { SupporterManager } from '@/components/admin/SupporterManager';
 import { NotificationsSection } from '@/components/dashboard/NotificationsSection';
+import { LiveFeed } from '@/components/cases/LiveFeed';
 import { cn } from '@/lib/utils';
 
 // Removed local TabType - using exported type from DashboardLayout
@@ -986,6 +987,11 @@ export default function Dashboard() {
                     <RegisteredUsersList />
                     <EarlyBadgeCountdown />
                   </div>
+                </div>
+
+                <div>
+                  <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">Live Case Openings</h2>
+                  <LiveFeed />
                 </div>
               </div>
             </div>
