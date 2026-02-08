@@ -211,8 +211,8 @@ export function AdminAccountLookup() {
         .from('user_balances')
         .select('balance')
         .eq('user_id', user.user_id)
-        .single();
-      
+        .maybeSingle();
+
       setUserBalance(ucToBigInt(balance?.balance ?? 0));
     } catch (error: any) {
       toast({ title: error.message || 'Error loading user details', variant: 'destructive' });

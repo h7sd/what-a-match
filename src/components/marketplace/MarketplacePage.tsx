@@ -157,7 +157,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
               <span className="text-muted-foreground">Transaction History</span>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Earned: <span className="text-emerald-500 font-medium">{formatUC(balance?.total_earned)}</span></span>
+                <span>Earned: <span className="text-emerald-500 font-medium">{formatUC(balance?.lifetime_earned)}</span></span>
               </div>
             </div>
             <TransactionHistory transactions={transactions || []} />
