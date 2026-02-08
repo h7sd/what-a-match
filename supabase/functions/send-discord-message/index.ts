@@ -3,6 +3,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 Deno.serve(async (req) => {
@@ -12,33 +13,73 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization')
+    console.log('[Discord Sender] Auth header present:', !!authHeader)
+
     if (!authHeader) {
+      console.error('[Discord Sender] No auth header')
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized - No auth header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')
 
+    console.log('[Discord Sender] Supabase URL:', supabaseUrl)
+    console.log('[Discord Sender] Supabase Key present:', !!supabaseKey)
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('[Discord Sender] Missing Supabase credentials')
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } }
+    })
+
+    console.log('[Discord Sender] Getting user...')
     const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
+
+    if (userError) {
+      console.error('[Discord Sender] User error:', userError)
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Auth failed: ' + userError.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    if (!user) {
+      console.error('[Discord Sender] No user found')
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - No user' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('[Discord Sender] User ID:', user.id)
+    console.log('[Discord Sender] Checking admin role...')
 
     const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', {
       _user_id: user.id,
       _role: 'admin'
     })
 
-    if (roleError || !isAdmin) {
+    if (roleError) {
+      console.error('[Discord Sender] Role check error:', roleError)
+      return new Response(
+        JSON.stringify({ error: 'Role check failed: ' + roleError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('[Discord Sender] Is admin:', isAdmin)
+
+    if (!isAdmin) {
+      console.error('[Discord Sender] User is not admin')
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
