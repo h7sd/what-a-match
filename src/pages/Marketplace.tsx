@@ -37,7 +37,7 @@ export default function Marketplace() {
               >
                 <Clock className="w-4 h-4 text-primary" />
                 <span className="bg-gradient-to-r from-primary to-amber-500 bg-clip-text text-transparent">
-                  Coming Soon
+                  Under Development
                 </span>
                 <Sparkles className="w-4 h-4 text-amber-500" />
               </motion.div>
@@ -47,7 +47,7 @@ export default function Marketplace() {
               </h1>
 
               <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-                We're building an amazing marketplace where you can buy and sell exclusive badges and profile templates. Get ready to trade unique items!
+                This feature is currently under development. Check back soon for updates!
               </p>
             </div>
 
