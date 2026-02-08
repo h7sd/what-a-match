@@ -6,7 +6,7 @@ import {
   Settings,
   LogOut,
   FolderOpen,
-  Sparkles
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,10 @@ export function ExpandingMenu() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const { signOut } = useAuth();
 
+  const openChat = () => {
+    window.dispatchEvent(new CustomEvent('openLiveChat'));
+  };
+
   const menuItems: MenuItem[] = [
     {
       icon: LayoutDashboard,
@@ -34,9 +38,9 @@ export function ExpandingMenu() {
       href: '/dashboard#profile'
     },
     {
-      icon: Sparkles,
-      label: 'AI',
-      href: '/dashboard#overview'
+      icon: MessageCircle,
+      label: 'AI Chat',
+      onClick: openChat
     },
     {
       icon: Settings,

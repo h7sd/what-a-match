@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Menu, X, Sparkles, ShoppingBag, MessageCircle } from 'lucide-react';
+import { Menu, X, Sparkles, ShoppingBag } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { ReportUserDialog } from './ReportUserDialog';
 import { Magnet } from './Magnet';
@@ -11,16 +11,11 @@ import { LandingEventsPopover } from './LandingEventsPopover';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ExpandingMenu } from '@/components/navigation/ExpandingMenu';
 import { ExpandingAuthMenu } from '@/components/navigation/ExpandingAuthMenu';
-import { Button } from '@/components/ui/button';
 
 export function ModernHeader() {
   const { user } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const openChat = () => {
-    window.dispatchEvent(new CustomEvent('openLiveChat'));
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -132,15 +127,6 @@ export function ModernHeader() {
                       <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                     </svg>
                   </Link>
-                  <Button
-                    onClick={openChat}
-                    className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
-                    size="icon"
-                    variant="ghost"
-                    title="AI Chat"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                  </Button>
                 </nav>
 
                 {/* Right: Logo & Menu (only when logged in) */}
@@ -308,25 +294,13 @@ export function ModernHeader() {
 
               <div className="pt-4 mt-2 border-t border-border/50 flex flex-col gap-3">
                 {user ? (
-                  <>
-                    <button
-                      onClick={() => {
-                        openChat();
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className="text-center py-3 text-foreground font-medium hover:bg-white/5 rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      AI Chat
-                    </button>
-                    <Link
-                      to="/dashboard"
-                      className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#00B4D8] to-[#00D9A5] text-white font-semibold border border-white/10"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Dashboard
-                    </Link>
-                  </>
+                  <Link
+                    to="/dashboard"
+                    className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#00B4D8] to-[#00D9A5] text-white font-semibold border border-white/10"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
                 ) : (
                   <>
                     <Link
