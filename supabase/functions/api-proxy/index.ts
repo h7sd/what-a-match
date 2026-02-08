@@ -543,14 +543,7 @@ Deno.serve(async (req) => {
         if (alias) {
           query = query.eq('alias_username', alias.toLowerCase());
         } else {
-          const normalizedUsername = username.toLowerCase();
-          const isNumeric = /^\d+$/.test(normalizedUsername);
-
-          if (isNumeric) {
-            query = query.eq('uid_number', parseInt(normalizedUsername, 10));
-          } else {
-            query = query.eq('username', normalizedUsername);
-          }
+          query = query.eq('username', username.toLowerCase());
         }
 
         const { data, error } = await query.maybeSingle();

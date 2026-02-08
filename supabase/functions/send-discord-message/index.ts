@@ -1,3 +1,5 @@
+import { createClient } from 'npm:@supabase/supabase-js@2'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -9,6 +11,40 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    )
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', {
+      _user_id: user.id,
+      _role: 'admin'
+    })
+
+    if (roleError || !isAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const botToken = Deno.env.get('DISCORD_BOT_TOKEN')
     if (!botToken) {
       return new Response(
