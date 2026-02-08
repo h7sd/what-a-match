@@ -932,7 +932,7 @@ export default function Auth() {
             {(step === 'signup' || step === 'verify') && (
               <Stepper
                 externalStep={step === 'signup' ? 1 : 2}
-                disableStepIndicators={true}
+                disableStepIndicators={false}
                 stepCircleContainerClassName="!border-0 !shadow-none !bg-transparent !p-0"
                 contentClassName="!p-0"
                 backButtonText="Previous"
