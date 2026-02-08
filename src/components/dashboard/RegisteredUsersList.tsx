@@ -25,8 +25,8 @@ export function RegisteredUsersList() {
     fetchUsers();
   }, []);
 
-  const filteredUsers = users.filter(user => 
-    user.u.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredUsers = users.filter(user =>
+    (user.u && user.u.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (user.d && user.d.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
