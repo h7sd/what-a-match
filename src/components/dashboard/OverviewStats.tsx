@@ -91,75 +91,35 @@ function StatCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{
-        delay: index * 0.06,
-        duration: 0.5,
-        type: "spring",
-        stiffness: 120,
-        damping: 15
+        delay: index * 0.05,
+        duration: 0.4,
       }}
       whileHover={{
-        y: -6,
-        scale: 1.01,
-        transition: { duration: 0.3, type: "spring", stiffness: 400, damping: 10 }
+        y: -2,
+        transition: { duration: 0.2 }
       }}
-      className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-gradient-to-br from-black/50 via-black/30 to-black/50 backdrop-blur-xl p-5 cursor-pointer"
+      className="group relative overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-4 hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300"
     >
-      {/* Animated gradient background */}
-      <motion.div
-        className={`absolute inset-0 opacity-0 group-hover:opacity-25 transition-all duration-700 bg-gradient-to-br ${styles.iconBg}`}
-        animate={{
-          scale: [1, 1.05, 1],
-          rotate: [0, 2, 0],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-      />
-
-      {/* Shine effect on hover */}
-      <motion.div
-        className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent)',
-        }}
-      />
-
-      {/* Content */}
-      <div className="relative z-10 flex items-center gap-4">
-        <motion.div
-          className={`w-14 h-14 rounded-xl bg-gradient-to-br ${styles.iconBg} flex items-center justify-center border ${styles.iconBorder} transition-all duration-300 shadow-lg ${styles.glow}`}
-          whileHover={{
-            scale: 1.1,
-            rotate: 5,
-            transition: { duration: 0.3 }
-          }}
-        >
-          <Icon className={`w-6 h-6 ${styles.iconColor} transition-transform group-hover:scale-110`} />
-        </motion.div>
-        <div className="space-y-0.5 flex-1 min-w-0">
-          <p className="text-xs font-medium text-white/50 uppercase tracking-wide">{label}</p>
-          <motion.p
-            className="text-2xl font-bold bg-gradient-to-r from-white to-white/90 bg-clip-text text-transparent"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: index * 0.1 + 0.2 }}
-          >
-            {isNumber && typeof value === 'number' ? (
-              <AnimatedNumber value={value} />
-            ) : (
-              value
-            )}
-          </motion.p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${styles.iconBg} flex items-center justify-center border ${styles.iconBorder}`}>
+            <Icon className={`w-5 h-5 ${styles.iconColor}`} />
+          </div>
+          <div>
+            <p className="text-[11px] font-medium text-white/40 uppercase tracking-wider">{label}</p>
+            <p className="text-xl font-bold text-white mt-0.5">
+              {isNumber && typeof value === 'number' ? (
+                <AnimatedNumber value={value} />
+              ) : (
+                value
+              )}
+            </p>
+          </div>
         </div>
       </div>
-
-      {/* Bottom glow */}
-      <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-3/4 h-0.5 bg-gradient-to-r ${styles.iconBg} opacity-0 group-hover:opacity-60 blur-md transition-opacity duration-500`} />
     </motion.div>
   );
 }
@@ -214,62 +174,50 @@ export function OverviewStats({ profileViews, uidNumber, username, profileId }: 
   }, [profileId]);
 
   return (
-    <div className="space-y-6">
-      {/* Primary Stats - Most Important */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <StatCard
-          icon={Eye}
-          value={profileViews}
-          label="Profile Views"
-          index={0}
-          color="primary"
-        />
-        <StatCard
-          icon={Hash}
-          value={`#${uidNumber}`}
-          label="User ID"
-          index={1}
-          isNumber={false}
-          color="blue"
-        />
-      </div>
-
-      {/* Engagement Stats */}
-      <div className="relative">
-        <div className="absolute -top-3 left-4 px-3 py-1 bg-black/80 backdrop-blur-sm border border-white/[0.08] rounded-full">
-          <span className="text-xs font-medium text-white/60">Engagement</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-          <StatCard
-            icon={ThumbsUp}
-            value={likesCount}
-            label="Likes"
-            index={2}
-            color="emerald"
-          />
-          <StatCard
-            icon={ThumbsDown}
-            value={dislikesCount}
-            label="Dislikes"
-            index={3}
-            color="rose"
-          />
-          <StatCard
-            icon={MessageCircle}
-            value={commentsCount}
-            label="Comments"
-            index={4}
-            color="amber"
-          />
-          <StatCard
-            icon={TrendingUp}
-            value={linkClicks}
-            label="Link Clicks"
-            index={5}
-            color="blue"
-          />
-        </div>
-      </div>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <StatCard
+        icon={Eye}
+        value={profileViews}
+        label="Views"
+        index={0}
+        color="primary"
+      />
+      <StatCard
+        icon={Hash}
+        value={`#${uidNumber}`}
+        label="User ID"
+        index={1}
+        isNumber={false}
+        color="blue"
+      />
+      <StatCard
+        icon={ThumbsUp}
+        value={likesCount}
+        label="Likes"
+        index={2}
+        color="emerald"
+      />
+      <StatCard
+        icon={ThumbsDown}
+        value={dislikesCount}
+        label="Dislikes"
+        index={3}
+        color="rose"
+      />
+      <StatCard
+        icon={MessageCircle}
+        value={commentsCount}
+        label="Comments"
+        index={4}
+        color="amber"
+      />
+      <StatCard
+        icon={TrendingUp}
+        value={linkClicks}
+        label="Clicks"
+        index={5}
+        color="blue"
+      />
     </div>
   );
 }

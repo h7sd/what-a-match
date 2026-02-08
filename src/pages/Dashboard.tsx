@@ -900,39 +900,28 @@ export default function Dashboard() {
       >
         {/* Overview Tab */}
         {activeTab === 'overview' && (
-          <motion.div
-            className="space-y-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-          >
+          <div className="space-y-6 max-w-7xl mx-auto">
             {/* Alias Requests Section - shows only if there are pending requests */}
             <AliasRequestsSection />
 
-            {/* Main Content Grid */}
-            <div className="grid lg:grid-cols-[1fr,380px] gap-6">
-              {/* Left Column - Primary Content */}
-              <div className="space-y-8 min-w-0">
-                {/* Stats Section */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.5 }}
-                >
-                  <OverviewStats
-                    profileViews={profile.views_count || 0}
-                    uidNumber={(profile as any).uid_number || 1}
-                    username={profile.username}
-                    profileId={profile.id}
-                  />
-                </motion.div>
+            {/* Stats Grid */}
+            <div>
+              <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">Statistics</h2>
+              <OverviewStats
+                profileViews={profile.views_count || 0}
+                uidNumber={(profile as any).uid_number || 1}
+                username={profile.username}
+                profileId={profile.id}
+              />
+            </div>
 
-                {/* Badges Section */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                >
+            {/* Main Grid */}
+            <div className="grid lg:grid-cols-[1fr,320px] gap-6">
+              {/* Left Column */}
+              <div className="space-y-6 min-w-0">
+                {/* Badges */}
+                <div>
+                  <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">Badges</h2>
                   <BadgesCarousel badges={userBadges.map(ub => ({
                     id: ub.badge?.id || ub.id,
                     name: ub.badge?.name || 'Unknown',
@@ -940,91 +929,67 @@ export default function Dashboard() {
                     color: ub.badge?.color,
                     description: ub.badge?.description,
                   }))} totalBadges={globalBadges.length || 10} />
-                </motion.div>
+                </div>
 
-                {/* Analytics Section */}
-                <motion.div
-                  className="grid md:grid-cols-2 gap-6"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.5 }}
-                >
-                  <ProfileVisitorsChart
-                    totalVisitors={profile.views_count || 0}
-                    profileId={profile.id}
-                  />
-                  <TopLinksChart
-                    links={[...socialLinks]
-                      .sort((a, b) => ((b as any).click_count || 0) - ((a as any).click_count || 0))
-                      .slice(0, 5)
-                      .map((link, i) => ({
-                        name: link.title || link.platform,
-                        clicks: (link as any).click_count || 0,
-                        color: ['#3B82F6', '#22C55E', '#EAB308', '#8B5CF6', '#EC4899'][i],
-                        url: link.url,
-                      }))}
-                  />
-                </motion.div>
+                {/* Analytics */}
+                <div>
+                  <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">Analytics</h2>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <ProfileVisitorsChart
+                      totalVisitors={profile.views_count || 0}
+                      profileId={profile.id}
+                    />
+                    <TopLinksChart
+                      links={[...socialLinks]
+                        .sort((a, b) => ((b as any).click_count || 0) - ((a as any).click_count || 0))
+                        .slice(0, 5)
+                        .map((link, i) => ({
+                          name: link.title || link.platform,
+                          clicks: (link as any).click_count || 0,
+                          color: ['#3B82F6', '#22C55E', '#EAB308', '#8B5CF6', '#EC4899'][i],
+                          url: link.url,
+                        }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Comments */}
+                <div>
+                  <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">Comments</h2>
+                  <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-4">
+                    <ProfileCommentsViewer />
+                  </div>
+                </div>
               </div>
 
-              {/* Right Column - Secondary Content */}
+              {/* Right Column */}
               <div className="space-y-6">
-                {/* Streak Display */}
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                >
+                <div>
+                  <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">Activity</h2>
                   <StreakDisplay />
-                </motion.div>
+                </div>
 
-                {/* Discord Section */}
-                <motion.div
-                  className="space-y-4"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3, duration: 0.5 }}
-                >
-                  <DiscordBotVerification
-                    userId={user?.id}
-                    discordUserId={discordUserId}
-                  />
-                  <DiscordCard isConnected={!!discordUserId} />
-                </motion.div>
+                <div>
+                  <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">Discord</h2>
+                  <div className="space-y-3">
+                    <DiscordBotVerification
+                      userId={user?.id}
+                      discordUserId={discordUserId}
+                    />
+                    <DiscordCard isConnected={!!discordUserId} />
+                  </div>
+                </div>
 
-                {/* Community Section */}
-                <motion.div
-                  className="space-y-4"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                >
-                  <RegisteredUsersList />
-                  <EarlyBadgeCountdown />
-                </motion.div>
+                <div>
+                  <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">Community</h2>
+                  <div className="space-y-3">
+                    <RegisteredUsersList />
+                    <EarlyBadgeCountdown />
+                  </div>
+                </div>
               </div>
             </div>
-
-            {/* Comments Section */}
-            <motion.div
-              className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.5 }}
-              whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center border border-amber-500/20">
-                  <MessageSquare className="w-5 h-5 text-amber-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">Profile Comments</h3>
-                  <p className="text-xs text-white/40">Comments from visitors on your profile</p>
-                </div>
-              </div>
-              <ProfileCommentsViewer />
-            </motion.div>
-          </motion.div>
+          </div>
         )}
 
       {/* Profile Tab */}
