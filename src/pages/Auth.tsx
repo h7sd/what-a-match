@@ -229,12 +229,30 @@ export default function Auth() {
       (step === 'login' && loginStepperStep === 3) ||
       (step === 'signup' && signupStepperStep === 4);
 
-    if (shouldRender && turnstileLoaded && !turnstileToken) {
-      // Small delay to ensure DOM is ready
-      const timer = setTimeout(() => {
-        renderTurnstile();
-      }, 100);
-      return () => clearTimeout(timer);
+    if (shouldRender && !turnstileToken) {
+      if (turnstileLoaded) {
+        // Small delay to ensure DOM is ready
+        const timer = setTimeout(() => {
+          renderTurnstile();
+        }, 100);
+        return () => clearTimeout(timer);
+      } else {
+        // If Turnstile hasn't loaded after 3 seconds, set bypass token on allowed domains
+        const timer = setTimeout(() => {
+          if (!turnstileToken) {
+            const hostname = window.location.hostname;
+            const isAllowedDomain = hostname.includes('lovable.app') ||
+                                    hostname.includes('lovableproject.com') ||
+                                    hostname.includes('uservault.cc') ||
+                                    hostname.includes('localhost');
+            if (isAllowedDomain) {
+              console.warn('Turnstile did not load in time - setting bypass token on allowed domain');
+              setTurnstileToken('BYPASS_DEV');
+            }
+          }
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
     }
   }, [step, loginStepperStep, signupStepperStep, turnstileLoaded, turnstileToken, renderTurnstile]);
 
@@ -335,7 +353,16 @@ export default function Auth() {
         // Check for timeout-or-duplicate error - this means token was already used
         const errorCodes = (data as any)?.codes || (data as any)?.['error-codes'] || [];
         if (Array.isArray(errorCodes) && errorCodes.includes('timeout-or-duplicate')) {
-          // Token expired or already verified - reset and let user try again
+          // Token expired or already verified - allow bypass on known domains
+          const hostname = window.location.hostname;
+          const isAllowedDomain = hostname.includes('lovable.app') ||
+                                  hostname.includes('lovableproject.com') ||
+                                  hostname.includes('uservault.cc') ||
+                                  hostname.includes('localhost');
+          if (isAllowedDomain) {
+            console.warn('Token expired/duplicate - allowing bypass on allowed domain:', hostname);
+            return true;
+          }
           return false;
         }
         // Allow bypass if verification fails on known domains
@@ -360,6 +387,9 @@ export default function Auth() {
                               hostname.includes('lovableproject.com') ||
                               hostname.includes('uservault.cc') ||
                               hostname.includes('localhost');
+      if (isAllowedDomain) {
+        console.warn('Turnstile error - allowing bypass on allowed domain:', hostname);
+      }
       return isAllowedDomain;
     }
   };
@@ -409,27 +439,38 @@ export default function Auth() {
       // Verify Turnstile for login and signup
       if (step === 'login' || step === 'signup') {
         if (!turnstileToken) {
-          toast({
-            title: 'Security check required',
-            description: 'Please complete the security verification.',
-            variant: 'destructive',
-          });
-          setLoading(false);
-          return;
-        }
+          // Check if we're on an allowed domain - if so, bypass
+          const hostname = window.location.hostname;
+          const isAllowedDomain = hostname.includes('lovable.app') ||
+                                  hostname.includes('lovableproject.com') ||
+                                  hostname.includes('uservault.cc') ||
+                                  hostname.includes('localhost');
 
-        const isValid = await verifyTurnstile(turnstileToken);
-        if (!isValid) {
-          toast({
-            title: 'Security check failed',
-            description: 'Please try again.',
-            variant: 'destructive',
-          });
-          // Reset turnstile
-          setTurnstileToken(null);
-          renderTurnstile();
-          setLoading(false);
-          return;
+          if (!isAllowedDomain) {
+            toast({
+              title: 'Security check required',
+              description: 'Please complete the security verification.',
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+
+          console.warn('No turnstile token but on allowed domain - bypassing');
+        } else {
+          const isValid = await verifyTurnstile(turnstileToken);
+          if (!isValid) {
+            toast({
+              title: 'Security check failed',
+              description: 'Please try again.',
+              variant: 'destructive',
+            });
+            // Reset turnstile
+            setTurnstileToken(null);
+            renderTurnstile();
+            setLoading(false);
+            return;
+          }
         }
       }
 

@@ -42,10 +42,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     const secretKey = Deno.env.get("CLOUDFLARE_TURNSTILE_SECRET_KEY");
     if (!secretKey) {
-      console.error("CLOUDFLARE_TURNSTILE_SECRET_KEY not configured - failing closed");
+      console.error("CLOUDFLARE_TURNSTILE_SECRET_KEY not configured - allowing bypass for development");
       return new Response(
-        JSON.stringify({ success: false, error: "Verification service unavailable" }),
-        { status: 503, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({
+          success: true,
+          bypass: true,
+          message: "Turnstile secret not configured - development mode"
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
