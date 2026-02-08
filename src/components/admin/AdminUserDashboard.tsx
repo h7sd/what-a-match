@@ -48,6 +48,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ProfileCard } from '@/components/profile/ProfileCard';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import type { Profile, SocialLink as SocialLinkType } from '@/hooks/useProfile';
+import { AdminDiscordSender } from './AdminDiscordSender';
 
 interface UserProfile {
   id: string;
@@ -144,7 +145,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [previewExpanded, setPreviewExpanded] = useState(true);
-  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'badges' | 'links' | 'visibility'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'badges' | 'links' | 'visibility' | 'admin'>('profile');
   
   // Complete profile form state
   const [formData, setFormData] = useState({
@@ -629,7 +630,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
       {/* Tabs */}
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-5 mx-4 mt-4 flex-shrink-0" style={{ width: 'calc(100% - 2rem)' }}>
+          <TabsList className="grid w-full grid-cols-6 mx-4 mt-4 flex-shrink-0" style={{ width: 'calc(100% - 2rem)' }}>
             <TabsTrigger value="profile" className="text-xs px-1 min-h-[36px]">
               <User className="w-3 h-3 mr-1 hidden sm:inline" />Profile
             </TabsTrigger>
@@ -644,6 +645,9 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
             </TabsTrigger>
             <TabsTrigger value="visibility" className="text-xs px-1 min-h-[36px]">
               <Eye className="w-3 h-3 mr-1 hidden sm:inline" />Show
+            </TabsTrigger>
+            <TabsTrigger value="admin" className="text-xs px-1 min-h-[36px]">
+              <Settings className="w-3 h-3 mr-1 hidden sm:inline" />Admin
             </TabsTrigger>
           </TabsList>
 
@@ -1175,6 +1179,11 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
                   )}
                 </div>
               </div>
+            </TabsContent>
+
+            {/* Admin Tools Tab */}
+            <TabsContent value="admin" className="mt-4">
+              <AdminDiscordSender />
             </TabsContent>
           </ScrollArea>
         </Tabs>
