@@ -55,31 +55,31 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
 
       {/* Background rounded square */}
       <rect
-        x="3"
-        y="3"
-        width="42"
-        height="42"
+        x="2"
+        y="2"
+        width="44"
+        height="44"
         rx="10"
         stroke="url(#uv-gradient)"
         strokeWidth="2"
         fill="none"
       />
 
-      {/* U letter */}
+      {/* U letter - clean and clear */}
       <path
-        d="M13 15V24C13 27.3137 15.6863 30 19 30H20"
+        d="M12 14V23C12 26.866 15.134 30 19 30C22.866 30 26 26.866 26 23V14"
         stroke="url(#uv-gradient)"
-        strokeWidth="3"
+        strokeWidth="3.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       />
 
-      {/* V letter */}
+      {/* V letter - clean and clear */}
       <path
-        d="M26 15L30 32L34 15"
+        d="M28 14L33 34L38 14"
         stroke="url(#uv-gradient)"
-        strokeWidth="3"
+        strokeWidth="3.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
