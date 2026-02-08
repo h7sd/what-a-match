@@ -7,6 +7,7 @@ import { ReportUserDialog } from './ReportUserDialog';
 import { Magnet } from './Magnet';
 import { UVLogo, UVLogoText } from './UVLogo';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { LandingEventsPopover } from './LandingEventsPopover';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ExpandingMenu } from '@/components/navigation/ExpandingMenu';
 import { ExpandingAuthMenu } from '@/components/navigation/ExpandingAuthMenu';
