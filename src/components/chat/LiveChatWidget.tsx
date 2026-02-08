@@ -51,6 +51,13 @@ export function LiveChatWidget() {
     }
   }, []);
 
+  // Listen for custom event to open chat (from header button)
+  useEffect(() => {
+    const handleOpenChat = () => setIsOpen(true);
+    window.addEventListener('openLiveChat', handleOpenChat);
+    return () => window.removeEventListener('openLiveChat', handleOpenChat);
+  }, []);
+
   useEffect(() => {
     if (isOpen && !conversationId) {
       initConversation();
@@ -517,7 +524,7 @@ export function LiveChatWidget() {
   };
 
   if (!isOpen) {
-    return (
+    return !user ? (
       <Button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg z-50"
@@ -525,7 +532,7 @@ export function LiveChatWidget() {
       >
         <MessageCircle className="h-6 w-6" />
       </Button>
-    );
+    ) : null;
   }
 
   return (
