@@ -22,7 +22,7 @@ export interface Case {
   name: string;
   description: string | null;
   image_url: string | null;
-  price: string;
+  price: number;
   active: boolean;
   order_index: number;
   created_at: string;
@@ -68,13 +68,19 @@ export function useCases() {
   return useQuery({
     queryKey: ['cases'],
     queryFn: async () => {
+      console.log('[useCases] Fetching cases...');
       const { data, error } = await supabase
         .from('cases')
         .select('*')
         .eq('active', true)
         .order('order_index', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useCases] Error fetching cases:', error);
+        throw error;
+      }
+
+      console.log('[useCases] Cases fetched:', data);
       return data as Case[];
     },
   });

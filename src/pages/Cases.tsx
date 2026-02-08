@@ -18,7 +18,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 export default function Cases() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
-  const { data: cases, isLoading: casesLoading } = useCases();
+  const { data: cases, isLoading: casesLoading, error: casesError } = useCases();
+
+  console.log('[Cases Page] Loading:', casesLoading);
+  console.log('[Cases Page] Cases:', cases);
+  console.log('[Cases Page] Error:', casesError);
 
   const { data: userBalance } = useQuery({
     queryKey: ['user-balance'],
