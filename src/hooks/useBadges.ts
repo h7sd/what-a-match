@@ -193,9 +193,26 @@ export function useProfileBadges(profileId: string) {
 export function useCreateGlobalBadge() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  
+
   return useMutation({
     mutationFn: async (badge: Omit<GlobalBadge, 'id' | 'created_at' | 'created_by' | 'claims_count'>) => {
+      if (badge.icon_url) {
+        const { data: existingBadges, error: checkError } = await supabase
+          .from('global_badges')
+          .select('id, name, icon_url')
+          .eq('icon_url', badge.icon_url);
+
+        if (checkError) throw checkError;
+
+        if (existingBadges && existingBadges.length > 0) {
+          const existingBadge = existingBadges[0];
+          if (existingBadge.name.toUpperCase() === 'HUNTER') {
+            throw new Error('This badge icon is already used by the protected Hunter Badge. Please use a different icon.');
+          }
+          throw new Error(`This badge icon is already used by "${existingBadge.name}". Please use a different icon.`);
+        }
+      }
+
       const { data, error } = await supabase
         .from('global_badges')
         .insert({
@@ -204,7 +221,7 @@ export function useCreateGlobalBadge() {
         })
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
@@ -239,14 +256,26 @@ export function useUpdateGlobalBadge() {
 // Delete a global badge (admin only)
 export function useDeleteGlobalBadge() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (id: string) => {
+      const { data: badge, error: fetchError } = await supabase
+        .from('global_badges')
+        .select('name')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (badge && badge.name.toUpperCase() === 'HUNTER') {
+        throw new Error('Cannot delete the Hunter Badge. This is a protected system badge.');
+      }
+
       const { error } = await supabase
         .from('global_badges')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -313,15 +342,27 @@ export function useAssignBadge() {
 // Remove badge from user (admin only)
 export function useRemoveBadge() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ userId, badgeId }: { userId: string; badgeId: string }) => {
+      const { data: badge, error: fetchError } = await supabase
+        .from('global_badges')
+        .select('name')
+        .eq('id', badgeId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (badge && badge.name.toUpperCase() === 'HUNTER') {
+        throw new Error('Cannot remove the Hunter Badge. This badge is permanently locked during events.');
+      }
+
       const { error } = await supabase
         .from('user_badges')
         .delete()
         .eq('user_id', userId)
         .eq('badge_id', badgeId);
-      
+
       if (error) throw error;
     },
     onSuccess: () => {

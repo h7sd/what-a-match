@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Edit2, Award, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Edit2, Award, Loader2, ChevronDown, ChevronUp, Lock, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -268,66 +268,95 @@ export function AdminBadgeManager() {
 
         <CollapsibleContent>
           <div className="grid gap-4 pt-2">
-            {badges.map((badge) => (
-              <motion.div
-                key={badge.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-4 flex items-center gap-4"
-              >
-                <div
-                  className="w-12 h-12 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: `${badge.color}20` }}
-                >
-                  {badge.icon_url ? (
-                    <img src={badge.icon_url} alt={badge.name} className="w-8 h-8" />
-                  ) : (
-                    <Award className="w-6 h-6" style={{ color: badge.color || '#8B5CF6' }} />
-                  )}
-                </div>
+            {badges.map((badge) => {
+              const isHunterBadge = badge.name.toUpperCase() === 'HUNTER';
 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium">{badge.name}</h4>
-                    <span
-                      className="text-xs px-2 py-0.5 rounded-full capitalize"
-                      style={{
-                        backgroundColor: `${badge.color}20`,
-                        color: badge.color || '#8B5CF6',
-                      }}
-                    >
-                      {badge.rarity}
-                    </span>
-                    {badge.is_limited && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-500">
-                        Limited
-                      </span>
+              return (
+                <motion.div
+                  key={badge.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`glass-card p-4 flex items-center gap-4 ${isHunterBadge ? 'border-red-500/30 bg-red-500/5' : ''}`}
+                >
+                  <div
+                    className="w-12 h-12 rounded-lg flex items-center justify-center relative"
+                    style={{ backgroundColor: `${badge.color}20` }}
+                  >
+                    {badge.icon_url ? (
+                      <img src={badge.icon_url} alt={badge.name} className="w-8 h-8" />
+                    ) : (
+                      <Award className="w-6 h-6" style={{ color: badge.color || '#8B5CF6' }} />
+                    )}
+                    {isHunterBadge && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                        <Shield className="w-3 h-3 text-white" />
+                      </div>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {badge.description || 'No description'}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Claims: {badge.claims_count || 0}
-                    {badge.is_limited && badge.max_claims && ` / ${badge.max_claims}`}
-                  </p>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => openEditDialog(badge)}>
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(badge.id)}
-                    disabled={deleteBadge.isPending}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium flex items-center gap-1">
+                        {badge.name}
+                        {isHunterBadge && (
+                          <Lock className="w-3 h-3 text-red-500" />
+                        )}
+                      </h4>
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full capitalize"
+                        style={{
+                          backgroundColor: `${badge.color}20`,
+                          color: badge.color || '#8B5CF6',
+                        }}
+                      >
+                        {badge.rarity}
+                      </span>
+                      {badge.is_limited && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-500">
+                          Limited
+                        </span>
+                      )}
+                      {isHunterBadge && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 flex items-center gap-1">
+                          <Shield className="w-3 h-3" />
+                          Protected
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {isHunterBadge
+                        ? 'System badge – cannot be deleted or modified during events'
+                        : badge.description || 'No description'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Claims: {badge.claims_count || 0}
+                      {badge.is_limited && badge.max_claims && ` / ${badge.max_claims}`}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEditDialog(badge)}
+                      disabled={isHunterBadge}
+                      className={isHunterBadge ? 'opacity-50 cursor-not-allowed' : ''}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(badge.id)}
+                      disabled={deleteBadge.isPending || isHunterBadge}
+                      className={isHunterBadge ? 'opacity-50 cursor-not-allowed' : ''}
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                </motion.div>
+              );
+            })}
 
             {badges.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">

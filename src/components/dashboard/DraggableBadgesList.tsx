@@ -45,20 +45,22 @@ interface DraggableBadgesListProps {
 }
 
 // Sortable Badge Item Component
-function SortableBadgeItem({ 
-  userBadge, 
-  onToggle, 
+function SortableBadgeItem({
+  userBadge,
+  onToggle,
   onColorChange,
   updating,
   isLocked,
   isHuntTarget,
-}: { 
+  isHunterBadge,
+}: {
   userBadge: UserBadgeWithEnabled;
   onToggle: (id: string, enabled: boolean) => void;
   onColorChange: (id: string, color: string | null) => void;
   updating: string | null;
   isLocked: boolean;
   isHuntTarget: boolean;
+  isHunterBadge: boolean;
 }) {
   const {
     attributes,
@@ -120,12 +122,19 @@ function SortableBadgeItem({
         </div>
 
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm truncate">{badge.name}</h4>
+          <h4 className="font-medium text-sm truncate flex items-center gap-1">
+            {badge.name}
+            {isHunterBadge && isEnabled && (
+              <Lock className="w-3 h-3 text-red-500" />
+            )}
+          </h4>
           <p className="text-xs text-muted-foreground truncate">
-            {isHuntTarget && isEnabled 
-              ? 'Hunt target – always visible' 
-              : isEnabled 
-                ? 'Visible on profile' 
+            {isHunterBadge && isEnabled
+              ? 'Permanent active – cannot be disabled'
+              : isHuntTarget && isEnabled
+              ? 'Hunt target – always visible'
+              : isEnabled
+                ? 'Visible on profile'
                 : 'Hidden'}
           </p>
         </div>
@@ -177,13 +186,19 @@ function SortableBadgeItem({
               <span>Hunt</span>
             </div>
           )}
+          {isHunterBadge && isEnabled && (
+            <div className="flex items-center gap-1 text-red-400 text-xs">
+              <Lock className="w-3 h-3" />
+              <span>Locked</span>
+            </div>
+          )}
           {updating === userBadge.id ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <Switch
               checked={isEnabled}
               onCheckedChange={() => onToggle(userBadge.id, isEnabled)}
-              disabled={isLocked || (isHuntTarget && isEnabled)}
+              disabled={isLocked || (isHuntTarget && isEnabled) || (isHunterBadge && isEnabled)}
             />
           )}
         </div>
@@ -231,6 +246,26 @@ export function DraggableBadgesList({ userBadges, userId }: DraggableBadgesListP
   );
 
   const handleToggle = async (userBadgeId: string, currentEnabled: boolean) => {
+    const userBadge = localBadges.find(b => b.id === userBadgeId);
+
+    if (userBadge?.badge.name.toUpperCase() === 'HUNTER' && currentEnabled) {
+      toast({
+        title: 'Cannot disable Hunter Badge',
+        description: 'The Hunter Badge must remain active during events.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (userBadge?.badge_id === huntTargetBadgeId && currentEnabled) {
+      toast({
+        title: 'Cannot disable hunt target badge',
+        description: 'This badge is the current hunt target and must remain visible.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setUpdating(userBadgeId);
     try {
       const { error } = await supabase
@@ -240,7 +275,7 @@ export function DraggableBadgesList({ userBadges, userId }: DraggableBadgesListP
 
       if (error) throw error;
 
-      setLocalBadges(prev => 
+      setLocalBadges(prev =>
         prev.map(b => b.id === userBadgeId ? { ...b, is_enabled: !currentEnabled } : b)
       );
       queryClient.invalidateQueries({ queryKey: ['userBadges'] });
@@ -347,6 +382,7 @@ export function DraggableBadgesList({ userBadges, userId }: DraggableBadgesListP
                     updating={updating}
                     isLocked={false}
                     isHuntTarget={ub.badge_id === huntTargetBadgeId}
+                    isHunterBadge={ub.badge.name.toUpperCase() === 'HUNTER'}
                   />
                 ))}
               </div>
