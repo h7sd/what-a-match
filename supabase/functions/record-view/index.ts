@@ -115,15 +115,15 @@ serve(async (req) => {
     // Hash the IP for privacy
     const ipHash = await hashIP(clientIp);
 
-    // Check if this IP has already viewed this profile recently (30 min window)
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    
+    // Check if this IP has already viewed this profile recently (24 hour window)
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
     const { data: existingView } = await supabase
       .from('profile_views')
       .select('id')
       .eq('profile_id', resolvedProfileId)
       .eq('viewer_ip_hash', ipHash)
-      .gte('viewed_at', thirtyMinutesAgo)
+      .gte('viewed_at', twentyFourHoursAgo)
       .limit(1);
 
     if (existingView && existingView.length > 0) {
