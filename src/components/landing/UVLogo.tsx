@@ -52,56 +52,37 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
       <defs>
         {gradient}
       </defs>
-      
+
       {/* Background rounded square */}
       <rect
-        x="2"
-        y="2"
-        width="44"
-        height="44"
-        rx="12"
-        fill="url(#uv-gradient)"
-        fillOpacity="0.15"
-      />
-      <rect
-        x="2"
-        y="2"
-        width="44"
-        height="44"
-        rx="12"
+        x="3"
+        y="3"
+        width="42"
+        height="42"
+        rx="10"
         stroke="url(#uv-gradient)"
-        strokeWidth="1.5"
+        strokeWidth="2"
         fill="none"
       />
-      
+
       {/* U letter */}
       <path
-        d="M12 14V26C12 30.4183 15.5817 34 20 34H20.5"
-        stroke="url(#uv-gradient)"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      
-      {/* V letter */}
-      <path
-        d="M27 14L31 30L35 14"
-        stroke="url(#uv-gradient)"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      
-      {/* Connecting arc from U to V */}
-      <path
-        d="M20.5 34C23.5 34 26 31 27 28"
+        d="M13 15V24C13 27.3137 15.6863 30 19 30H20"
         stroke="url(#uv-gradient)"
         strokeWidth="3"
         strokeLinecap="round"
+        strokeLinejoin="round"
         fill="none"
-        opacity="0.6"
+      />
+
+      {/* V letter */}
+      <path
+        d="M26 15L30 32L34 15"
+        stroke="url(#uv-gradient)"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
       />
     </motion.svg>
   );
