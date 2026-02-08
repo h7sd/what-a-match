@@ -50,7 +50,7 @@ export function ModernHeader() {
       >
         <div className="max-w-7xl mx-auto px-6">
           <div
-            className={`flex items-center ${user ? 'justify-between' : 'justify-between'} px-8 py-4 transition-all duration-500 ${
+            className={`flex items-center ${user ? 'justify-between md:justify-end relative' : 'justify-between'} px-8 py-4 transition-all duration-500 ${
               isScrolled
                 ? 'bg-background/80 backdrop-blur-2xl border border-border/50 rounded-2xl shadow-2xl shadow-black/20'
                 : 'bg-transparent'
@@ -58,63 +58,117 @@ export function ModernHeader() {
           >
             {user ? (
               <>
-                {/* Left: Navigation (only when logged in) */}
-                <nav className="hidden md:flex items-center gap-1 bg-secondary/95 backdrop-blur-xl rounded-full px-2 py-1.5 border border-border shadow-lg">
-                  {navLinks.slice(0, 3).map((link) =>
-                    link.external ? (
-                      <a
-                        key={link.label}
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300 inline-flex items-center gap-2"
-                      >
-                        {link.icon && <link.icon className="w-4 h-4" />}
-                        {link.label}
-                      </a>
-                    ) : link.href?.startsWith('#') ? (
-                      <a
-                        key={link.label}
-                        href={link.href}
-                        className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300 inline-flex items-center gap-2"
-                      >
-                        {link.icon && <link.icon className="w-4 h-4" />}
-                        {link.label}
-                      </a>
-                    ) : (
-                      <Link
-                        key={link.label}
-                        to={link.to!}
-                        className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300 inline-flex items-center gap-2"
-                      >
-                        {link.icon && <link.icon className="w-4 h-4" />}
-                        {link.label}
-                      </Link>
-                    )
-                  )}
-                </nav>
-
-                {/* Center: Logo (only when logged in) */}
+                {/* Mobile logo (only when logged in) */}
                 <Link
                   to="/"
-                  className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-3 group"
+                  className="md:hidden flex items-center gap-2 group"
                 >
-                  <UVLogo size={36} />
-                  <UVLogoText className="text-xl" />
+                  <UVLogo size={28} />
+                  <UVLogoText className="text-base" />
                 </Link>
 
-                {/* Right: AI Button (only when logged in) */}
-                <div className="flex items-center gap-2">
+                {/* Center: Icon Navigation (only when logged in) */}
+                <nav className="hidden md:flex items-center gap-1 bg-secondary/95 backdrop-blur-xl rounded-full px-2 py-1.5 border border-border shadow-lg absolute left-1/2 transform -translate-x-1/2">
+                  <a
+                    href="#features"
+                    className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
+                    title="Features"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="7" height="7" />
+                      <rect x="14" y="3" width="7" height="7" />
+                      <rect x="14" y="14" width="7" height="7" />
+                      <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                  </a>
+                  <Link
+                    to="/premium"
+                    className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
+                    title="Pricing"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18" />
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </Link>
+                  <a
+                    href="https://discord.gg/uservault"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
+                    title="Discord"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                    </svg>
+                  </a>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
+                        title="Events"
+                      >
+                        <Sparkles className="w-5 h-5" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="center"
+                      sideOffset={12}
+                      className="w-[420px] p-3 bg-card/90 backdrop-blur-2xl border-border/50"
+                    >
+                      <LandingEventsPopover />
+                    </PopoverContent>
+                  </Popover>
+                  <Link
+                    to="/status"
+                    className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
+                    title="Status"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                    </svg>
+                  </Link>
                   <Button
                     onClick={openChat}
-                    className="hidden md:flex h-10 w-10 rounded-full bg-secondary/95 hover:bg-primary border border-border shadow-lg items-center justify-center group"
+                    className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
                     size="icon"
                     variant="ghost"
+                    title="AI Chat"
                   >
-                    <MessageCircle className="h-5 w-5 text-foreground group-hover:text-primary-foreground transition-colors" />
+                    <MessageCircle className="w-5 h-5" />
                   </Button>
-                  <NotificationBell />
-                  <ExpandingMenu />
+                </nav>
+
+                {/* Right: Logo & Menu (only when logged in) */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 md:hidden">
+                    <NotificationBell />
+                  </div>
+
+                  <div className="hidden md:flex items-center gap-2">
+                    <NotificationBell />
+                    <ExpandingMenu />
+                  </div>
+
+                  <Link
+                    to="/"
+                    className="hidden md:flex items-center gap-2 group"
+                  >
+                    <UVLogo size={32} />
+                    <UVLogoText className="text-lg hidden lg:block" />
+                  </Link>
+
+                  {/* Mobile menu button */}
+                  <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="md:hidden p-2.5 text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-xl transition-all"
+                  >
+                    {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                  </button>
                 </div>
               </>
             ) : (
@@ -251,16 +305,28 @@ export function ModernHeader() {
                   </Link>
                 )
               )}
-              
+
               <div className="pt-4 mt-2 border-t border-border/50 flex flex-col gap-3">
                 {user ? (
-                  <Link
-                    to="/dashboard"
-                    className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#00B4D8] to-[#00D9A5] text-white font-semibold border border-white/10"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
+                  <>
+                    <button
+                      onClick={() => {
+                        openChat();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="text-center py-3 text-foreground font-medium hover:bg-white/5 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      AI Chat
+                    </button>
+                    <Link
+                      to="/dashboard"
+                      className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#00B4D8] to-[#00D9A5] text-white font-semibold border border-white/10"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Link
