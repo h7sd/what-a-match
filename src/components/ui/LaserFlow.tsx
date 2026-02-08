@@ -315,7 +315,6 @@ export const LaserFlow: React.FC<Props> = ({
     currentDprRef.current = baseDprRef.current;
     renderer.setPixelRatio(currentDprRef.current);
     renderer.shadowMap.enabled = false;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setClearColor(0x000000, 1);
     const canvas = renderer.domElement;
     canvas.style.width = '100%';
