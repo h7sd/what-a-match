@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { LandingEventsPopover } from './LandingEventsPopover';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ExpandingMenu } from '@/components/navigation/ExpandingMenu';
+import { ExpandingAuthMenu } from '@/components/navigation/ExpandingAuthMenu';
 
 export function ModernHeader() {
   const { user } = useAuth();
@@ -127,22 +128,8 @@ export function ModernHeader() {
                   <ExpandingMenu />
                 </div>
               ) : (
-                <div className="hidden md:flex items-center gap-3">
-                  <Link
-                    to="/auth"
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors px-4 py-2 font-medium hover:bg-white/5 rounded-lg"
-                  >
-                    Sign in
-                  </Link>
-                  <Magnet magnetStrength={0.2}>
-                    <Link
-                      to="/auth"
-                      className="relative text-sm px-6 py-2.5 rounded-lg bg-primary text-white font-medium transition-all duration-300 hover:shadow-lg hover:shadow-primary/30 overflow-hidden group"
-                    >
-                      <span className="relative z-10">Get Started</span>
-                      <div className="absolute inset-0 bg-primary/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    </Link>
-                  </Magnet>
+                <div className="hidden md:block">
+                  <ExpandingAuthMenu />
                 </div>
               )}
 
