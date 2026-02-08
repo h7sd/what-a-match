@@ -82,6 +82,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [signupStepperStep, setSignupStepperStep] = useState(1);
+  const [loginStepperStep, setLoginStepperStep] = useState(1);
   // Google/Apple OAuth disabled
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileLoaded, setTurnstileLoaded] = useState(false);
@@ -222,16 +223,20 @@ export default function Auth() {
     }
   }, [turnstileLoaded]);
 
-  // Render Turnstile when step changes to login/signup
+  // Render Turnstile when step changes to login/signup or when reaching final step
   useEffect(() => {
-    if ((step === 'login' || step === 'signup') && turnstileLoaded) {
+    const shouldRender =
+      (step === 'login' && loginStepperStep === 3) ||
+      (step === 'signup' && signupStepperStep === 4);
+
+    if (shouldRender && turnstileLoaded) {
       // Small delay to ensure DOM is ready
       const timer = setTimeout(() => {
         renderTurnstile();
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [step, turnstileLoaded, renderTurnstile]);
+  }, [step, loginStepperStep, signupStepperStep, turnstileLoaded, renderTurnstile]);
 
   // Handle password reset from email link or MFA required redirect
   useEffect(() => {
@@ -834,134 +839,43 @@ export default function Auth() {
               )}
             </motion.div>
 
-            {/* Login Form */}
+            {/* Login Form with Stepper */}
             {step === 'login' && (
-              <motion.form 
-                onSubmit={handleSubmit} 
-                className="space-y-5 relative z-10"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="emailOrUsername" className="text-white/80 text-sm font-medium">
-                    Email or Username
-                  </Label>
-                  <Input
-                    id="emailOrUsername"
-                    type="text"
-                    placeholder="you@example.com or username"
-                    value={emailOrUsername}
-                    onChange={(e) => setEmailOrUsername(e.target.value)}
-                    className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
-                  />
-                  {errors.emailOrUsername && (
-                    <p className="text-sm text-red-400">{errors.emailOrUsername}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-white/80 text-sm font-medium">
-                      Password
-                    </Label>
-                    <button
-                      type="button"
-                      onClick={() => setStep('forgot-password')}
-                      className="text-xs text-primary hover:text-primary/80 transition-colors"
-                    >
-                      Forgot?
-                    </button>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
-                  />
-                  {errors.password && (
-                    <p className="text-sm text-red-400">{errors.password}</p>
-                  )}
-                </div>
-
-                {/* Turnstile Widget */}
-                <div className="flex justify-center py-2">
-                  <div ref={turnstileRef} />
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={loading || !turnstileToken}
-                  className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-primary/20 hover:shadow-primary/30"
-                >
-                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Sign in
-                </Button>
-
-                {/* Divider */}
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10" />
-                  </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="px-3 bg-black/60 text-white/40">or continue with</span>
-                  </div>
-                </div>
-
-                {/* Discord Login Button */}
-                <Button
-                  type="button"
-                  onClick={initiateDiscordLogin}
-                  disabled={discordLoading}
-                  variant="outline"
-                  className="w-full h-12 bg-[#5865F2]/10 border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 text-white font-semibold rounded-xl transition-all duration-300"
-                >
-                  {discordLoading ? (
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  ) : (
-                    <FaDiscord className="w-5 h-5 mr-2 text-[#5865F2]" />
-                  )}
-                  Discord
-                </Button>
-              </motion.form>
-            )}
-
-            {/* Signup & Verification Stepper */}
-            {(step === 'signup' || step === 'verify') && (
               <Stepper
-                externalStep={step === 'signup' ? 1 : 2}
+                externalStep={loginStepperStep}
                 disableStepIndicators={false}
                 stepCircleContainerClassName="!border-0 !shadow-none !bg-transparent !p-0"
                 contentClassName="!p-0"
                 backButtonText="Previous"
                 isNextDisabled={
-                  step === 'signup'
-                    ? loading || !turnstileToken || !getPasswordStrength(password).isStrong || !username || !email || !password
-                    : loading || verificationCode.length !== 6
+                  loginStepperStep === 1
+                    ? !emailOrUsername
+                    : loginStepperStep === 2
+                    ? !password
+                    : loading || !turnstileToken
                 }
                 onExternalNext={async () => {
-                  if (step === 'signup') {
+                  if (loginStepperStep < 3) {
+                    setLoginStepperStep(loginStepperStep + 1);
+                  } else {
                     await handleSubmit(new Event('submit') as any);
-                  } else if (step === 'verify') {
-                    await handleVerifyCode();
                   }
                 }}
                 onExternalBack={() => {
-                  if (step === 'verify') {
-                    setStep('signup');
-                    setVerificationCode('');
+                  if (loginStepperStep > 1) {
+                    setLoginStepperStep(loginStepperStep - 1);
                   }
                 }}
                 nextButtonProps={{
-                  children: loading ? (
+                  children: loading && loginStepperStep === 3 ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {step === 'verify' ? 'Verifying...' : 'Loading...'}
+                      Signing in...
                     </>
+                  ) : loginStepperStep === 3 ? (
+                    'Sign in'
                   ) : (
-                    step === 'verify' ? 'Verify & Complete' : 'Next'
+                    'Next'
                   )
                 }}
               >
@@ -969,157 +883,378 @@ export default function Auth() {
                   <div className="space-y-4">
                     <div className="text-center mb-6">
                       <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
-                        Create account
+                        Welcome back
                       </h1>
                       <p className="text-white/50 text-sm">
-                        Create your own personalized bio page
+                        Enter your email or username
                       </p>
                     </div>
 
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="username" className="text-white/80 text-sm font-medium">
-                          Username
-                        </Label>
-                        <Input
-                          id="username"
-                          type="text"
-                          placeholder="cooluser"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
-                        />
-                        {errors.username && (
-                          <p className="text-sm text-red-400">{errors.username}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="email" className="text-white/80 text-sm font-medium">
-                          Email
-                        </Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="you@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
-                        />
-                        {errors.email && (
-                          <p className="text-sm text-red-400">{errors.email}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="password" className="text-white/80 text-sm font-medium">
-                          Password
-                        </Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
-                        />
-                        {errors.password && (
-                          <p className="text-sm text-destructive">{errors.password}</p>
-                        )}
-                        <PasswordStrengthIndicator password={password} />
-                      </div>
-
-                      <div className="flex justify-center py-2">
-                        <div ref={turnstileRef} />
-                      </div>
-
-                      <div className="relative my-4">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-white/10" />
-                        </div>
-                        <div className="relative flex justify-center text-xs">
-                          <span className="px-3 bg-black/60 text-white/40">or sign up with</span>
-                        </div>
-                      </div>
-
-                      <Button
-                        type="button"
-                        onClick={initiateDiscordLogin}
-                        disabled={discordLoading}
-                        variant="outline"
-                        className="w-full h-12 bg-[#5865F2]/10 border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 text-white font-semibold rounded-xl transition-all duration-300"
-                      >
-                        {discordLoading ? (
-                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        ) : (
-                          <FaDiscord className="w-5 h-5 mr-2 text-[#5865F2]" />
-                        )}
-                        Discord
-                      </Button>
+                    <div className="space-y-2">
+                      <Label htmlFor="emailOrUsername" className="text-white/80 text-sm font-medium">
+                        Email or Username
+                      </Label>
+                      <Input
+                        id="emailOrUsername"
+                        type="text"
+                        placeholder="you@example.com or username"
+                        value={emailOrUsername}
+                        onChange={(e) => setEmailOrUsername(e.target.value)}
+                        className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
+                      />
+                      {errors.emailOrUsername && (
+                        <p className="text-sm text-red-400">{errors.emailOrUsername}</p>
+                      )}
                     </div>
                   </div>
                 </Step>
 
                 <Step>
-                  <div className="space-y-6">
-                    <motion.div
-                      className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 border border-primary/30"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
-                    >
-                      <motion.div
-                        animate={{
-                          boxShadow: ['0 0 20px rgba(0, 217, 165, 0.3)', '0 0 40px rgba(0, 217, 165, 0.5)', '0 0 20px rgba(0, 217, 165, 0.3)']
-                        }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center"
-                      >
-                        <Mail className="w-6 h-6 text-primary" />
-                      </motion.div>
-                    </motion.div>
-
+                  <div className="space-y-4">
                     <div className="text-center mb-6">
                       <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
-                        Verify email
+                        Enter password
                       </h1>
                       <p className="text-white/50 text-sm">
-                        We sent a 6-digit code to {email}
+                        Enter your password to continue
                       </p>
                     </div>
 
-                    <div className="flex justify-center">
-                      <InputOTP
-                        maxLength={6}
-                        value={verificationCode}
-                        onChange={setVerificationCode}
-                        className="gap-2"
-                      >
-                        <InputOTPGroup className="gap-2">
-                          {[0, 1, 2, 3, 4, 5].map((index) => (
-                            <InputOTPSlot
-                              key={index}
-                              index={index}
-                              className="w-12 h-14 bg-white/5 border-white/10 text-white text-lg font-semibold rounded-lg focus:border-primary focus:ring-primary/20"
-                            />
-                          ))}
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
-
-                    <div className="text-center">
-                      <button
-                        type="button"
-                        onClick={handleResendCode}
-                        disabled={loading}
-                        className="text-sm text-white/50 hover:text-white transition-colors"
-                      >
-                        Didn't receive a code? <span className="text-primary">Resend</span>
-                      </button>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="password" className="text-white/80 text-sm font-medium">
+                          Password
+                        </Label>
+                        <button
+                          type="button"
+                          onClick={() => setStep('forgot-password')}
+                          className="text-xs text-primary hover:text-primary/80 transition-colors"
+                        >
+                          Forgot?
+                        </button>
+                      </div>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
+                      />
+                      {errors.password && (
+                        <p className="text-sm text-red-400">{errors.password}</p>
+                      )}
                     </div>
                   </div>
                 </Step>
+
+                <Step>
+                  <div className="space-y-4">
+                    <div className="text-center mb-6">
+                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
+                        Security check
+                      </h1>
+                      <p className="text-white/50 text-sm">
+                        Complete the verification to continue
+                      </p>
+                    </div>
+
+                    <div className="flex justify-center py-2">
+                      <div ref={turnstileRef} />
+                    </div>
+
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-white/10" />
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="px-3 bg-black/60 text-white/40">or continue with</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={initiateDiscordLogin}
+                      disabled={discordLoading}
+                      variant="outline"
+                      className="w-full h-12 bg-[#5865F2]/10 border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 text-white font-semibold rounded-xl transition-all duration-300"
+                    >
+                      {discordLoading ? (
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      ) : (
+                        <FaDiscord className="w-5 h-5 mr-2 text-[#5865F2]" />
+                      )}
+                      Discord
+                    </Button>
+                  </div>
+                </Step>
               </Stepper>
+            )}
+
+            {/* Signup Stepper */}
+            {step === 'signup' && (
+              <Stepper
+                externalStep={signupStepperStep}
+                disableStepIndicators={false}
+                stepCircleContainerClassName="!border-0 !shadow-none !bg-transparent !p-0"
+                contentClassName="!p-0"
+                backButtonText="Previous"
+                isNextDisabled={
+                  signupStepperStep === 1
+                    ? !username
+                    : signupStepperStep === 2
+                    ? !email
+                    : signupStepperStep === 3
+                    ? !password || !getPasswordStrength(password).isStrong
+                    : loading || !turnstileToken
+                }
+                onExternalNext={async () => {
+                  if (signupStepperStep < 4) {
+                    setSignupStepperStep(signupStepperStep + 1);
+                  } else {
+                    await handleSubmit(new Event('submit') as any);
+                  }
+                }}
+                onExternalBack={() => {
+                  if (signupStepperStep > 1) {
+                    setSignupStepperStep(signupStepperStep - 1);
+                  }
+                }}
+                nextButtonProps={{
+                  children: loading && signupStepperStep === 4 ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : signupStepperStep === 4 ? (
+                    'Create account'
+                  ) : (
+                    'Next'
+                  )
+                }}
+              >
+                <Step>
+                  <div className="space-y-4">
+                    <div className="text-center mb-6">
+                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
+                        Choose username
+                      </h1>
+                      <p className="text-white/50 text-sm">
+                        Pick a unique username for your profile
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="username" className="text-white/80 text-sm font-medium">
+                        Username
+                      </Label>
+                      <Input
+                        id="username"
+                        type="text"
+                        placeholder="cooluser"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
+                      />
+                      {errors.username && (
+                        <p className="text-sm text-red-400">{errors.username}</p>
+                      )}
+                    </div>
+                  </div>
+                </Step>
+
+                <Step>
+                  <div className="space-y-4">
+                    <div className="text-center mb-6">
+                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
+                        Enter email
+                      </h1>
+                      <p className="text-white/50 text-sm">
+                        We'll send you a verification code
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-white/80 text-sm font-medium">
+                        Email
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
+                      />
+                      {errors.email && (
+                        <p className="text-sm text-red-400">{errors.email}</p>
+                      )}
+                    </div>
+                  </div>
+                </Step>
+
+                <Step>
+                  <div className="space-y-4">
+                    <div className="text-center mb-6">
+                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
+                        Create password
+                      </h1>
+                      <p className="text-white/50 text-sm">
+                        Make it strong and secure
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-white/80 text-sm font-medium">
+                        Password
+                      </Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
+                      />
+                      {errors.password && (
+                        <p className="text-sm text-destructive">{errors.password}</p>
+                      )}
+                      <PasswordStrengthIndicator password={password} />
+                    </div>
+                  </div>
+                </Step>
+
+                <Step>
+                  <div className="space-y-4">
+                    <div className="text-center mb-6">
+                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
+                        Security check
+                      </h1>
+                      <p className="text-white/50 text-sm">
+                        Complete the verification to continue
+                      </p>
+                    </div>
+
+                    <div className="flex justify-center py-2">
+                      <div ref={turnstileRef} />
+                    </div>
+
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-white/10" />
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="px-3 bg-black/60 text-white/40">or sign up with</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={initiateDiscordLogin}
+                      disabled={discordLoading}
+                      variant="outline"
+                      className="w-full h-12 bg-[#5865F2]/10 border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 text-white font-semibold rounded-xl transition-all duration-300"
+                    >
+                      {discordLoading ? (
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      ) : (
+                        <FaDiscord className="w-5 h-5 mr-2 text-[#5865F2]" />
+                      )}
+                      Discord
+                    </Button>
+                  </div>
+                </Step>
+              </Stepper>
+            )}
+
+            {/* Verification Step */}
+            {step === 'verify' && (
+              <motion.div
+                className="space-y-6 relative z-10"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <motion.div
+                  className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 border border-primary/30"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+                >
+                  <motion.div
+                    animate={{
+                      boxShadow: ['0 0 20px rgba(0, 217, 165, 0.3)', '0 0 40px rgba(0, 217, 165, 0.5)', '0 0 20px rgba(0, 217, 165, 0.3)']
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center"
+                  >
+                    <Mail className="w-6 h-6 text-primary" />
+                  </motion.div>
+                </motion.div>
+
+                <div className="text-center mb-6">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
+                    Verify email
+                  </h1>
+                  <p className="text-white/50 text-sm">
+                    We sent a 6-digit code to {email}
+                  </p>
+                </div>
+
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={verificationCode}
+                    onChange={setVerificationCode}
+                    className="gap-2"
+                  >
+                    <InputOTPGroup className="gap-2">
+                      {[0, 1, 2, 3, 4, 5].map((index) => (
+                        <InputOTPSlot
+                          key={index}
+                          index={index}
+                          className="w-12 h-14 bg-white/5 border-white/10 text-white text-lg font-semibold rounded-lg focus:border-primary focus:ring-primary/20"
+                        />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+
+                <Button
+                  onClick={handleVerifyCode}
+                  disabled={loading || verificationCode.length !== 6}
+                  className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-primary/20"
+                >
+                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Verify
+                </Button>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={loading}
+                    className="text-sm text-white/50 hover:text-white transition-colors"
+                  >
+                    Didn't receive a code? <span className="text-primary">Resend</span>
+                  </button>
+                </div>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep('signup');
+                      setVerificationCode('');
+                      setSignupStepperStep(1);
+                    }}
+                    className="text-sm text-white/50 hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to sign up
+                  </button>
+                </div>
+              </motion.div>
             )}
 
             {/* Forgot Password Form */}
@@ -1444,6 +1579,7 @@ export default function Auth() {
                   type="button"
                   onClick={() => {
                     setStep('signup');
+                    setSignupStepperStep(1);
                     setErrors({});
                     setTurnstileToken(null);
                   }}
@@ -1468,6 +1604,7 @@ export default function Auth() {
                   type="button"
                   onClick={() => {
                     setStep('login');
+                    setLoginStepperStep(1);
                     setErrors({});
                     setTurnstileToken(null);
                     setVerificationCode('');
