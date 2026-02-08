@@ -14,7 +14,7 @@
   width: 100%;
   align-items: center;
   padding-bottom: 2rem;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .stepper-step-content-default {
@@ -99,13 +99,13 @@
 
 .stepper-step-indicator-inner {
   display: flex;
-  height: 2.5rem;
-  width: 2.5rem;
+  height: 1.75rem;
+  width: 1.75rem;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
 }
 
 .stepper-active-dot {
@@ -122,10 +122,10 @@
 
 .stepper-step-connector {
   position: relative;
-  margin-left: 0.75rem;
-  margin-right: 0.75rem;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
   height: 2px;
-  width: 60px;
+  width: 40px;
   overflow: hidden;
   border-radius: 0.25rem;
   background-color: #374151;
@@ -139,7 +139,7 @@
 }
 
 .stepper-check-icon {
-  height: 1rem;
-  width: 1rem;
+  height: 0.75rem;
+  width: 0.75rem;
   color: white;
 }

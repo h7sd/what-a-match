@@ -91,8 +91,12 @@ export default function Stepper({
   };
 
   const handleComplete = () => {
-    setDirection(1);
-    updateStep(totalSteps + 1);
+    if (onExternalNext) {
+      onExternalNext();
+    } else {
+      setDirection(1);
+      updateStep(totalSteps + 1);
+    }
   };
 
   // Update direction when external step changes
