@@ -6,7 +6,7 @@ import {
   Settings,
   LogOut,
   FolderOpen,
-  MessageSquare
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -34,8 +34,8 @@ export function ExpandingMenu() {
       href: '/dashboard#profile'
     },
     {
-      icon: MessageSquare,
-      label: 'Support',
+      icon: Sparkles,
+      label: 'AI',
       href: '/dashboard#overview'
     },
     {
