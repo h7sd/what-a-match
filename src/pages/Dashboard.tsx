@@ -37,6 +37,7 @@ import {
   Volume2,
   Send,
   Crown,
+  ShoppingBag,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -1394,6 +1395,36 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* Marketplace Tab */}
+            {activeTab === 'marketplace' && (
+              <div className="space-y-6 max-w-4xl mx-auto">
+                <div className="glass-card p-12 text-center">
+                  <div className="space-y-6">
+                    <div className="relative inline-block">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-amber-500/20 to-primary/20 blur-3xl animate-pulse" />
+                      <ShoppingBag className="w-24 h-24 text-primary relative z-10 mx-auto" />
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 via-amber-500/10 to-primary/20 border border-primary/20 text-sm font-medium backdrop-blur-sm">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        <span className="bg-gradient-to-r from-primary to-amber-500 bg-clip-text text-transparent">
+                          Under Development
+                        </span>
+                      </div>
+
+                      <h2 className="text-4xl font-bold bg-gradient-to-r from-foreground via-foreground/90 to-foreground bg-clip-text text-transparent">
+                        Marketplace Coming Soon
+                      </h2>
+
+                      <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+                        This feature is currently under development. Check back soon for updates!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Badges Tab */}
             {activeTab === 'badges' && (
