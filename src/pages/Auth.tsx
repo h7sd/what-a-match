@@ -933,17 +933,40 @@ export default function Auth() {
               <Stepper
                 externalStep={step === 'signup' ? 1 : 2}
                 disableStepIndicators={true}
-                hideFooter={true}
-                stepCircleContainerClassName="!border-0 !shadow-none !bg-transparent"
+                stepCircleContainerClassName="!border-0 !shadow-none !bg-transparent !p-0"
                 contentClassName="!p-0"
+                backButtonText="Previous"
+                isNextDisabled={
+                  step === 'signup'
+                    ? loading || !turnstileToken || !getPasswordStrength(password).isStrong || !username || !email || !password
+                    : loading || verificationCode.length !== 6
+                }
+                onExternalNext={async () => {
+                  if (step === 'signup') {
+                    await handleSubmit(new Event('submit') as any);
+                  } else if (step === 'verify') {
+                    await handleVerifyCode();
+                  }
+                }}
+                onExternalBack={() => {
+                  if (step === 'verify') {
+                    setStep('signup');
+                    setVerificationCode('');
+                  }
+                }}
+                nextButtonProps={{
+                  children: loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {step === 'verify' ? 'Verifying...' : 'Loading...'}
+                    </>
+                  ) : (
+                    step === 'verify' ? 'Verify & Complete' : 'Next'
+                  )
+                }}
               >
                 <Step>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="space-y-4"
-                  >
+                  <div className="space-y-4">
                     <div className="text-center mb-6">
                       <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
                         Create account
@@ -953,7 +976,7 @@ export default function Auth() {
                       </p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="username" className="text-white/80 text-sm font-medium">
                           Username
@@ -1010,15 +1033,6 @@ export default function Auth() {
                         <div ref={turnstileRef} />
                       </div>
 
-                      <Button
-                        type="submit"
-                        disabled={loading || !turnstileToken || !getPasswordStrength(password).isStrong}
-                        className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-primary/20 hover:shadow-primary/30"
-                      >
-                        {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                        Continue
-                      </Button>
-
                       <div className="relative my-4">
                         <div className="absolute inset-0 flex items-center">
                           <div className="w-full border-t border-white/10" />
@@ -1042,17 +1056,12 @@ export default function Auth() {
                         )}
                         Discord
                       </Button>
-                    </form>
-                  </motion.div>
+                    </div>
+                  </div>
                 </Step>
 
                 <Step>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="space-y-6"
-                  >
+                  <div className="space-y-6">
                     <motion.div
                       className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 border border-primary/30"
                       initial={{ scale: 0 }}
@@ -1098,15 +1107,6 @@ export default function Auth() {
                       </InputOTP>
                     </div>
 
-                    <Button
-                      onClick={handleVerifyCode}
-                      disabled={loading || verificationCode.length !== 6}
-                      className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-primary/20"
-                    >
-                      {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      Verify
-                    </Button>
-
                     <div className="text-center">
                       <button
                         type="button"
@@ -1117,21 +1117,7 @@ export default function Auth() {
                         Didn't receive a code? <span className="text-primary">Resend</span>
                       </button>
                     </div>
-
-                    <div className="text-center pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setStep('signup');
-                          setVerificationCode('');
-                        }}
-                        className="text-sm text-white/50 hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
-                      >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to sign up
-                      </button>
-                    </div>
-                  </motion.div>
+                  </div>
                 </Step>
               </Stepper>
             )}
