@@ -123,12 +123,15 @@ export function ModernHeader() {
               {user ? (
                 <div className="flex items-center gap-2">
                   <NotificationBell />
-                  <Link
-                    to="/dashboard"
-                    className="text-sm px-5 py-2 rounded-lg bg-primary/90 hover:bg-primary text-white font-medium transition-colors"
-                  >
-                    Dashboard
-                  </Link>
+                  <Magnet magnetStrength={0.2}>
+                    <Link
+                      to="/dashboard"
+                      className="relative text-sm px-6 py-2.5 rounded-lg bg-primary text-white font-medium transition-all duration-300 hover:shadow-lg hover:shadow-primary/30 overflow-hidden group"
+                    >
+                      <span className="relative z-10">Dashboard</span>
+                      <div className="absolute inset-0 bg-primary/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </Link>
+                  </Magnet>
                 </div>
               ) : (
                 <div className="hidden md:flex items-center gap-3">
@@ -138,12 +141,15 @@ export function ModernHeader() {
                   >
                     Sign in
                   </Link>
-                  <Link
-                    to="/auth"
-                    className="text-sm px-5 py-2 rounded-lg bg-primary/90 hover:bg-primary text-white font-medium transition-colors"
-                  >
-                    Get Started
-                  </Link>
+                  <Magnet magnetStrength={0.2}>
+                    <Link
+                      to="/auth"
+                      className="relative text-sm px-6 py-2.5 rounded-lg bg-primary text-white font-medium transition-all duration-300 hover:shadow-lg hover:shadow-primary/30 overflow-hidden group"
+                    >
+                      <span className="relative z-10">Get Started</span>
+                      <div className="absolute inset-0 bg-primary/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </Link>
+                  </Magnet>
                 </div>
               )}
 
