@@ -13,7 +13,6 @@ import { ModernFooter } from "@/components/landing/ModernFooter";
 import { PremiumDialog } from "@/components/landing/PremiumDialog";
 import { LiveChatWidget } from "@/components/chat/LiveChatWidget";
 import { ProfileCardSwapExact } from "@/components/landing/ProfileCardSwapExact";
-import { ExpandingMenu } from "@/components/navigation/ExpandingMenu";
 
 
 // Lazy load heavy WebGL background to improve initial load time
@@ -71,7 +70,6 @@ export default function Index() {
 
       {/* Content */}
       <div className="relative z-10">
-        {user && !authLoading && <ExpandingMenu />}
         <ModernHeader />
 
         <main>

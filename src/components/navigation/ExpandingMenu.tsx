@@ -52,12 +52,11 @@ export function ExpandingMenu() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="fixed top-6 left-1/2 -translate-x-1/2 z-50"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
     >
-      <div className="flex items-center gap-[6px] p-2 rounded-[24px] bg-white/[0.85] backdrop-blur-[20px] border border-[#ffffff]/20 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+      <div className="flex items-center gap-[6px] p-2 rounded-[24px] bg-secondary/50 backdrop-blur-sm border border-border/50 shadow-lg">
         {menuItems.map((item, index) => {
           const Icon = item.icon;
           const isHovered = hoveredIndex === index;
@@ -70,7 +69,7 @@ export function ExpandingMenu() {
               onHoverEnd={() => setHoveredIndex(null)}
               animate={{
                 width: isHovered ? '135px' : '52px',
-                backgroundColor: isHovered ? '#e4e4e7' : 'transparent'
+                backgroundColor: isHovered ? 'hsl(var(--muted))' : 'transparent'
               }}
               transition={{
                 duration: 0.4,
@@ -94,8 +93,8 @@ export function ExpandingMenu() {
               >
                 <Icon
                   className={cn(
-                    "w-6 h-6 transition-colors",
-                    isHovered ? "text-[#0f172a]" : "text-[#52525b]"
+                    "w-5 h-5 transition-colors",
+                    isHovered ? "text-foreground" : "text-muted-foreground"
                   )}
                 />
               </motion.div>
@@ -110,7 +109,7 @@ export function ExpandingMenu() {
                   duration: 0.3,
                   delay: isHovered ? 0.1 : 0
                 }}
-                className="absolute right-4 text-sm font-medium text-[#0f172a] whitespace-nowrap"
+                className="absolute right-4 text-sm font-medium text-foreground whitespace-nowrap"
               >
                 {item.label}
               </motion.span>
