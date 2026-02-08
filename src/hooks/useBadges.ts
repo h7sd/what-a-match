@@ -32,28 +32,39 @@ export interface UserBadge {
 // Even if this check is bypassed client-side, database operations will still fail.
 export function useIsAdmin() {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: ['isAdmin', user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
-      
+
       // Double-check: verify the JWT is valid first
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !sessionData?.session?.user || sessionData.session.user.id !== user.id) {
         console.error('Session validation failed');
         return false;
       }
-      
-      // Use RPC which validates against the actual database
+
+      // HARDCODED: Check if user has UID 1 or 2 (admins)
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('uid_number')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!profileError && profile && (profile.uid_number === 1 || profile.uid_number === 2)) {
+        return true;
+      }
+
+      // Fallback: Use RPC which validates against the actual database
       const { data, error } = await supabase
         .rpc('has_role', { _user_id: user.id, _role: 'admin' });
-      
+
       if (error) {
         console.error('Error checking admin status:', error);
         return false;
       }
-      
+
       // Strict boolean check - anything other than explicit true is false
       return data === true;
     },
