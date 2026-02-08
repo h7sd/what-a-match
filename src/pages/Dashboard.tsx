@@ -63,7 +63,8 @@ import { DisplayNameAnimationSettings } from '@/components/dashboard/DisplayName
 import { AdminBadgeManager } from '@/components/admin/AdminBadgeManager';
 import { AdminUserManager } from '@/components/admin/AdminUserManager';
 import { AdminPremiumManager } from '@/components/admin/AdminPremiumManager';
- import { AdminBotNotificationTester } from '@/components/admin/AdminBotNotificationTester';
+import { AdminBotNotificationTester } from '@/components/admin/AdminBotNotificationTester';
+import { AdminDiscordSender } from '@/components/admin/AdminDiscordSender';
 import { BadgesGrid } from '@/components/dashboard/BadgesGrid';
 import { UserBadgesList } from '@/components/dashboard/UserBadgesList';
 import { LimitedBadgeAssigner } from '@/components/admin/LimitedBadgeAssigner';
@@ -1470,124 +1471,179 @@ export default function Dashboard() {
 
             {/* Owner Panel Tab */}
             {activeTab === 'owner' && isAdmin && (
-              <div className="space-y-4 max-w-6xl">
+              <div className="space-y-6 max-w-7xl">
                 {/* Header */}
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30">
-                    <Shield className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold">Owner Panel</h1>
-                    <p className="text-sm text-muted-foreground">
-                      Full administrative control over the platform
-                    </p>
-                  </div>
-                </div>
-
-                {/* Secret DB Viewer shortcut (super-admin by UID) */}
-                {SECRET_DB_ALLOWED_UIDS.includes((profile?.uid_number as any) ?? -1) && (
-                  <div className="glass-card p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-muted-foreground" />
-                        <h3 className="font-semibold">Database Viewer</h3>
-                      </div>
+                <div className="glass-card p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold">Owner Panel</h1>
                       <p className="text-sm text-muted-foreground">
-                        Öffnet die geheime Read-Only Datenbank-Ansicht (UID-Whitelist + MFA Pflicht).
+                        Full administrative control over the platform
                       </p>
                     </div>
-                    <Button
-                      onClick={() => navigate(SECRET_DB_VIEWER_PATH)}
-                    >
-                      DB Viewer öffnen
-                    </Button>
-                  </div>
-                )}
-
-                {/* Supporter Manager - Add/Remove Supporters */}
-                <div className="glass-card p-6">
-                  <SupporterManager />
-                </div>
-
-                {/* Live Notification Sender */}
-                <div className="glass-card p-6">
-                  <AdminNotificationSender />
-                </div>
-
-                {/* Badge Events Controller */}
-                <div className="glass-card p-6">
-                  <AdminEventController />
-                </div>
-
-                {/* EARLY Badge Counter */}
-                <div className="glass-card p-6">
-                  <AdminEarlyBadgeCounter />
-                </div>
-
-                {/* Account Lookup - Full Width Top */}
-                <div className="glass-card p-6">
-                  <AdminAccountLookup />
-                </div>
-
-                {/* Admin Tools Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {/* Premium Manager */}
-                  <div className="glass-card p-5 lg:col-span-1">
-                    <AdminPremiumManager />
-                  </div>
-
-                  {/* User Ban Manager */}
-                  <div className="glass-card p-5">
-                    <UserBanManager />
-                  </div>
-
-                  {/* User Role Manager */}
-                  <div className="glass-card p-5">
-                    <AdminUserManager />
-                  </div>
-
-                  {/* Limited Badge Assigner */}
-                  <div className="glass-card p-5">
-                    <LimitedBadgeAssigner />
-                  </div>
-
-                  {/* All Badge Assigner */}
-                  <div className="glass-card p-5">
-                    <AllBadgeAssigner />
-                  </div>
-
-                  {/* Badge Remover */}
-                  <div className="glass-card p-5">
-                    <AdminBadgeRemover />
                   </div>
                 </div>
 
-                {/* Marketplace Approvals */}
-                <div className="glass-card p-6">
-                  <AdminMarketplaceManager />
-                </div>
-
-                {/* Promo Codes Manager - Full Width */}
-                <div className="glass-card p-6">
-                  <AdminPromoCodeManager />
-                </div>
-
-                {/* Purchase History - Full Width */}
-                <AdminPurchaseHistory />
-
-                {/* Full Width Bottom Section */}
+                {/* Quick Actions Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Secret DB Viewer */}
+                  {SECRET_DB_ALLOWED_UIDS.includes((profile?.uid_number as any) ?? -1) && (
+                    <div className="glass-card p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-amber-500" />
+                            <h3 className="font-semibold text-sm">Database Viewer</h3>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Read-Only Datenbank-Ansicht (UID-Whitelist + MFA)
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => navigate(SECRET_DB_VIEWER_PATH)}
+                        >
+                          Öffnen
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Account Lookup */}
                   <div className="glass-card p-5">
-                    <AdminUIDManager />
-                  </div>
-                  <div className="glass-card p-5">
-                    <AdminBadgeManager />
+                    <AdminAccountLookup />
                   </div>
                 </div>
 
-                {/* Bot Notification Tester */}
-                <div className="glass-card p-5">
-                  <AdminBotNotificationTester />
+                {/* Communication Section */}
+                <div className="space-y-3">
+                  <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider px-1">
+                    Communication
+                  </h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Discord Message Sender */}
+                    <div className="glass-card p-5">
+                      <AdminDiscordSender />
+                    </div>
+
+                    {/* Live Notification Sender */}
+                    <div className="glass-card p-5">
+                      <AdminNotificationSender />
+                    </div>
+                  </div>
+                </div>
+
+                {/* User Management Section */}
+                <div className="space-y-3">
+                  <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider px-1">
+                    User Management
+                  </h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {/* Premium Manager */}
+                    <div className="glass-card p-5">
+                      <AdminPremiumManager />
+                    </div>
+
+                    {/* User Ban Manager */}
+                    <div className="glass-card p-5">
+                      <UserBanManager />
+                    </div>
+
+                    {/* User Role Manager */}
+                    <div className="glass-card p-5">
+                      <AdminUserManager />
+                    </div>
+
+                    {/* Supporter Manager */}
+                    <div className="glass-card p-5">
+                      <SupporterManager />
+                    </div>
+
+                    {/* UID Manager */}
+                    <div className="glass-card p-5">
+                      <AdminUIDManager />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Badge Management Section */}
+                <div className="space-y-3">
+                  <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider px-1">
+                    Badge Management
+                  </h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {/* Badge Manager */}
+                    <div className="glass-card p-5">
+                      <AdminBadgeManager />
+                    </div>
+
+                    {/* Limited Badge Assigner */}
+                    <div className="glass-card p-5">
+                      <LimitedBadgeAssigner />
+                    </div>
+
+                    {/* All Badge Assigner */}
+                    <div className="glass-card p-5">
+                      <AllBadgeAssigner />
+                    </div>
+
+                    {/* Badge Remover */}
+                    <div className="glass-card p-5">
+                      <AdminBadgeRemover />
+                    </div>
+
+                    {/* EARLY Badge Counter */}
+                    <div className="glass-card p-5">
+                      <AdminEarlyBadgeCounter />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Events & Features Section */}
+                <div className="space-y-3">
+                  <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider px-1">
+                    Events & Features
+                  </h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Badge Events Controller */}
+                    <div className="glass-card p-5">
+                      <AdminEventController />
+                    </div>
+
+                    {/* Marketplace Approvals */}
+                    <div className="glass-card p-5">
+                      <AdminMarketplaceManager />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Management Section */}
+                <div className="space-y-3">
+                  <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider px-1">
+                    Financial Management
+                  </h2>
+                  <div className="grid grid-cols-1 gap-4">
+                    {/* Promo Codes Manager */}
+                    <div className="glass-card p-5">
+                      <AdminPromoCodeManager />
+                    </div>
+
+                    {/* Purchase History */}
+                    <AdminPurchaseHistory />
+                  </div>
+                </div>
+
+                {/* Developer Tools Section */}
+                <div className="space-y-3">
+                  <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider px-1">
+                    Developer Tools
+                  </h2>
+                  <div className="glass-card p-5">
+                    <AdminBotNotificationTester />
+                  </div>
                 </div>
               </div>
             )}
