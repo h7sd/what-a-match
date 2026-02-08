@@ -7,7 +7,6 @@ import { ReportUserDialog } from './ReportUserDialog';
 import { Magnet } from './Magnet';
 import { UVLogo, UVLogoText } from './UVLogo';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { LandingEventsPopover } from './LandingEventsPopover';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ExpandingMenu } from '@/components/navigation/ExpandingMenu';
 import { ExpandingAuthMenu } from '@/components/navigation/ExpandingAuthMenu';
@@ -62,74 +61,16 @@ export function ModernHeader() {
                   <UVLogoText className="text-base" />
                 </Link>
 
-                {/* Center: Icon Navigation (only when logged in) */}
-                <nav className="hidden md:flex items-center gap-1 bg-secondary/95 backdrop-blur-xl rounded-full px-2 py-1.5 border border-border shadow-lg absolute left-1/2 transform -translate-x-1/2">
-                  <a
-                    href="#features"
-                    className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
-                    title="Features"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="7" height="7" />
-                      <rect x="14" y="3" width="7" height="7" />
-                      <rect x="14" y="14" width="7" height="7" />
-                      <rect x="3" y="14" width="7" height="7" />
-                    </svg>
-                  </a>
-                  <Link
-                    to="/premium"
-                    className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
-                    title="Pricing"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 6h18" />
-                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                      <line x1="10" y1="11" x2="10" y2="17" />
-                      <line x1="14" y1="11" x2="14" y2="17" />
-                    </svg>
-                  </Link>
-                  <a
-                    href="https://discord.gg/uservault"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
-                    title="Discord"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                    </svg>
-                  </a>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
-                        title="Events"
-                      >
-                        <Sparkles className="w-5 h-5" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      align="center"
-                      sideOffset={12}
-                      className="w-[420px] p-3 bg-card/90 backdrop-blur-2xl border-border/50"
-                    >
-                      <LandingEventsPopover />
-                    </PopoverContent>
-                  </Popover>
-                  <Link
-                    to="/status"
-                    className="p-2.5 text-foreground hover:text-primary-foreground hover:bg-primary rounded-full transition-all duration-300"
-                    title="Status"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                    </svg>
-                  </Link>
-                </nav>
+                {/* Center: Logo (only when logged in) */}
+                <Link
+                  to="/"
+                  className="hidden md:flex items-center gap-2 group absolute left-1/2 transform -translate-x-1/2"
+                >
+                  <UVLogo size={36} />
+                  <UVLogoText className="text-xl" />
+                </Link>
 
-                {/* Right: Logo & Menu (only when logged in) */}
+                {/* Right: Menu (only when logged in) */}
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2 md:hidden">
                     <NotificationBell />
@@ -139,14 +80,6 @@ export function ModernHeader() {
                     <NotificationBell />
                     <ExpandingMenu />
                   </div>
-
-                  <Link
-                    to="/"
-                    className="hidden md:flex items-center gap-2 group"
-                  >
-                    <UVLogo size={32} />
-                    <UVLogoText className="text-lg hidden lg:block" />
-                  </Link>
 
                   {/* Mobile menu button */}
                   <button

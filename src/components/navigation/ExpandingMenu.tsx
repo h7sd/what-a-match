@@ -6,16 +6,26 @@ import {
   Settings,
   LogOut,
   FolderOpen,
-  MessageCircle
+  MessageCircle,
+  Grid3x3,
+  Package,
+  Github,
+  Sparkles,
+  Activity
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { LandingEventsPopover } from '@/components/landing/LandingEventsPopover';
 
 interface MenuItem {
   icon: React.ElementType;
   label: string;
   href?: string;
   onClick?: () => void;
+  isPopover?: boolean;
+  popoverContent?: React.ReactNode;
+  external?: boolean;
 }
 
 export function ExpandingMenu() {
@@ -27,6 +37,33 @@ export function ExpandingMenu() {
   };
 
   const menuItems: MenuItem[] = [
+    {
+      icon: Grid3x3,
+      label: 'Features',
+      href: '/#features'
+    },
+    {
+      icon: Package,
+      label: 'Pricing',
+      href: '/premium'
+    },
+    {
+      icon: Github,
+      label: 'Discord',
+      href: 'https://discord.gg/uservault',
+      external: true
+    },
+    {
+      icon: Sparkles,
+      label: 'Events',
+      isPopover: true,
+      popoverContent: <LandingEventsPopover />
+    },
+    {
+      icon: Activity,
+      label: 'Status',
+      href: '/status'
+    },
     {
       icon: LayoutDashboard,
       label: 'Dashboard',
@@ -60,7 +97,7 @@ export function ExpandingMenu() {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="flex items-center gap-[6px] p-2 rounded-[24px] bg-secondary/95 backdrop-blur-xl border border-border shadow-lg">
+      <div className="flex items-center gap-[4px] p-1.5 rounded-[22px] bg-secondary/95 backdrop-blur-xl border border-border shadow-lg">
         {menuItems.map((item, index) => {
           const Icon = item.icon;
           const isHovered = hoveredIndex === index;
@@ -72,7 +109,7 @@ export function ExpandingMenu() {
               onHoverStart={() => setHoveredIndex(index)}
               onHoverEnd={() => setHoveredIndex(null)}
               animate={{
-                width: isHovered ? '135px' : '52px',
+                width: isHovered ? '145px' : '44px',
                 backgroundColor: isHovered ? 'hsl(var(--primary))' : 'transparent'
               }}
               transition={{
@@ -80,24 +117,24 @@ export function ExpandingMenu() {
                 ease: [0.175, 0.885, 0.32, 1.275]
               }}
               className={cn(
-                "relative h-[52px] rounded-[20px] flex items-center justify-center cursor-pointer overflow-hidden",
+                "relative h-[44px] rounded-[18px] flex items-center justify-center cursor-pointer overflow-hidden",
                 isFirst && isActive && !isHovered && "opacity-100",
                 !isFirst && isActive && !isHovered && "opacity-60"
               )}
             >
               <motion.div
                 animate={{
-                  x: isHovered ? -20 : 0
+                  x: isHovered ? -22 : 0
                 }}
                 transition={{
                   duration: 0.4,
                   ease: [0.175, 0.885, 0.32, 1.275]
                 }}
-                className="flex items-center justify-center w-[52px] h-[52px]"
+                className="flex items-center justify-center w-[44px] h-[44px]"
               >
                 <Icon
                   className={cn(
-                    "w-5 h-5 transition-colors",
+                    "w-4 h-4 transition-colors",
                     isHovered ? "text-primary-foreground" : "text-foreground"
                   )}
                 />
@@ -113,12 +150,37 @@ export function ExpandingMenu() {
                   duration: 0.3,
                   delay: isHovered ? 0.1 : 0
                 }}
-                className="absolute right-4 text-sm font-medium text-primary-foreground whitespace-nowrap"
+                className="absolute right-3 text-xs font-medium text-primary-foreground whitespace-nowrap"
               >
                 {item.label}
               </motion.span>
             </motion.div>
           );
+
+          if (item.isPopover) {
+            return (
+              <Popover key={index}>
+                <PopoverTrigger asChild>
+                  {content}
+                </PopoverTrigger>
+                <PopoverContent
+                  align="center"
+                  sideOffset={12}
+                  className="w-[420px] p-3 bg-card/90 backdrop-blur-2xl border-border/50"
+                >
+                  {item.popoverContent}
+                </PopoverContent>
+              </Popover>
+            );
+          }
+
+          if (item.external && item.href) {
+            return (
+              <a key={index} href={item.href} target="_blank" rel="noopener noreferrer">
+                {content}
+              </a>
+            );
+          }
 
           if (item.href) {
             return (
