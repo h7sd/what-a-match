@@ -65,7 +65,11 @@ export function Sidebar({ username, onSignOut, isPremium = false, isAdmin = fals
       icon: <Icon size={20} />,
       label: item.label,
       onClick: () => {
-        window.location.hash = item.tab;
+        if (location.pathname !== '/dashboard') {
+          window.location.href = `/dashboard#${item.tab}`;
+        } else {
+          window.location.hash = item.tab;
+        }
       },
       className: isActive ? 'active' : '',
     };

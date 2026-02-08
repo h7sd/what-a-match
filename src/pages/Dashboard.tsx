@@ -147,8 +147,12 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>(getActiveTab());
 
   useEffect(() => {
-    setActiveTab(getActiveTab());
-  }, [location.hash, isAdmin]);
+    const newTab = getActiveTab();
+    setActiveTab(newTab);
+    if (!location.hash && location.pathname === '/dashboard') {
+      navigate(`/dashboard#overview`, { replace: true });
+    }
+  }, [location.hash, location.pathname, isAdmin, navigate]);
 
   // Profile state
   const [username, setUsername] = useState('');
