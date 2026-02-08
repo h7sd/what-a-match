@@ -45,7 +45,7 @@ export function ModernHeader() {
       >
         <div className="max-w-7xl mx-auto px-6">
           <div
-            className={`flex items-center ${user ? 'justify-between md:justify-end relative' : 'justify-between'} px-8 py-4 transition-all duration-500 ${
+            className={`flex items-center justify-between relative px-8 py-4 transition-all duration-500 ${
               isScrolled
                 ? 'bg-background/80 backdrop-blur-2xl border border-border/50 rounded-2xl shadow-2xl shadow-black/20'
                 : 'bg-transparent'
@@ -53,33 +53,24 @@ export function ModernHeader() {
           >
             {user ? (
               <>
-                {/* Mobile logo (only when logged in) */}
+                {/* Left: Logo (logged in) */}
                 <Link
                   to="/"
-                  className="md:hidden flex items-center gap-2 group"
-                >
-                  <UVLogo size={28} />
-                  <UVLogoText className="text-base" />
-                </Link>
-
-                {/* Center: Logo (only when logged in) */}
-                <Link
-                  to="/"
-                  className="hidden md:flex items-center gap-2 group absolute left-1/2 transform -translate-x-1/2"
+                  className="flex items-center gap-2 group"
                 >
                   <UVLogo size={36} />
-                  <UVLogoText className="text-xl" />
+                  <UVLogoText className="text-xl hidden md:block" />
                 </Link>
 
-                {/* Right: Menu (only when logged in) */}
+                {/* Center: Menu with Notifications (only desktop when logged in) */}
+                <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2">
+                  <ExpandingMenu />
+                </div>
+
+                {/* Right: Mobile elements */}
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2 md:hidden">
                     <NotificationBell />
-                  </div>
-
-                  <div className="hidden md:flex items-center gap-2">
-                    <NotificationBell />
-                    <ExpandingMenu />
                   </div>
 
                   {/* Mobile menu button */}
@@ -99,73 +90,18 @@ export function ModernHeader() {
                   className="flex items-center gap-3 group"
                 >
                   <UVLogo size={36} />
-                  <UVLogoText className="text-xl" />
+                  <UVLogoText className="text-xl hidden md:block" />
                 </Link>
 
-                {/* Desktop Nav - Clean pill style (not logged in) */}
-                <nav className="hidden md:flex items-center gap-1 bg-secondary/50 backdrop-blur-sm rounded-full px-2 py-1.5">
-                  {navLinks.map((link) =>
-                    link.external ? (
-                      <a
-                        key={link.label}
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-300 inline-flex items-center gap-2"
-                      >
-                        {link.icon && <link.icon className="w-4 h-4" />}
-                        {link.label}
-                      </a>
-                    ) : link.href?.startsWith('#') ? (
-                      <a
-                        key={link.label}
-                        href={link.href}
-                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-300 inline-flex items-center gap-2"
-                      >
-                        {link.icon && <link.icon className="w-4 h-4" />}
-                        {link.label}
-                      </a>
-                    ) : (
-                      <Link
-                        key={link.label}
-                        to={link.to!}
-                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-300 inline-flex items-center gap-2"
-                      >
-                        {link.icon && <link.icon className="w-4 h-4" />}
-                        {link.label}
-                      </Link>
-                    )
-                  )}
-
-                  {/* Events dropdown */}
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-full transition-all duration-300 inline-flex items-center gap-2"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        Events
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      align="end"
-                      sideOffset={12}
-                      className="w-[420px] p-3 bg-card/90 backdrop-blur-2xl border-border/50"
-                    >
-                      <LandingEventsPopover />
-                    </PopoverContent>
-                  </Popover>
-                </nav>
+                {/* Center: Auth Menu (only desktop when not logged in) */}
+                <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2">
+                  <ExpandingAuthMenu />
+                </div>
 
                 {/* Right side (not logged in) */}
                 <div className="flex items-center gap-4">
                   <div className="hidden md:block">
                     <ReportUserDialog />
-                  </div>
-
-                  <div className="hidden md:block">
-                    <ExpandingAuthMenu />
                   </div>
 
                   {/* Mobile menu button */}

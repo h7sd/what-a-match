@@ -11,12 +11,14 @@ import {
   Package,
   Github,
   Sparkles,
-  Activity
+  Activity,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LandingEventsPopover } from '@/components/landing/LandingEventsPopover';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 interface MenuItem {
   icon: React.ElementType;
@@ -26,6 +28,7 @@ interface MenuItem {
   isPopover?: boolean;
   popoverContent?: React.ReactNode;
   external?: boolean;
+  isNotificationBell?: boolean;
 }
 
 export function ExpandingMenu() {
@@ -37,6 +40,11 @@ export function ExpandingMenu() {
   };
 
   const menuItems: MenuItem[] = [
+    {
+      icon: Bell,
+      label: 'Notifications',
+      isNotificationBell: true
+    },
     {
       icon: Grid3x3,
       label: 'Features',
@@ -103,6 +111,22 @@ export function ExpandingMenu() {
           const isHovered = hoveredIndex === index;
           const isActive = hoveredIndex !== null;
           const isFirst = index === 0;
+
+          if (item.isNotificationBell) {
+            return (
+              <div
+                key={index}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                className={cn(
+                  "relative h-[44px] w-[44px] rounded-[18px] flex items-center justify-center transition-opacity",
+                  isActive && !isHovered && "opacity-60"
+                )}
+              >
+                <NotificationBell />
+              </div>
+            );
+          }
 
           const content = (
             <motion.div

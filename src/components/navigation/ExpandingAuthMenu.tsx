@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, LogIn, User } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { UserPlus, LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MenuItem {
   icon: React.ElementType;
   label: string;
   href: string;
-  primary?: boolean;
 }
 
 export function ExpandingAuthMenu() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const menuItems: MenuItem[] = [
     {
@@ -23,59 +22,83 @@ export function ExpandingAuthMenu() {
     {
       icon: UserPlus,
       label: 'Get Started',
-      href: '/auth',
-      primary: true
+      href: '/auth'
     }
   ];
 
   return (
-    <div className="relative">
-      <motion.button
-        onHoverStart={() => setIsOpen(true)}
-        onHoverEnd={() => setIsOpen(false)}
-        className={cn(
-          "flex items-center justify-center w-[44px] h-[44px] rounded-full transition-all duration-300",
-          "bg-secondary/50 backdrop-blur-sm border border-border/50",
-          "hover:bg-muted hover:border-border shadow-lg"
-        )}
-      >
-        <User className="w-5 h-5 text-muted-foreground" />
-      </motion.button>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="flex items-center gap-[4px] p-1.5 rounded-[22px] bg-secondary/95 backdrop-blur-xl border border-border shadow-lg">
+        {menuItems.map((item, index) => {
+          const Icon = item.icon;
+          const isHovered = hoveredIndex === index;
+          const isActive = hoveredIndex !== null;
+          const isFirst = index === 0;
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: [0.175, 0.885, 0.32, 1.275] }}
-            onMouseEnter={() => setIsOpen(true)}
-            onMouseLeave={() => setIsOpen(false)}
-            className="absolute top-full right-0 mt-2 w-[180px] bg-secondary/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden z-50"
-          >
-            <div className="p-2 space-y-1">
-              {menuItems.map((item, index) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={index}
-                    to={item.href}
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
-                      item.primary
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                        : "hover:bg-muted text-foreground"
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          const content = (
+            <motion.div
+              onHoverStart={() => setHoveredIndex(index)}
+              onHoverEnd={() => setHoveredIndex(null)}
+              animate={{
+                width: isHovered ? '145px' : '44px',
+                backgroundColor: isHovered ? 'hsl(var(--primary))' : 'transparent'
+              }}
+              transition={{
+                duration: 0.4,
+                ease: [0.175, 0.885, 0.32, 1.275]
+              }}
+              className={cn(
+                "relative h-[44px] rounded-[18px] flex items-center justify-center cursor-pointer overflow-hidden",
+                isFirst && isActive && !isHovered && "opacity-100",
+                !isFirst && isActive && !isHovered && "opacity-60"
+              )}
+            >
+              <motion.div
+                animate={{
+                  x: isHovered ? -22 : 0
+                }}
+                transition={{
+                  duration: 0.4,
+                  ease: [0.175, 0.885, 0.32, 1.275]
+                }}
+                className="flex items-center justify-center w-[44px] h-[44px]"
+              >
+                <Icon
+                  className={cn(
+                    "w-4 h-4 transition-colors",
+                    isHovered ? "text-primary-foreground" : "text-foreground"
+                  )}
+                />
+              </motion.div>
+
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{
+                  opacity: isHovered ? 1 : 0,
+                  x: isHovered ? 0 : 20
+                }}
+                transition={{
+                  duration: 0.3,
+                  delay: isHovered ? 0.1 : 0
+                }}
+                className="absolute right-3 text-xs font-medium text-primary-foreground whitespace-nowrap"
+              >
+                {item.label}
+              </motion.span>
+            </motion.div>
+          );
+
+          return (
+            <Link key={index} to={item.href}>
+              {content}
+            </Link>
+          );
+        })}
+      </div>
+    </motion.div>
   );
 }
