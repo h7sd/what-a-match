@@ -37,7 +37,6 @@ import {
   Volume2,
   Send,
   Crown,
-  ShoppingBag,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -92,7 +91,6 @@ import { FriendBadgesManager } from '@/components/dashboard/FriendBadgesManager'
 import { AdminEventController } from '@/components/admin/AdminEventController';
 import { AdminNotificationSender } from '@/components/admin/AdminNotificationSender';
 import { AdminMarketplaceManager } from '@/components/admin/AdminMarketplaceManager';
-import { MarketplacePage } from '@/components/marketplace/MarketplacePage';
 import { GlobalBadgeColorSettings } from '@/components/dashboard/GlobalBadgeColorSettings';
 import { StreakDisplay } from '@/components/dashboard/StreakDisplay';
 import { SupporterPanel } from '@/components/supporter/SupporterPanel';
@@ -114,7 +112,6 @@ const baseNavItems: { icon: React.ElementType; label: string; tab: TabType }[] =
   { icon: Palette, label: 'Appearance', tab: 'appearance' },
   { icon: LinkIcon, label: 'Links', tab: 'links' },
   { icon: Award, label: 'Badges', tab: 'badges' },
-  { icon: ShoppingBag, label: 'Marketplace', tab: 'marketplace' },
   { icon: Settings, label: 'Settings', tab: 'settings' },
 ];
 
@@ -1457,11 +1454,6 @@ export default function Dashboard() {
                   onGlobalColorChange={setGlobalBadgeColor}
                 />
               </div>
-            )}
-
-            {/* Marketplace Tab */}
-            {activeTab === 'marketplace' && (
-              <MarketplacePage />
             )}
 
             {/* Supporter Tab */}
