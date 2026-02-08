@@ -28,12 +28,14 @@ export function StreakDisplay() {
     : 100;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 h-full">
       {/* Main Streak Card */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5"
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        whileHover={{ scale: 1.02, transition: { duration: 0.3 } }}
+        transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
+        className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-black/40 to-black/60 backdrop-blur-xl p-6 shadow-xl"
       >
         {/* Streak Updated Animation */}
         <AnimatePresence>
@@ -90,52 +92,83 @@ export function StreakDisplay() {
       </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="p-4 rounded-xl border border-border bg-card/50">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Trophy className="w-4 h-4 text-amber-500" />
-            <span className="text-xs">Longest Streak</span>
+      <div className="grid grid-cols-2 gap-4">
+        <motion.div
+          className="group p-5 rounded-xl border border-white/[0.08] bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-xl relative overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+          whileHover={{ y: -4, scale: 1.02, transition: { duration: 0.3 } }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 text-white/50 mb-2">
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <span className="text-xs font-medium">Longest Streak</span>
+            </div>
+            <p className="text-2xl font-bold text-white">
+              {longestStreak} <span className="text-sm font-normal text-white/50">days</span>
+            </p>
           </div>
-          <p className="text-2xl font-bold">{longestStreak} <span className="text-sm font-normal text-muted-foreground">days</span></p>
-        </div>
-        
-        <div className="p-4 rounded-xl border border-border bg-card/50">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Calendar className="w-4 h-4 text-primary" />
-            <span className="text-xs">Total Logins</span>
+        </motion.div>
+
+        <motion.div
+          className="group p-5 rounded-xl border border-white/[0.08] bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-xl relative overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.5 }}
+          whileHover={{ y: -4, scale: 1.02, transition: { duration: 0.3 } }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 text-white/50 mb-2">
+              <Calendar className="w-4 h-4 text-primary" />
+              <span className="text-xs font-medium">Total Logins</span>
+            </div>
+            <p className="text-2xl font-bold text-white">{totalLogins}</p>
           </div>
-          <p className="text-2xl font-bold">{totalLogins}</p>
-        </div>
+        </motion.div>
       </div>
 
       {/* Milestone Badges */}
-      <div className="p-4 rounded-xl border border-border bg-card/50">
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingUp className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium">Milestones</span>
+      <motion.div
+        className="p-5 rounded-xl border border-white/[0.08] bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-xl"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20">
+            <TrendingUp className="w-4 h-4 text-primary" />
+          </div>
+          <span className="text-sm font-semibold text-white">Milestones</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {STREAK_MILESTONES.map((milestone) => {
+          {STREAK_MILESTONES.map((milestone, idx) => {
             const isAchieved = currentStreak >= milestone.days;
             return (
-              <div
+              <motion.div
                 key={milestone.days}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.25 + idx * 0.05, duration: 0.3 }}
+                whileHover={{ scale: 1.1, y: -2 }}
                 className={`
-                  px-3 py-1.5 rounded-full text-sm flex items-center gap-1.5 transition-all
-                  ${isAchieved 
-                    ? 'bg-primary/20 border border-primary/30 text-primary' 
-                    : 'bg-muted/30 border border-muted text-muted-foreground opacity-50'
+                  px-3 py-2 rounded-full text-sm flex items-center gap-2 transition-all cursor-default
+                  ${isAchieved
+                    ? 'bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/40 text-primary shadow-lg shadow-primary/20'
+                    : 'bg-white/[0.03] border border-white/[0.06] text-white/30'
                   }
                 `}
                 title={milestone.label}
               >
-                <span>{milestone.icon}</span>
+                <span className="text-base">{milestone.icon}</span>
                 <span className="text-xs font-medium">{milestone.label}</span>
-              </div>
+              </motion.div>
             );
           })}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -900,81 +900,125 @@ export default function Dashboard() {
       >
         {/* Overview Tab */}
         {activeTab === 'overview' && (
-          <div className="space-y-6">
+          <motion.div
+            className="space-y-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+          >
             {/* Alias Requests Section - shows only if there are pending requests */}
             <AliasRequestsSection />
 
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <OverviewStats
-                profileViews={profile.views_count || 0}
-                uidNumber={(profile as any).uid_number || 1}
-                username={profile.username}
+            {/* Stats & Streak Section */}
+            <motion.div
+              className="grid lg:grid-cols-3 gap-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+            >
+              <div className="lg:col-span-2">
+                <OverviewStats
+                  profileViews={profile.views_count || 0}
+                  uidNumber={(profile as any).uid_number || 1}
+                  username={profile.username}
+                  profileId={profile.id}
+                />
+              </div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
+                <StreakDisplay />
+              </motion.div>
+            </motion.div>
+
+            {/* Badges & Discord Section */}
+            <motion.div
+              className="grid lg:grid-cols-3 gap-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              <div className="lg:col-span-2">
+                <BadgesCarousel badges={userBadges.map(ub => ({
+                  id: ub.badge?.id || ub.id,
+                  name: ub.badge?.name || 'Unknown',
+                  icon_url: ub.badge?.icon_url,
+                  color: ub.badge?.color,
+                  description: ub.badge?.description,
+                }))} totalBadges={globalBadges.length || 10} />
+              </div>
+              <motion.div
+                className="space-y-4"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+              >
+                <DiscordBotVerification
+                  userId={user?.id}
+                  discordUserId={discordUserId}
+                />
+                <DiscordCard isConnected={!!discordUserId} />
+              </motion.div>
+            </motion.div>
+
+            {/* Community & Events Section */}
+            <motion.div
+              className="grid lg:grid-cols-2 gap-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
+              <RegisteredUsersList />
+              <EarlyBadgeCountdown />
+            </motion.div>
+
+            {/* Analytics Section */}
+            <motion.div
+              className="grid lg:grid-cols-2 gap-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+            >
+              <ProfileVisitorsChart
+                totalVisitors={profile.views_count || 0}
                 profileId={profile.id}
               />
-            </div>
-            <div>
-              <StreakDisplay />
-            </div>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <BadgesCarousel badges={userBadges.map(ub => ({
-                id: ub.badge?.id || ub.id,
-                name: ub.badge?.name || 'Unknown',
-                icon_url: ub.badge?.icon_url,
-                color: ub.badge?.color,
-                description: ub.badge?.description,
-              }))} totalBadges={globalBadges.length || 10} />
-            </div>
-            <div className="space-y-4">
-              <DiscordBotVerification 
-                userId={user?.id} 
-                discordUserId={discordUserId} 
+              <TopLinksChart
+                links={[...socialLinks]
+                  .sort((a, b) => ((b as any).click_count || 0) - ((a as any).click_count || 0))
+                  .slice(0, 5)
+                  .map((link, i) => ({
+                    name: link.title || link.platform,
+                    clicks: (link as any).click_count || 0,
+                    color: ['#3B82F6', '#22C55E', '#EAB308', '#8B5CF6', '#EC4899'][i],
+                    url: link.url,
+                  }))}
               />
-              <DiscordCard isConnected={!!discordUserId} />
-            </div>
-          </div>
+            </motion.div>
 
-          <div className="grid lg:grid-cols-2 gap-6">
-            <RegisteredUsersList />
-            <EarlyBadgeCountdown />
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-6">
-            <ProfileVisitorsChart 
-              totalVisitors={profile.views_count || 0} 
-              profileId={profile.id}
-            />
-            <TopLinksChart 
-              links={[...socialLinks]
-                .sort((a, b) => ((b as any).click_count || 0) - ((a as any).click_count || 0))
-                .slice(0, 5)
-                .map((link, i) => ({
-                  name: link.title || link.platform,
-                  clicks: (link as any).click_count || 0,
-                  color: ['#3B82F6', '#22C55E', '#EAB308', '#8B5CF6', '#EC4899'][i],
-                  url: link.url,
-                }))}
-            />
-          </div>
-
-          {/* Comments Section */}
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center border border-amber-500/20">
-                <MessageSquare className="w-5 h-5 text-amber-400" />
+            {/* Comments Section */}
+            <motion.div
+              className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7, duration: 0.5 }}
+              whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center border border-amber-500/20">
+                  <MessageSquare className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">Profile Comments</h3>
+                  <p className="text-xs text-white/40">Comments from visitors on your profile</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-white">Profile Comments</h3>
-                <p className="text-xs text-white/40">Comments from visitors on your profile</p>
-              </div>
-            </div>
-            <ProfileCommentsViewer />
-          </div>
-        </div>
-      )}
+              <ProfileCommentsViewer />
+            </motion.div>
+          </motion.div>
+        )}
 
       {/* Profile Tab */}
       {activeTab === 'profile' && (

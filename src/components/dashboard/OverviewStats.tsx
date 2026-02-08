@@ -86,31 +86,75 @@ function StatCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.5 }}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-5"
+      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{
+        delay: index * 0.08,
+        duration: 0.5,
+        type: "spring",
+        stiffness: 100,
+        damping: 15
+      }}
+      whileHover={{
+        y: -8,
+        scale: 1.02,
+        transition: { duration: 0.3, type: "spring", stiffness: 400, damping: 10 }
+      }}
+      className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-xl p-6 cursor-pointer"
     >
-      {/* Static gradient background instead of Aurora for performance */}
-      <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-500 bg-gradient-to-br from-[#00B4D8]/30 via-[#00D9A5]/20 to-[#0077B6]/30" />
-      
+      {/* Animated gradient background */}
+      <motion.div
+        className={`absolute inset-0 opacity-0 group-hover:opacity-30 transition-all duration-700 bg-gradient-to-br ${styles.iconBg}`}
+        animate={{
+          scale: [1, 1.05, 1],
+          rotate: [0, 2, 0],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+
+      {/* Shine effect on hover */}
+      <motion.div
+        className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)',
+        }}
+      />
+
       {/* Content */}
       <div className="relative z-10">
-        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${styles.iconBg} flex items-center justify-center border ${styles.iconBorder} transition-colors mb-4`}>
-          <Icon className={`w-5 h-5 ${styles.iconColor}`} />
-        </div>
+        <motion.div
+          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${styles.iconBg} flex items-center justify-center border ${styles.iconBorder} transition-all duration-300 mb-4 shadow-lg`}
+          whileHover={{
+            scale: 1.1,
+            rotate: 5,
+            transition: { duration: 0.3 }
+          }}
+        >
+          <Icon className={`w-5 h-5 ${styles.iconColor} transition-transform group-hover:scale-110`} />
+        </motion.div>
         <div className="space-y-1">
-          <p className="text-2xl font-bold text-white">
+          <motion.p
+            className="text-3xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: index * 0.1 + 0.2 }}
+          >
             {isNumber && typeof value === 'number' ? (
               <AnimatedNumber value={value} />
             ) : (
               value
             )}
-          </p>
-          <p className="text-sm text-white/40">{label}</p>
+          </motion.p>
+          <p className="text-sm font-medium text-white/50 group-hover:text-white/70 transition-colors">{label}</p>
         </div>
       </div>
+
+      {/* Bottom glow */}
+      <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r ${styles.iconBg} opacity-0 group-hover:opacity-50 blur-xl transition-opacity duration-500`} />
     </motion.div>
   );
 }
