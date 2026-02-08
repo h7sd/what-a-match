@@ -22,7 +22,7 @@ export function ExpandingAuthMenu() {
     {
       icon: UserPlus,
       label: 'Get Started',
-      href: '/auth'
+      href: '/auth?mode=signup'
     }
   ];
 
