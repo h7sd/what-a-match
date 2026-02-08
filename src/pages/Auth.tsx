@@ -16,80 +16,11 @@ import { BanAppealScreen } from '@/components/auth/BanAppealScreen';
 import { PasswordStrengthIndicator, getPasswordStrength } from '@/components/auth/PasswordStrengthIndicator';
 import { useDiscordOAuth } from '@/hooks/useDiscordOAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
+import Stepper, { Step } from '@/components/ui/Stepper';
 
 const LiquidEther = lazy(() =>
   import('@/components/landing/LiquidEther').then((m) => ({ default: m.LiquidEther }))
 );
-
-// Visual Auth Stepper Component
-function AuthStepper({ currentStep }: { currentStep: 'signup' | 'verify' | 'complete' }) {
-  const steps = [
-    { key: 'signup', label: 'Account' },
-    { key: 'verify', label: 'Verify' },
-    { key: 'complete', label: 'Done' }
-  ];
-  
-  const currentIndex = steps.findIndex(s => s.key === currentStep);
-  
-  return (
-    <div className="flex items-center justify-center w-full mb-6">
-      {steps.map((step, index) => {
-        const isComplete = index < currentIndex;
-        const isActive = index === currentIndex;
-        const isLast = index === steps.length - 1;
-        
-        return (
-          <div key={step.key} className="flex items-center">
-            <div className="flex flex-col items-center">
-              <motion.div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${
-                  isComplete 
-                    ? 'bg-primary text-primary-foreground' 
-                    : isActive 
-                      ? 'bg-primary text-primary-foreground ring-4 ring-primary/30' 
-                      : 'bg-white/10 text-white/50'
-                }`}
-                initial={false}
-                animate={{
-                  scale: isActive ? 1.1 : 1,
-                }}
-                transition={{ duration: 0.2 }}
-              >
-                {isComplete ? (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
-                  >
-                    <Check className="w-5 h-5" />
-                  </motion.div>
-                ) : (
-                  <span>{index + 1}</span>
-                )}
-              </motion.div>
-              <span className={`text-xs mt-2 transition-colors ${
-                isComplete || isActive ? 'text-primary' : 'text-white/40'
-              }`}>
-                {step.label}
-              </span>
-            </div>
-            
-            {!isLast && (
-              <div className="relative w-12 md:w-16 h-0.5 mx-2 mt-[-1rem] bg-white/10 rounded-full overflow-hidden">
-                <motion.div
-                  className="absolute inset-y-0 left-0 bg-primary"
-                  initial={{ width: 0 }}
-                  animate={{ width: isComplete ? '100%' : '0%' }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
-                />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAACVEg1JAQ99IiFFG';
 
@@ -150,6 +81,7 @@ export default function Auth() {
   const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [signupStepperStep, setSignupStepperStep] = useState(1);
   // Google/Apple OAuth disabled
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileLoaded, setTurnstileLoaded] = useState(false);
@@ -864,54 +796,42 @@ export default function Auth() {
             {/* Subtle spotlight effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
             
-            {/* Stepper for signup flow */}
-            {(step === 'signup' || step === 'verify') && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="relative z-10"
-              >
-                <AuthStepper currentStep={step === 'signup' ? 'signup' : 'verify'} />
-              </motion.div>
-            )}
-
             {/* Header */}
-            <motion.div 
+            <motion.div
               className="text-center mb-8 relative z-10"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              {(step === 'verify' || step === 'mfa-verify') && (
-                <motion.div 
+              {step === 'mfa-verify' && (
+                <motion.div
                   className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 border border-primary/30"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 200, delay: 0.4 }}
                 >
                   <motion.div
-                    animate={{ 
+                    animate={{
                       boxShadow: ['0 0 20px rgba(0, 217, 165, 0.3)', '0 0 40px rgba(0, 217, 165, 0.5)', '0 0 20px rgba(0, 217, 165, 0.3)']
                     }}
                     transition={{ duration: 2, repeat: Infinity }}
                     className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center"
                   >
-                    {step === 'mfa-verify' ? (
-                      <Shield className="w-6 h-6 text-primary" />
-                    ) : (
-                      <Mail className="w-6 h-6 text-primary" />
-                    )}
+                    <Shield className="w-6 h-6 text-primary" />
                   </motion.div>
                 </motion.div>
               )}
-              
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
-                {renderTitle()}
-              </h1>
-              <p className="text-white/50 text-sm">
-                {renderDescription()}
-              </p>
+
+              {step !== 'signup' && step !== 'verify' && (
+                <>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
+                    {renderTitle()}
+                  </h1>
+                  <p className="text-white/50 text-sm">
+                    {renderDescription()}
+                  </p>
+                </>
+              )}
             </motion.div>
 
             {/* Login Form */}
@@ -1008,156 +928,212 @@ export default function Auth() {
               </motion.form>
             )}
 
-            {/* Signup Form */}
-            {step === 'signup' && (
-              <motion.form 
-                onSubmit={handleSubmit} 
-                className="space-y-4 relative z-10"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
+            {/* Signup & Verification Stepper */}
+            {(step === 'signup' || step === 'verify') && (
+              <Stepper
+                externalStep={step === 'signup' ? 1 : 2}
+                disableStepIndicators={true}
+                hideFooter={true}
+                stepCircleContainerClassName="!border-0 !shadow-none !bg-transparent"
+                contentClassName="!p-0"
               >
-                <div className="space-y-2">
-                  <Label htmlFor="username" className="text-white/80 text-sm font-medium">
-                    Username
-                  </Label>
-                  <Input
-                    id="username"
-                    type="text"
-                    placeholder="cooluser"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
-                  />
-                  {errors.username && (
-                    <p className="text-sm text-red-400">{errors.username}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white/80 text-sm font-medium">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-red-400">{errors.email}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-white/80 text-sm font-medium">
-                    Password
-                  </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
-                  />
-                  {errors.password && (
-                    <p className="text-sm text-destructive">{errors.password}</p>
-                  )}
-                  <PasswordStrengthIndicator password={password} />
-                </div>
-
-                {/* Turnstile Widget */}
-                <div className="flex justify-center py-2">
-                  <div ref={turnstileRef} />
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={loading || !turnstileToken || !getPasswordStrength(password).isStrong}
-                  className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-primary/20 hover:shadow-primary/30"
-                >
-                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Continue
-                </Button>
-
-                {/* Divider */}
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10" />
-                  </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="px-3 bg-black/60 text-white/40">or sign up with</span>
-                  </div>
-                </div>
-
-                {/* Discord Signup Button */}
-                <Button
-                  type="button"
-                  onClick={initiateDiscordLogin}
-                  disabled={discordLoading}
-                  variant="outline"
-                  className="w-full h-12 bg-[#5865F2]/10 border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 text-white font-semibold rounded-xl transition-all duration-300"
-                >
-                  {discordLoading ? (
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  ) : (
-                    <FaDiscord className="w-5 h-5 mr-2 text-[#5865F2]" />
-                  )}
-                  Discord
-                </Button>
-              </motion.form>
-            )}
-
-            {/* Verification Form */}
-            {step === 'verify' && (
-              <motion.div 
-                className="space-y-6 relative z-10"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                <div className="flex justify-center">
-                  <InputOTP
-                    maxLength={6}
-                    value={verificationCode}
-                    onChange={setVerificationCode}
-                    className="gap-2"
+                <Step>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="space-y-4"
                   >
-                    <InputOTPGroup className="gap-2">
-                      {[0, 1, 2, 3, 4, 5].map((index) => (
-                        <InputOTPSlot 
-                          key={index}
-                          index={index} 
-                          className="w-12 h-14 bg-white/5 border-white/10 text-white text-lg font-semibold rounded-lg focus:border-primary focus:ring-primary/20"
+                    <div className="text-center mb-6">
+                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
+                        Create account
+                      </h1>
+                      <p className="text-white/50 text-sm">
+                        Create your own personalized bio page
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="username" className="text-white/80 text-sm font-medium">
+                          Username
+                        </Label>
+                        <Input
+                          id="username"
+                          type="text"
+                          placeholder="cooluser"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
                         />
-                      ))}
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
+                        {errors.username && (
+                          <p className="text-sm text-red-400">{errors.username}</p>
+                        )}
+                      </div>
 
-                <Button
-                  onClick={handleVerifyCode}
-                  disabled={loading || verificationCode.length !== 6}
-                  className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-primary/20"
-                >
-                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Verify
-                </Button>
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="text-white/80 text-sm font-medium">
+                          Email
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="you@example.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
+                        />
+                        {errors.email && (
+                          <p className="text-sm text-red-400">{errors.email}</p>
+                        )}
+                      </div>
 
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={handleResendCode}
-                    disabled={loading}
-                    className="text-sm text-white/50 hover:text-white transition-colors"
+                      <div className="space-y-2">
+                        <Label htmlFor="password" className="text-white/80 text-sm font-medium">
+                          Password
+                        </Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
+                        />
+                        {errors.password && (
+                          <p className="text-sm text-destructive">{errors.password}</p>
+                        )}
+                        <PasswordStrengthIndicator password={password} />
+                      </div>
+
+                      <div className="flex justify-center py-2">
+                        <div ref={turnstileRef} />
+                      </div>
+
+                      <Button
+                        type="submit"
+                        disabled={loading || !turnstileToken || !getPasswordStrength(password).isStrong}
+                        className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-primary/20 hover:shadow-primary/30"
+                      >
+                        {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Continue
+                      </Button>
+
+                      <div className="relative my-4">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-white/10" />
+                        </div>
+                        <div className="relative flex justify-center text-xs">
+                          <span className="px-3 bg-black/60 text-white/40">or sign up with</span>
+                        </div>
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={initiateDiscordLogin}
+                        disabled={discordLoading}
+                        variant="outline"
+                        className="w-full h-12 bg-[#5865F2]/10 border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 text-white font-semibold rounded-xl transition-all duration-300"
+                      >
+                        {discordLoading ? (
+                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        ) : (
+                          <FaDiscord className="w-5 h-5 mr-2 text-[#5865F2]" />
+                        )}
+                        Discord
+                      </Button>
+                    </form>
+                  </motion.div>
+                </Step>
+
+                <Step>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="space-y-6"
                   >
-                    Didn't receive a code? <span className="text-primary">Resend</span>
-                  </button>
-                </div>
-              </motion.div>
+                    <motion.div
+                      className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6 border border-primary/30"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+                    >
+                      <motion.div
+                        animate={{
+                          boxShadow: ['0 0 20px rgba(0, 217, 165, 0.3)', '0 0 40px rgba(0, 217, 165, 0.5)', '0 0 20px rgba(0, 217, 165, 0.3)']
+                        }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center"
+                      >
+                        <Mail className="w-6 h-6 text-primary" />
+                      </motion.div>
+                    </motion.div>
+
+                    <div className="text-center mb-6">
+                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
+                        Verify email
+                      </h1>
+                      <p className="text-white/50 text-sm">
+                        We sent a 6-digit code to {email}
+                      </p>
+                    </div>
+
+                    <div className="flex justify-center">
+                      <InputOTP
+                        maxLength={6}
+                        value={verificationCode}
+                        onChange={setVerificationCode}
+                        className="gap-2"
+                      >
+                        <InputOTPGroup className="gap-2">
+                          {[0, 1, 2, 3, 4, 5].map((index) => (
+                            <InputOTPSlot
+                              key={index}
+                              index={index}
+                              className="w-12 h-14 bg-white/5 border-white/10 text-white text-lg font-semibold rounded-lg focus:border-primary focus:ring-primary/20"
+                            />
+                          ))}
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+
+                    <Button
+                      onClick={handleVerifyCode}
+                      disabled={loading || verificationCode.length !== 6}
+                      className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-primary/20"
+                    >
+                      {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Verify
+                    </Button>
+
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={handleResendCode}
+                        disabled={loading}
+                        className="text-sm text-white/50 hover:text-white transition-colors"
+                      >
+                        Didn't receive a code? <span className="text-primary">Resend</span>
+                      </button>
+                    </div>
+
+                    <div className="text-center pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStep('signup');
+                          setVerificationCode('');
+                        }}
+                        className="text-sm text-white/50 hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to sign up
+                      </button>
+                    </div>
+                  </motion.div>
+                </Step>
+              </Stepper>
             )}
 
             {/* Forgot Password Form */}
@@ -1471,8 +1447,8 @@ export default function Auth() {
             )}
 
             {/* Toggle between login and signup */}
-            {(step === 'login' || step === 'signup') && (
-              <motion.div 
+            {step === 'login' && (
+              <motion.div
                 className="mt-8 text-center relative z-10"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1481,25 +1457,23 @@ export default function Auth() {
                 <button
                   type="button"
                   onClick={() => {
-                    setStep(step === 'login' ? 'signup' : 'login');
+                    setStep('signup');
                     setErrors({});
                     setTurnstileToken(null);
                   }}
                   className="text-sm text-white/50 hover:text-white transition-colors"
                 >
-                  {step === 'login'
-                    ? "Don't have an account? "
-                    : 'Already have an account? '}
+                  Don't have an account?{' '}
                   <span className="text-primary font-medium">
-                    {step === 'login' ? 'Sign up' : 'Sign in'}
+                    Sign up
                   </span>
                 </button>
               </motion.div>
             )}
 
-            {step === 'verify' && (
-              <motion.div 
-                className="mt-6 text-center relative z-10"
+            {(step === 'signup' || step === 'verify') && (
+              <motion.div
+                className="mt-8 text-center relative z-10"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
@@ -1507,13 +1481,17 @@ export default function Auth() {
                 <button
                   type="button"
                   onClick={() => {
-                    setStep('signup');
+                    setStep('login');
+                    setErrors({});
+                    setTurnstileToken(null);
                     setVerificationCode('');
                   }}
-                  className="text-sm text-white/50 hover:text-white transition-colors flex items-center justify-center gap-2"
+                  className="text-sm text-white/50 hover:text-white transition-colors"
                 >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to sign up
+                  Already have an account?{' '}
+                  <span className="text-primary font-medium">
+                    Sign in
+                  </span>
                 </button>
               </motion.div>
             )}
