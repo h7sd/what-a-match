@@ -12,7 +12,8 @@ import {
   Github,
   Sparkles,
   Activity,
-  Bell
+  Bell,
+  Box
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,11 @@ export function ExpandingMenu() {
       icon: Package,
       label: 'Pricing',
       href: '/premium'
+    },
+    {
+      icon: Box,
+      label: 'Cases',
+      href: '/cases'
     },
     {
       icon: Github,

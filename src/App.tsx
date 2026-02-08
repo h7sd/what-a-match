@@ -28,6 +28,7 @@ const Status = lazy(() => import("./pages/Status"));
 const AliasRespond = lazy(() => import("./pages/AliasRespond"));
 const Premium = lazy(() => import("./pages/Premium"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
+const Cases = lazy(() => import("./pages/Cases"));
 const PublishBookmarklet = lazy(() => import("./pages/PublishBookmarklet"));
 const SecretDatabaseViewer = lazy(() => import("./pages/SecretDatabaseViewer"));
 const DiscordOAuthCallback = lazy(() => import("./pages/DiscordOAuthCallback"));
@@ -193,6 +194,7 @@ function MaintenanceRouter() {
             />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/cases" element={<Cases />} />
             <Route path="/premium" element={<Premium />} />
             <Route path="/admin/publish" element={<PublishBookmarklet />} />
             <Route
@@ -230,6 +232,7 @@ function MaintenanceRouter() {
           {/* Redirect all protected routes to landing */}
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/marketplace" element={<Navigate to="/" replace />} />
+          <Route path="/cases" element={<Navigate to="/" replace />} />
           <Route path="/premium" element={<Navigate to="/" replace />} />
           {/* Status page stays accessible */}
           <Route path="/status" element={<Status />} />
@@ -283,6 +286,7 @@ const App = () => {
                 />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/cases" element={<Cases />} />
                 <Route path="/premium" element={<Premium />} />
                 <Route path="/admin/publish" element={<PublishBookmarklet />} />
                 <Route
