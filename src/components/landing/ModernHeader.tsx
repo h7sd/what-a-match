@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Menu, X, Sparkles, ShoppingBag } from 'lucide-react';
+import { Menu, X, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { ReportUserDialog } from './ReportUserDialog';
 import { Magnet } from './Magnet';
@@ -30,7 +30,6 @@ export function ModernHeader() {
     { label: 'Pricing', to: '/premium' },
     { label: 'Discord', href: 'https://discord.gg/uservault', external: true },
     { label: 'Status', to: '/status' },
-    { label: 'Market', to: '/marketplace', icon: ShoppingBag },
   ];
 
   return (
