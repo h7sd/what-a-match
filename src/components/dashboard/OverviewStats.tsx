@@ -46,10 +46,10 @@ interface StatCardProps {
   color?: 'primary' | 'blue' | 'amber' | 'emerald' | 'rose';
 }
 
-function StatCard({ 
-  icon: Icon, 
-  value, 
-  label, 
+function StatCard({
+  icon: Icon,
+  value,
+  label,
   index,
   isNumber = true,
   color = 'primary'
@@ -57,28 +57,33 @@ function StatCard({
   const colorStyles = {
     primary: {
       iconBg: 'from-[#00B4D8]/20 via-[#00D9A5]/15 to-[#0077B6]/20',
-      iconBorder: 'border-[#00D9A5]/20 group-hover:border-[#00D9A5]/40',
+      iconBorder: 'border-[#00D9A5]/30 group-hover:border-[#00D9A5]/50',
       iconColor: 'text-[#00D9A5]',
+      glow: 'shadow-[#00D9A5]/20',
     },
     blue: {
       iconBg: 'from-[#00B4D8]/20 to-[#0077B6]/20',
-      iconBorder: 'border-[#00B4D8]/20 group-hover:border-[#00B4D8]/40',
+      iconBorder: 'border-[#00B4D8]/30 group-hover:border-[#00B4D8]/50',
       iconColor: 'text-[#00B4D8]',
+      glow: 'shadow-[#00B4D8]/20',
     },
     amber: {
       iconBg: 'from-amber-500/20 to-amber-500/5',
-      iconBorder: 'border-amber-500/20 group-hover:border-amber-500/40',
+      iconBorder: 'border-amber-500/30 group-hover:border-amber-500/50',
       iconColor: 'text-amber-400',
+      glow: 'shadow-amber-500/20',
     },
     emerald: {
       iconBg: 'from-[#00D9A5]/20 to-[#00D9A5]/5',
-      iconBorder: 'border-[#00D9A5]/20 group-hover:border-[#00D9A5]/40',
+      iconBorder: 'border-[#00D9A5]/30 group-hover:border-[#00D9A5]/50',
       iconColor: 'text-[#00D9A5]',
+      glow: 'shadow-[#00D9A5]/20',
     },
     rose: {
       iconBg: 'from-rose-500/20 to-rose-500/5',
-      iconBorder: 'border-rose-500/20 group-hover:border-rose-500/40',
+      iconBorder: 'border-rose-500/30 group-hover:border-rose-500/50',
       iconColor: 'text-rose-400',
+      glow: 'shadow-rose-500/20',
     }
   };
 
@@ -89,22 +94,22 @@ function StatCard({
       initial={{ opacity: 0, scale: 0.95, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{
-        delay: index * 0.08,
+        delay: index * 0.06,
         duration: 0.5,
         type: "spring",
-        stiffness: 100,
+        stiffness: 120,
         damping: 15
       }}
       whileHover={{
-        y: -8,
-        scale: 1.02,
+        y: -6,
+        scale: 1.01,
         transition: { duration: 0.3, type: "spring", stiffness: 400, damping: 10 }
       }}
-      className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-xl p-6 cursor-pointer"
+      className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-gradient-to-br from-black/50 via-black/30 to-black/50 backdrop-blur-xl p-5 cursor-pointer"
     >
       {/* Animated gradient background */}
       <motion.div
-        className={`absolute inset-0 opacity-0 group-hover:opacity-30 transition-all duration-700 bg-gradient-to-br ${styles.iconBg}`}
+        className={`absolute inset-0 opacity-0 group-hover:opacity-25 transition-all duration-700 bg-gradient-to-br ${styles.iconBg}`}
         animate={{
           scale: [1, 1.05, 1],
           rotate: [0, 2, 0],
@@ -120,25 +125,26 @@ function StatCard({
       <motion.div
         className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent)',
         }}
       />
 
       {/* Content */}
-      <div className="relative z-10">
+      <div className="relative z-10 flex items-center gap-4">
         <motion.div
-          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${styles.iconBg} flex items-center justify-center border ${styles.iconBorder} transition-all duration-300 mb-4 shadow-lg`}
+          className={`w-14 h-14 rounded-xl bg-gradient-to-br ${styles.iconBg} flex items-center justify-center border ${styles.iconBorder} transition-all duration-300 shadow-lg ${styles.glow}`}
           whileHover={{
             scale: 1.1,
             rotate: 5,
             transition: { duration: 0.3 }
           }}
         >
-          <Icon className={`w-5 h-5 ${styles.iconColor} transition-transform group-hover:scale-110`} />
+          <Icon className={`w-6 h-6 ${styles.iconColor} transition-transform group-hover:scale-110`} />
         </motion.div>
-        <div className="space-y-1">
+        <div className="space-y-0.5 flex-1 min-w-0">
+          <p className="text-xs font-medium text-white/50 uppercase tracking-wide">{label}</p>
           <motion.p
-            className="text-3xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent"
+            className="text-2xl font-bold bg-gradient-to-r from-white to-white/90 bg-clip-text text-transparent"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: index * 0.1 + 0.2 }}
@@ -149,12 +155,11 @@ function StatCard({
               value
             )}
           </motion.p>
-          <p className="text-sm font-medium text-white/50 group-hover:text-white/70 transition-colors">{label}</p>
         </div>
       </div>
 
       {/* Bottom glow */}
-      <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r ${styles.iconBg} opacity-0 group-hover:opacity-50 blur-xl transition-opacity duration-500`} />
+      <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-3/4 h-0.5 bg-gradient-to-r ${styles.iconBg} opacity-0 group-hover:opacity-60 blur-md transition-opacity duration-500`} />
     </motion.div>
   );
 }
@@ -209,52 +214,61 @@ export function OverviewStats({ profileViews, uidNumber, username, profileId }: 
   }, [profileId]);
 
   return (
-    <div className="space-y-4">
-      {/* Main stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard 
-          icon={Eye} 
-          value={profileViews} 
-          label="Profile Views" 
+    <div className="space-y-6">
+      {/* Primary Stats - Most Important */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <StatCard
+          icon={Eye}
+          value={profileViews}
+          label="Profile Views"
           index={0}
           color="primary"
         />
-        <StatCard 
-          icon={Hash} 
-          value={`#${uidNumber}`} 
-          label="User ID" 
+        <StatCard
+          icon={Hash}
+          value={`#${uidNumber}`}
+          label="User ID"
           index={1}
           isNumber={false}
           color="blue"
         />
-        <StatCard 
-          icon={ThumbsUp} 
-          value={likesCount} 
-          label="Likes" 
-          index={2}
-          color="emerald"
-        />
-        <StatCard 
-          icon={ThumbsDown} 
-          value={dislikesCount} 
-          label="Dislikes" 
-          index={3}
-          color="rose"
-        />
-        <StatCard 
-          icon={MessageCircle} 
-          value={commentsCount} 
-          label="Comments" 
-          index={4}
-          color="amber"
-        />
-        <StatCard 
-          icon={TrendingUp} 
-          value={linkClicks} 
-          label="Link Clicks" 
-          index={5}
-          color="blue"
-        />
+      </div>
+
+      {/* Engagement Stats */}
+      <div className="relative">
+        <div className="absolute -top-3 left-4 px-3 py-1 bg-black/80 backdrop-blur-sm border border-white/[0.08] rounded-full">
+          <span className="text-xs font-medium text-white/60">Engagement</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+          <StatCard
+            icon={ThumbsUp}
+            value={likesCount}
+            label="Likes"
+            index={2}
+            color="emerald"
+          />
+          <StatCard
+            icon={ThumbsDown}
+            value={dislikesCount}
+            label="Dislikes"
+            index={3}
+            color="rose"
+          />
+          <StatCard
+            icon={MessageCircle}
+            value={commentsCount}
+            label="Comments"
+            index={4}
+            color="amber"
+          />
+          <StatCard
+            icon={TrendingUp}
+            value={linkClicks}
+            label="Link Clicks"
+            index={5}
+            color="blue"
+          />
+        </div>
       </div>
     </div>
   );
