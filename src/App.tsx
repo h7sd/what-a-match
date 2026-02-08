@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { AuthProvider, useAuth } from "@/lib/auth";
 import Index from "./pages/Index";
 import { ClaimedUsernamePopup } from "@/components/landing/ClaimedUsernamePopup";
-import { WelcomeBackGate } from "@/components/auth/WelcomeBackGate";
 import { EventAnnouncementBanner } from "@/components/landing/EventAnnouncementBanner";
 import { GlobalAdminNotification } from "@/components/notifications/GlobalAdminNotification";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -180,7 +179,6 @@ function MaintenanceRouter() {
       <>
         <Toaster />
         <Sonner />
-        <WelcomeBackGate />
         <GlobalPopups />
         <GlobalAdminNotification />
         <EventBannerGate />
@@ -269,7 +267,6 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <WelcomeBackGate />
             <GlobalPopups />
             <GlobalAdminNotification />
             {/* Global Event Banner (also visible on profile pages) */}

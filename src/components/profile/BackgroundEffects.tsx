@@ -57,15 +57,20 @@ export function BackgroundEffects({
 
     // Force hardware acceleration and smooth playback
     video.style.willChange = 'transform';
-    
-    const handleCanPlay = () => {
+
+    // Reset to beginning
+    video.currentTime = 0;
+    video.load();
+
+    const handleLoadedData = () => {
+      video.currentTime = 0;
       video.play().catch(() => {});
     };
 
-    video.addEventListener('canplay', handleCanPlay);
-    
+    video.addEventListener('loadeddata', handleLoadedData, { once: true });
+
     return () => {
-      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('loadeddata', handleLoadedData);
     };
   }, [backgroundVideoUrl]);
 

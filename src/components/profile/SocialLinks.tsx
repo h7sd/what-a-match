@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ExternalLink, Link2 } from 'lucide-react';
+import { ExternalLink, Link2, Copy, Check } from 'lucide-react';
 import {
   SiDiscord,
   SiSpotify,
@@ -21,8 +21,11 @@ import {
   SiPinterest,
   SiFacebook,
   SiKick,
+  SiRoblox,
 } from 'react-icons/si';
 import type { SocialLink } from '@/hooks/useProfile';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { Pickaxe } from 'lucide-react';
 
@@ -48,6 +51,7 @@ const platformIcons: Record<string, React.ComponentType<{ className?: string }>>
   pinterest: SiPinterest,
   facebook: SiFacebook,
   kick: SiKick,
+  roblox: SiRoblox,
   namemc: Pickaxe,
 };
 
@@ -73,6 +77,7 @@ const platformColors: Record<string, string> = {
   pinterest: '#BD081C',
   facebook: '#1877F2',
   kick: '#53FC18',
+  roblox: '#E74C3C',
   namemc: '#8BC34A',
 };
 
@@ -99,8 +104,24 @@ function detectPlatform(url: string): string {
   if (urlLower.includes('pinterest.com')) return 'pinterest';
   if (urlLower.includes('facebook.com')) return 'facebook';
   if (urlLower.includes('kick.com')) return 'kick';
+  if (urlLower.includes('roblox.com')) return 'roblox';
   if (urlLower.includes('namemc.com')) return 'namemc';
   return 'link';
+}
+
+// Wrap external URLs with uservault.cc redirect
+function wrapWithRedirect(url: string): string {
+  if (url.includes('uservault.cc')) {
+    return url;
+  }
+
+  const cleanUrl = url.replace(/^https?:\/\//, '');
+  return `https://uservault.cc/${cleanUrl}`;
+}
+
+// Check if a URL is a Discord username (not a full URL)
+function isDiscordUsername(url: string): boolean {
+  return !url.includes('://') && !url.includes('discord.com') && !url.includes('discord.gg');
 }
 
 interface SocialLinksProps {
@@ -112,6 +133,8 @@ interface SocialLinksProps {
 }
 
 export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = true, iconOnly = false, iconOpacity = 100 }: SocialLinksProps) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -125,6 +148,13 @@ export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = tru
   const item = {
     hidden: { opacity: 0, y: 20, scale: 0.95 },
     show: { opacity: 1, y: 0, scale: 1 },
+  };
+
+  const handleDiscordClick = (username: string, linkId: string) => {
+    navigator.clipboard.writeText(username);
+    setCopiedId(linkId);
+    toast.success('Discord username copied to clipboard!');
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // Icon-only mode: render as a grid of icons
@@ -142,12 +172,44 @@ export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = tru
           const Icon = platformIcons[platform] || Link2;
           const color = platformColors[platform] || accentColor;
 
-          const bgOpacity = (iconOpacity / 100) * 0.4; // Scale 0-100 to 0-0.4 for bg
-          
+          const bgOpacity = (iconOpacity / 100) * 0.4;
+
+          const isDiscord = platform === 'discord' && isDiscordUsername(link.url);
+
+          if (isDiscord) {
+            return (
+              <motion.button
+                key={link.id}
+                onClick={() => handleDiscordClick(link.url, link.id)}
+                variants={item}
+                whileHover={{ scale: 1.15, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-12 h-12 rounded-xl flex items-center justify-center backdrop-blur-xl border border-white/10 transition-all duration-300 hover:border-white/20 cursor-pointer"
+                style={{
+                  backgroundColor: `rgba(0, 0, 0, ${bgOpacity})`,
+                  boxShadow: glowingIcons ? `0 0 20px ${color}40, 0 0 40px ${color}20` : undefined,
+                }}
+                title={`Click to copy: ${link.url}`}
+              >
+                {copiedId === link.id ? (
+                  <Check className="w-6 h-6" style={{ color }} />
+                ) : (
+                  <Icon
+                    className="w-6 h-6 transition-all duration-300"
+                    style={{
+                      color,
+                      filter: glowingIcons ? `drop-shadow(0 0 8px ${color})` : undefined,
+                    }}
+                  />
+                )}
+              </motion.button>
+            );
+          }
+
           return (
             <motion.a
               key={link.id}
-              href={link.url}
+              href={wrapWithRedirect(link.url)}
               target="_blank"
               rel="noopener noreferrer"
               variants={item}
@@ -162,7 +224,7 @@ export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = tru
             >
               <Icon
                 className="w-6 h-6 transition-all duration-300"
-                style={{ 
+                style={{
                   color,
                   filter: glowingIcons ? `drop-shadow(0 0 8px ${color})` : undefined,
                 }}
@@ -188,10 +250,57 @@ export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = tru
         const Icon = platformIcons[platform] || Link2;
         const color = platformColors[platform] || accentColor;
 
+        const isDiscord = platform === 'discord' && isDiscordUsername(link.url);
+
+        if (isDiscord) {
+          return (
+            <motion.button
+              key={link.id}
+              onClick={() => handleDiscordClick(link.url, link.id)}
+              variants={item}
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full flex items-center gap-4 p-4 rounded-xl backdrop-blur-xl bg-black/40 border border-white/10 transition-all duration-300 hover:bg-black/50 hover:border-white/20 group cursor-pointer"
+              style={{
+                boxShadow: glowingIcons ? `0 0 20px ${color}20` : undefined,
+              }}
+            >
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300"
+                style={{
+                  backgroundColor: `${color}20`,
+                  boxShadow: glowingIcons ? `0 0 15px ${color}40` : undefined,
+                }}
+              >
+                {copiedId === link.id ? (
+                  <Check className="w-6 h-6" style={{ color }} />
+                ) : (
+                  <Icon
+                    className="w-6 h-6 transition-all duration-300"
+                    style={{
+                      color,
+                      filter: glowingIcons ? `drop-shadow(0 0 6px ${color})` : undefined,
+                    }}
+                  />
+                )}
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="font-medium text-foreground truncate">
+                  {link.title || link.platform || detectedPlatform}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  Click to copy: {link.url}
+                </p>
+              </div>
+              <Copy className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </motion.button>
+          );
+        }
+
         return (
           <motion.a
             key={link.id}
-            href={link.url}
+            href={wrapWithRedirect(link.url)}
             target="_blank"
             rel="noopener noreferrer"
             variants={item}
@@ -211,7 +320,7 @@ export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = tru
             >
               <Icon
                 className="w-6 h-6 transition-all duration-300"
-                style={{ 
+                style={{
                   color,
                   filter: glowingIcons ? `drop-shadow(0 0 6px ${color})` : undefined,
                 }}

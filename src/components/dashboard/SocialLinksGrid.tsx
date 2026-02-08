@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Check, Loader2 } from 'lucide-react';
+import { Plus, Check, Loader2, Pickaxe } from 'lucide-react';
 import {
-  FaSnapchat, FaYoutube, FaDiscord, FaSpotify, FaInstagram, FaTiktok, 
+  FaSnapchat, FaYoutube, FaDiscord, FaSpotify, FaInstagram, FaTiktok,
   FaTelegram, FaSoundcloud, FaPaypal, FaGithub, FaTwitch, FaPatreon,
   FaLinkedin, FaPinterest, FaReddit, FaSteam, FaFacebook, FaThreads,
   FaXTwitter
 } from 'react-icons/fa6';
-import { SiOnlyfans, SiCashapp, SiVenmo, SiKofi, SiKick } from 'react-icons/si';
+import { SiOnlyfans, SiCashapp, SiVenmo, SiKofi, SiKick, SiRoblox } from 'react-icons/si';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,8 +30,8 @@ const socialPlatforms = [
   { id: 'discord', icon: FaDiscord, color: '#5865F2', name: 'Discord' },
   { id: 'spotify', icon: FaSpotify, color: '#1DB954', name: 'Spotify' },
   { id: 'instagram', icon: FaInstagram, color: '#E4405F', name: 'Instagram' },
-  { id: 'tiktok', icon: FaTiktok, color: '#000000', name: 'TikTok' },
-  { id: 'twitter', icon: FaXTwitter, color: '#000000', name: 'X (Twitter)' },
+  { id: 'tiktok', icon: FaTiktok, color: '#ffffff', name: 'TikTok' },
+  { id: 'twitter', icon: FaXTwitter, color: '#ffffff', name: 'X (Twitter)' },
   { id: 'telegram', icon: FaTelegram, color: '#0088CC', name: 'Telegram' },
   { id: 'soundcloud', icon: FaSoundcloud, color: '#FF5500', name: 'SoundCloud' },
   { id: 'paypal', icon: FaPaypal, color: '#00457C', name: 'PayPal' },
@@ -49,6 +49,8 @@ const socialPlatforms = [
   { id: 'facebook', icon: FaFacebook, color: '#1877F2', name: 'Facebook' },
   { id: 'threads', icon: FaThreads, color: '#000000', name: 'Threads' },
   { id: 'kick', icon: SiKick, color: '#53FC18', name: 'Kick' },
+  { id: 'roblox', icon: SiRoblox, color: '#E74C3C', name: 'Roblox' },
+  { id: 'namemc', icon: Pickaxe, color: '#8BC34A', name: 'NameMC' },
 ];
 
 export function SocialLinksGrid({ existingLinks, onAddLink, isLoading }: SocialLinksGridProps) {
@@ -153,12 +155,25 @@ export function SocialLinksGrid({ existingLinks, onAddLink, isLoading }: SocialL
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
-              <label className="text-sm text-muted-foreground">URL</label>
+              <label className="text-sm text-muted-foreground">
+                {selectedPlatform?.id === 'discord' ? 'Username' : 'URL'}
+              </label>
               <Input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder={`https://${selectedPlatform?.id === 'custom' ? 'example.com' : selectedPlatform?.id + '.com/username'}`}
+                placeholder={
+                  selectedPlatform?.id === 'discord'
+                    ? 'username or username#0000'
+                    : selectedPlatform?.id === 'custom'
+                    ? 'https://example.com'
+                    : `https://${selectedPlatform?.id}.com/username`
+                }
               />
+              {selectedPlatform?.id === 'discord' && (
+                <p className="text-xs text-muted-foreground">
+                  Enter your Discord username. Visitors can copy it by clicking the button on your profile.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm text-muted-foreground">Display Title (optional)</label>
@@ -168,9 +183,9 @@ export function SocialLinksGrid({ existingLinks, onAddLink, isLoading }: SocialL
                 placeholder={selectedPlatform?.name}
               />
             </div>
-            <Button 
-              onClick={handleSubmit} 
-              className="w-full" 
+            <Button
+              onClick={handleSubmit}
+              className="w-full"
               disabled={!url || isSubmitting}
             >
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add Link'}
