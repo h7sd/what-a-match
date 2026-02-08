@@ -56,7 +56,7 @@ export function ExpandingMenu() {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="flex items-center gap-[6px] p-2 rounded-[24px] bg-secondary/50 backdrop-blur-sm border border-border/50 shadow-lg">
+      <div className="flex items-center gap-[6px] p-2 rounded-[24px] bg-secondary/95 backdrop-blur-xl border border-border shadow-lg">
         {menuItems.map((item, index) => {
           const Icon = item.icon;
           const isHovered = hoveredIndex === index;
@@ -69,7 +69,7 @@ export function ExpandingMenu() {
               onHoverEnd={() => setHoveredIndex(null)}
               animate={{
                 width: isHovered ? '135px' : '52px',
-                backgroundColor: isHovered ? 'hsl(var(--muted))' : 'transparent'
+                backgroundColor: isHovered ? 'hsl(var(--primary))' : 'transparent'
               }}
               transition={{
                 duration: 0.4,
@@ -94,7 +94,7 @@ export function ExpandingMenu() {
                 <Icon
                   className={cn(
                     "w-5 h-5 transition-colors",
-                    isHovered ? "text-foreground" : "text-muted-foreground"
+                    isHovered ? "text-primary-foreground" : "text-foreground"
                   )}
                 />
               </motion.div>
@@ -109,7 +109,7 @@ export function ExpandingMenu() {
                   duration: 0.3,
                   delay: isHovered ? 0.1 : 0
                 }}
-                className="absolute right-4 text-sm font-medium text-foreground whitespace-nowrap"
+                className="absolute right-4 text-sm font-medium text-primary-foreground whitespace-nowrap"
               >
                 {item.label}
               </motion.span>
