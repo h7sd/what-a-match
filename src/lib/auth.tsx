@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Check for errors - edge function returns error in body for user not found
       if (userError || !userData || userData.error) {
         console.error('Get user email error:', userError || userData?.error);
-        return { error: new Error('Invalid username or password') };
+        return { error: new Error('Dieser Benutzername ist nicht registriert. Falls Sie noch kein Konto haben, registrieren Sie sich bitte.') };
       }
       
       // Decode obfuscated email from response
@@ -88,13 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           loginEmail = email;
         } catch (e) {
           console.error('Failed to decode email');
-          return { error: new Error('Invalid username or password') };
+          return { error: new Error('Dieser Benutzername ist nicht registriert. Falls Sie noch kein Konto haben, registrieren Sie sich bitte.') };
         }
       } else if (userData.email) {
         // Fallback for backwards compatibility
         loginEmail = userData.email;
       } else {
-        return { error: new Error('Invalid username or password') };
+        return { error: new Error('Dieser Benutzername ist nicht registriert. Falls Sie noch kein Konto haben, registrieren Sie sich bitte.') };
       }
     }
     

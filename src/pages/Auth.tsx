@@ -492,8 +492,8 @@ export default function Auth() {
         if (error) {
           toast({
             title: 'Login failed',
-            description: error.message === 'Invalid login credentials' 
-              ? 'Invalid email or password'
+            description: error.message === 'Invalid login credentials'
+              ? 'Diese E-Mail ist nicht registriert oder das Passwort ist falsch. Falls Sie noch kein Konto haben, registrieren Sie sich bitte.'
               : error.message,
             variant: 'destructive',
           });
