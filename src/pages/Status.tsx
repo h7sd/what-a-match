@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { 
-  CheckCircle2, 
-  XCircle, 
-  AlertCircle, 
-  RefreshCw, 
-  Globe, 
-  Shield, 
+import {
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  RefreshCw,
+  Globe,
+  Shield,
   Database,
   Server,
   ArrowLeft,
   Clock,
   Cloud,
-  MessageCircle
+  MessageCircle,
+  Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,179 +29,130 @@ interface Service {
   status: ServiceStatus;
   responseTime?: number;
   lastChecked?: Date;
+  uptime?: number;
+  hasActiveIncident?: boolean;
 }
 
-export default function Status() {
-  const [services, setServices] = useState<Service[]>([
-    {
-      id: 'website',
-      name: 'Website',
-      description: 'Main application frontend',
-      icon: Globe,
-      status: 'checking',
-    },
-    {
-      id: 'cloudflare',
-      name: 'Cloudflare',
-      description: 'CDN & DDoS Protection',
-      icon: Cloud,
-      status: 'checking',
-    },
-    {
-      id: 'database',
-      name: 'Database',
-      description: 'Data storage & retrieval',
-      icon: Database,
-      status: 'checking',
-    },
-    {
-      id: 'auth',
-      name: 'Authentication',
-      description: 'User login & security',
-      icon: Shield,
-      status: 'checking',
-    },
-    {
-      id: 'login-register',
-      name: 'Login & Register',
-      description: 'User sign-in & registration',
-      icon: Shield,
-      status: 'checking',
-    },
-    {
-      id: 'discord-bot',
-      name: 'Discord Bot',
-      description: 'Discord integration & presence',
-      icon: MessageCircle,
-      status: 'checking',
-    },
-    {
-      id: 'edge-functions',
-      name: 'Edge Functions',
-      description: 'Backend serverless functions',
-      icon: Server,
-      status: 'checking',
-    },
-  ]);
+const iconMap: Record<string, React.ElementType> = {
+  Globe,
+  Cloud,
+  Database,
+  Shield,
+  MessageCircle,
+  Server,
+  Activity,
+};
 
+export default function Status() {
+  const [services, setServices] = useState<Service[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const checkServices = async () => {
-    setRefreshing(true);
-    
-    // Check Website
-    const websiteStart = performance.now();
+  const loadServiceStatus = async () => {
     try {
-      const response = await fetch(window.location.origin, { method: 'HEAD' });
-      const websiteTime = Math.round(performance.now() - websiteStart);
-      updateService('website', response.ok ? 'operational' : 'degraded', websiteTime);
-    } catch {
-      updateService('website', 'outage');
-    }
+      const { data, error: rpcError } = await supabase.rpc('get_current_service_status');
 
-    // Check Cloudflare (check cf-ray header)
-    try {
-      const response = await fetch(window.location.origin, { method: 'HEAD' });
-      const cfRay = response.headers.get('cf-ray');
-      updateService('cloudflare', cfRay ? 'operational' : 'degraded');
-    } catch {
-      updateService('cloudflare', 'outage');
-    }
-
-    // Check Database
-    const dbStart = performance.now();
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .limit(1);
-      const dbTime = Math.round(performance.now() - dbStart);
-      updateService('database', error ? 'degraded' : 'operational', dbTime);
-    } catch {
-      updateService('database', 'outage');
-    }
-
-    // Check Auth
-    const authStart = performance.now();
-    try {
-      const { data, error } = await supabase.auth.getSession();
-      const authTime = Math.round(performance.now() - authStart);
-      updateService('auth', error ? 'degraded' : 'operational', authTime);
-    } catch {
-      updateService('auth', 'outage');
-    }
-
-    // Check Login & Register + Discord Bot + Edge Functions (via health endpoint)
-    const healthStart = performance.now();
-    try {
-      const { data, error } = await supabase.functions.invoke('health', {
-        body: { source: 'status-page' }
-      });
-
-      const healthTime = Math.round(performance.now() - healthStart);
-
-      if (error || !data) {
-        updateService('login-register', 'degraded');
-        updateService('discord-bot', 'degraded');
-        updateService('edge-functions', 'degraded', healthTime);
-      } else {
-        const overall: ServiceStatus =
-          data.status === 'healthy' ? 'operational' :
-          data.status === 'degraded' ? 'degraded' :
-          data.status === 'unhealthy' ? 'outage' :
-          'degraded';
-
-        updateService('edge-functions', overall, healthTime);
-
-        const loginOk = data?.checks?.login_endpoint?.status === 'ok';
-        const registerOk = data?.checks?.register_endpoint?.status === 'ok';
-        const loginStatus: ServiceStatus = (loginOk && registerOk)
-          ? 'operational'
-          : (loginOk || registerOk)
-          ? 'degraded'
-          : 'outage';
-
-        const loginTime = Math.max(
-          data?.checks?.login_endpoint?.latency_ms || 0,
-          data?.checks?.register_endpoint?.latency_ms || 0
-        ) || undefined;
-
-        updateService('login-register', loginStatus, loginTime);
-
-        const bot = data?.checks?.discord_bot;
-        const botStatus: ServiceStatus = bot?.status === 'ok'
-          ? (bot?.error ? 'degraded' : 'operational')
-          : bot?.status === 'error'
-          ? 'outage'
-          : 'degraded';
-
-        updateService('discord-bot', botStatus, bot?.latency_ms);
+      if (rpcError) {
+        console.error('Error loading service status:', rpcError);
+        setError('Failed to load service status');
+        return;
       }
-    } catch {
-      updateService('login-register', 'outage');
-      updateService('discord-bot', 'outage');
-      updateService('edge-functions', 'outage');
-    }
 
-    setLastRefresh(new Date());
-    setRefreshing(false);
+      if (data) {
+        const formattedServices: Service[] = data.map((s: any) => ({
+          id: s.service_slug,
+          name: s.service_name,
+          description: s.service_description,
+          icon: iconMap[s.service_icon] || Server,
+          status: (s.current_status as ServiceStatus) || 'checking',
+          responseTime: s.response_time_ms,
+          lastChecked: s.last_checked ? new Date(s.last_checked) : undefined,
+          hasActiveIncident: s.has_active_incident,
+        }));
+
+        setServices(formattedServices);
+        setError(null);
+      }
+    } catch (err) {
+      console.error('Error loading service status:', err);
+      setError('Failed to load service status');
+    }
   };
 
-  const updateService = (id: string, status: ServiceStatus, responseTime?: number) => {
-    setServices(prev => prev.map(s => 
-      s.id === id 
-        ? { ...s, status, responseTime, lastChecked: new Date() }
-        : s
-    ));
+  const triggerStatusCheck = async () => {
+    setRefreshing(true);
+    setError(null);
+
+    try {
+      const { error: checkError } = await supabase.functions.invoke('check-service-status');
+
+      if (checkError) {
+        console.error('Error triggering status check:', checkError);
+        setError('Failed to check service status');
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await loadServiceStatus();
+
+      setLastRefresh(new Date());
+    } catch (err) {
+      console.error('Error during status check:', err);
+      setError('Failed to check service status');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const loadUptimeData = async () => {
+    try {
+      const serviceIds = services.map(s => s.id);
+
+      const uptimePromises = serviceIds.map(async (slug) => {
+        const { data: serviceData } = await supabase
+          .from('services')
+          .select('id')
+          .eq('slug', slug)
+          .maybeSingle();
+
+        if (!serviceData?.id) return { slug, uptime: 100 };
+
+        const { data: uptimeData, error } = await supabase
+          .rpc('get_service_uptime', {
+            p_service_id: serviceData.id,
+            p_hours: 24
+          });
+
+        if (error) {
+          console.error(`Error loading uptime for ${slug}:`, error);
+          return { slug, uptime: 100 };
+        }
+
+        return { slug, uptime: uptimeData || 100 };
+      });
+
+      const uptimeResults = await Promise.all(uptimePromises);
+
+      setServices(prev => prev.map(s => {
+        const uptimeData = uptimeResults.find(u => u.slug === s.id);
+        return { ...s, uptime: uptimeData?.uptime };
+      }));
+    } catch (err) {
+      console.error('Error loading uptime data:', err);
+    }
   };
 
   useEffect(() => {
-    checkServices();
-    // Auto-refresh every 60 seconds
-    const interval = setInterval(checkServices, 60000);
+    loadServiceStatus();
+    const interval = setInterval(loadServiceStatus, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (services.length > 0) {
+      loadUptimeData();
+    }
+  }, [services.length]);
 
   const getStatusIcon = (status: ServiceStatus) => {
     switch (status) {
@@ -280,10 +232,10 @@ export default function Status() {
             </div>
           </div>
           
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
-            onClick={checkServices}
+            onClick={triggerStatusCheck}
             disabled={refreshing}
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -293,8 +245,20 @@ export default function Status() {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-12">
+        {/* Error Message */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 mb-6 flex items-center gap-3"
+          >
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <p className="text-sm text-red-200">{error}</p>
+          </motion.div>
+        )}
+
         {/* Overall Status */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className={`rounded-2xl border p-6 mb-8 ${getStatusColor(overallStatus)}`}
@@ -338,6 +302,12 @@ export default function Status() {
                   </div>
                   
                   <div className="flex items-center gap-3">
+                    {service.uptime !== undefined && (
+                      <div className="text-xs text-muted-foreground hidden md:flex items-center gap-1">
+                        <Activity className="w-3 h-3" />
+                        <span className="font-mono">{service.uptime.toFixed(2)}%</span>
+                      </div>
+                    )}
                     {service.responseTime && (
                       <span className="text-xs text-muted-foreground font-mono">
                         {service.responseTime}ms
