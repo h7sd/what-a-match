@@ -9,7 +9,7 @@
  */
 
 // The actual Supabase URL (hidden from clients)
-const SUPABASE_URL = "https://cjulgfbmcnmrkvnzkpym.supabase.co";
+const SUPABASE_URL = "https://nuszlhxbyxdjlaubuwzd.supabase.co";
 
 // Paths that should be proxied
 const PROXY_PATHS = [
