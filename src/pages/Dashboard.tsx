@@ -276,11 +276,15 @@ export default function Dashboard() {
   // Check ban status (server-side) to ensure suspended users cannot access /dashboard even via manual URL.
   useEffect(() => {
     let cancelled = false;
+    let timeoutId: NodeJS.Timeout;
 
     const checkBanStatus = async () => {
+      console.log('[v0] Dashboard: Starting ban status check for user:', user?.id);
+      
       // No user => nothing to check
       if (!user) {
         if (!cancelled) {
+          console.log('[v0] Dashboard: No user found, setting banCheckDone to true');
           setIsBanned(false);
           setBanReason(null);
           setAppealSubmitted(false);
@@ -291,48 +295,83 @@ export default function Dashboard() {
 
       if (!cancelled) setBanCheckDone(false);
 
+      // Set a timeout to prevent indefinite hanging
+      timeoutId = setTimeout(() => {
+        if (!cancelled) {
+          console.log('[v0] Dashboard: Ban check timed out, allowing access');
+          setIsBanned(false);
+          setBanReason(null);
+          setAppealSubmitted(false);
+          setBanCheckDone(true);
+        }
+      }, 5000); // 5 second timeout
+
       try {
         const { data, error } = await supabase.functions.invoke('check-ban-status', {
           body: { userId: user.id },
         });
 
+        // Clear timeout if we got a response
+        clearTimeout(timeoutId);
+
         if (error) throw error;
 
         if (!cancelled) {
+          console.log('[v0] Dashboard: Ban check completed, isBanned:', !!data?.isBanned);
           setIsBanned(!!data?.isBanned);
           setBanReason(data?.reason ?? null);
           setAppealSubmitted(!!data?.appealSubmitted);
         }
       } catch (err) {
-        console.error('Error checking ban status:', err);
+        console.error('[v0] Dashboard: Error checking ban status:', err);
+        clearTimeout(timeoutId);
         if (!cancelled) {
           // Fail-safe: if ban check fails, do not lock out the dashboard.
+          console.log('[v0] Dashboard: Ban check failed, allowing access');
           setIsBanned(false);
           setBanReason(null);
           setAppealSubmitted(false);
         }
       } finally {
-        if (!cancelled) setBanCheckDone(true);
+        if (!cancelled) {
+          console.log('[v0] Dashboard: Setting banCheckDone to true');
+          setBanCheckDone(true);
+        }
       }
     };
 
     checkBanStatus();
     return () => {
       cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [user?.id]);
 
   // Check MFA status and redirect if not verified
   useEffect(() => {
     const checkMfaStatus = async () => {
-      if (authLoading) return;
-      if (!banCheckDone) return;
-      if (isBanned) return;
+      console.log('[v0] Dashboard: MFA check - authLoading:', authLoading, 'banCheckDone:', banCheckDone, 'isBanned:', isBanned);
+      
+      if (authLoading) {
+        console.log('[v0] Dashboard: Waiting for auth to load');
+        return;
+      }
+      if (!banCheckDone) {
+        console.log('[v0] Dashboard: Waiting for ban check to complete');
+        return;
+      }
+      if (isBanned) {
+        console.log('[v0] Dashboard: User is banned');
+        return;
+      }
 
       if (!user) {
+        console.log('[v0] Dashboard: No user, redirecting to auth');
         navigate('/auth');
         return;
       }
+
+      console.log('[v0] Dashboard: All checks passed, user can access dashboard');
 
       // If we just completed MFA, we may still be in a short token propagation window.
       // Use BOTH navigation state and a sessionStorage fallback (state can be lost on reloads).
