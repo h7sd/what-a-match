@@ -307,20 +307,24 @@ export default function Dashboard() {
       }, 5000); // 5 second timeout
 
       try {
-        const { data, error } = await supabase.functions.invoke('check-ban-status', {
-          body: { userId: user.id },
-        });
+        // Use direct RPC call instead of Edge Function to avoid Bad Gateway errors
+        const { data, error } = await supabase
+          .rpc('check_user_ban_status', { p_user_id: user.id });
 
         // Clear timeout if we got a response
         clearTimeout(timeoutId);
 
-        if (error) throw error;
+        if (error) {
+          console.error('[v0] Dashboard: RPC error:', error);
+          throw error;
+        }
 
         if (!cancelled) {
-          console.log('[v0] Dashboard: Ban check completed, isBanned:', !!data?.isBanned);
-          setIsBanned(!!data?.isBanned);
-          setBanReason(data?.reason ?? null);
-          setAppealSubmitted(!!data?.appealSubmitted);
+          console.log('[v0] Dashboard: Ban check completed, data:', data);
+          const isBannedStatus = data && data.length > 0 && data[0]?.is_banned;
+          setIsBanned(!!isBannedStatus);
+          setBanReason(null); // RPC doesn't return reason, set to null
+          setAppealSubmitted(false); // RPC doesn't return appeal status
         }
       } catch (err) {
         console.error('[v0] Dashboard: Error checking ban status:', err);
