@@ -32,7 +32,7 @@ const BOT_PATTERNS = [
 const OG_FUNCTION_URL = "https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/share";
 
 // Lovable origin URL (where the actual app is hosted)
-const LOVABLE_ORIGIN = "https://what-a-match.lovable.app";
+const LOVABLE_ORIGIN = "https://uservault.cc";
 
 function isBot(request) {
   const ua = request.headers.get("User-Agent") || "";
