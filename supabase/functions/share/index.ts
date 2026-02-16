@@ -2,7 +2,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -118,7 +119,7 @@ Deno.serve(async (req) => {
   <title>${escapeHtml(ogTitle)}</title>
   <meta name="title" content="${escapeHtml(ogTitle)}">
   <meta name="description" content="${escapeHtml(ogDescription)}">
-  <meta name="theme-color" content="#8B5CF6">
+  <meta name="theme-color" content="${escapeHtml(profile.og_embed_color || '#8B5CF6')}">
   
   <!-- Open Graph / Discord -->
   <meta property="og:type" content="website">
