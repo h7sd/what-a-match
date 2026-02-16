@@ -189,28 +189,28 @@ client.on('interactionCreate', async (interaction) => {
     return handleBlackjackButton(interaction);
   }
 
-  // Handle button clicks
+  // Handle button clicks with cryptic IDs
   if (interaction.isButton()) {
     const customId = interaction.customId;
-    
-    // Badge Approve Button
-    if (customId.startsWith('badge_approve_')) {
-      const requestId = customId.replace('badge_approve_', '');
-      
+
+    // Badge Approve Button (cryptic ID)
+    if (customId.startsWith('x98zg89ezhg938g893g9389g3489g3894z_')) {
+      const requestId = customId.split('_')[1];
+
       await interaction.deferReply({ ephemeral: true });
-      
+
       try {
         const result = await handleBadgeAction('approve', requestId);
-        
+
         if (result.success) {
           await interaction.editReply({ content: '✅ Badge request approved! User has been notified via email.' });
-          
+
           // Update original message
           const embed = EmbedBuilder.from(interaction.message.embeds[0])
             .setColor(0x22c55e)
             .setTitle('✅ Badge Request APPROVED')
             .setFooter({ text: `Approved by ${interaction.user.tag}` });
-          
+
           await interaction.message.edit({ embeds: [embed], components: [] });
         } else {
           await interaction.editReply({ content: `❌ Failed to approve: ${result.error}` });
@@ -219,15 +219,15 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.editReply({ content: `❌ Error: ${err.message}` });
       }
     }
-    
-    // Badge Deny Button - Show modal for reason
-    if (customId.startsWith('badge_deny_')) {
-      const requestId = customId.replace('badge_deny_', '');
-      
+
+    // Badge Deny Button (cryptic ID)
+    if (customId.startsWith('x809guj305gh9i00hezg890zu9ergo9ieuoh_')) {
+      const requestId = customId.split('_')[1];
+
       const modal = new ModalBuilder()
-        .setCustomId(`badge_deny_modal_${requestId}`)
+        .setCustomId(`deny_modal_${requestId}`)
         .setTitle('Deny Badge Request');
-      
+
       const reasonInput = new TextInputBuilder()
         .setCustomId('denial_reason')
         .setLabel('Reason for denial')
@@ -235,47 +235,47 @@ client.on('interactionCreate', async (interaction) => {
         .setPlaceholder('Please provide a reason for denying this badge request...')
         .setRequired(true)
         .setMaxLength(500);
-      
+
       modal.addComponents(new ActionRowBuilder().addComponents(reasonInput));
-      
+
       await interaction.showModal(modal);
     }
-    
-    // Badge Edit Button - Show modal for editing
-    if (customId.startsWith('badge_edit_')) {
-      const requestId = customId.replace('badge_edit_', '');
-      
+
+    // Badge Edit Button (cryptic ID)
+    if (customId.startsWith('x67ytf6t9f85hzohjoi90879sft7t623ui23u4g_')) {
+      const requestId = customId.split('_')[1];
+
       const modal = new ModalBuilder()
-        .setCustomId(`badge_edit_modal_${requestId}`)
+        .setCustomId(`edit_approve_modal_${requestId}`)
         .setTitle('Edit & Approve Badge');
-      
+
       const nameInput = new TextInputBuilder()
         .setCustomId('edited_name')
         .setLabel('Badge Name (leave empty to keep original)')
         .setStyle(TextInputStyle.Short)
         .setRequired(false)
         .setMaxLength(30);
-      
+
       const descInput = new TextInputBuilder()
         .setCustomId('edited_description')
         .setLabel('Description (leave empty to keep original)')
         .setStyle(TextInputStyle.Paragraph)
         .setRequired(false)
         .setMaxLength(100);
-      
+
       const colorInput = new TextInputBuilder()
         .setCustomId('edited_color')
         .setLabel('Color hex (e.g. #8B5CF6)')
         .setStyle(TextInputStyle.Short)
         .setRequired(false)
         .setMaxLength(7);
-      
+
       modal.addComponents(
         new ActionRowBuilder().addComponents(nameInput),
         new ActionRowBuilder().addComponents(descInput),
         new ActionRowBuilder().addComponents(colorInput)
       );
-      
+
       await interaction.showModal(modal);
     }
   }
@@ -283,27 +283,27 @@ client.on('interactionCreate', async (interaction) => {
   // Handle modal submissions
   if (interaction.isModalSubmit()) {
     const customId = interaction.customId;
-    
+
     // Denial Modal
-    if (customId.startsWith('badge_deny_modal_')) {
-      const requestId = customId.replace('badge_deny_modal_', '');
+    if (customId.startsWith('deny_modal_')) {
+      const requestId = customId.split('_')[2];
       const denialReason = interaction.fields.getTextInputValue('denial_reason');
-      
+
       await interaction.deferReply({ ephemeral: true });
-      
+
       try {
         const result = await handleBadgeAction('deny', requestId, { denialReason });
-        
+
         if (result.success) {
           await interaction.editReply({ content: '✅ Badge request denied. User has been notified via email.' });
-          
+
           // Update original message
           const embed = EmbedBuilder.from(interaction.message.embeds[0])
             .setColor(0xef4444)
             .setTitle('❌ Badge Request DENIED')
             .addFields({ name: '📋 Denial Reason', value: denialReason })
             .setFooter({ text: `Denied by ${interaction.user.tag}` });
-          
+
           await interaction.message.edit({ embeds: [embed], components: [] });
         } else {
           await interaction.editReply({ content: `❌ Failed to deny: ${result.error}` });
@@ -312,36 +312,36 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.editReply({ content: `❌ Error: ${err.message}` });
       }
     }
-    
-    // Edit Modal
-    if (customId.startsWith('badge_edit_modal_')) {
-      const requestId = customId.replace('badge_edit_modal_', '');
+
+    // Edit & Approve Modal
+    if (customId.startsWith('edit_approve_modal_')) {
+      const requestId = customId.split('_')[3];
       const editedName = interaction.fields.getTextInputValue('edited_name') || undefined;
       const editedDescription = interaction.fields.getTextInputValue('edited_description') || undefined;
       const editedColor = interaction.fields.getTextInputValue('edited_color') || undefined;
-      
+
       await interaction.deferReply({ ephemeral: true });
-      
+
       try {
         const result = await handleBadgeAction('approve', requestId, {
           editedName,
           editedDescription,
           editedColor,
         });
-        
+
         if (result.success) {
           await interaction.editReply({ content: '✅ Badge edited and approved! User has been notified via email.' });
-          
+
           // Update original message
           const embed = EmbedBuilder.from(interaction.message.embeds[0])
             .setColor(0x22c55e)
             .setTitle('✅ Badge Request APPROVED (Edited)')
             .setFooter({ text: `Approved by ${interaction.user.tag}` });
-          
+
           if (editedName) embed.addFields({ name: '✏️ Edited Name', value: editedName, inline: true });
           if (editedColor) embed.addFields({ name: '🎨 Edited Color', value: editedColor, inline: true });
           if (editedDescription) embed.addFields({ name: '📝 Edited Description', value: editedDescription });
-          
+
           await interaction.message.edit({ embeds: [embed], components: [] });
         } else {
           await interaction.editReply({ content: `❌ Failed to approve: ${result.error}` });
@@ -426,20 +426,20 @@ async function checkForNewBadgeRequests() {
         embed.setThumbnail(request.badge_icon_url);
       }
 
-      // Build buttons
+      // Build buttons with cryptic IDs matching edge functions
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setCustomId(`badge_approve_${request.id}`)
+          .setCustomId(`x98zg89ezhg938g893g9389g3489g3894z_${request.id}`)
           .setLabel('Approve')
           .setStyle(ButtonStyle.Success)
           .setEmoji('✅'),
         new ButtonBuilder()
-          .setCustomId(`badge_deny_${request.id}`)
+          .setCustomId(`x809guj305gh9i00hezg890zu9ergo9ieuoh_${request.id}`)
           .setLabel('Deny')
           .setStyle(ButtonStyle.Danger)
           .setEmoji('❌'),
         new ButtonBuilder()
-          .setCustomId(`badge_edit_${request.id}`)
+          .setCustomId(`x67ytf6t9f85hzohjoi90879sft7t623ui23u4g_${request.id}`)
           .setLabel('Edit & Approve')
           .setStyle(ButtonStyle.Secondary)
           .setEmoji('✏️'),
