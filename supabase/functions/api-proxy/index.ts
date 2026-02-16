@@ -518,6 +518,13 @@ Deno.serve(async (req) => {
           throw new Error('Invalid input');
         }
 
+        // Block UUID attempts - UUIDs should never be used in profile URLs
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if ((username && uuidPattern.test(username)) || (alias && uuidPattern.test(alias))) {
+          result = null;
+          break;
+        }
+
         let query = supabase.from('profiles').select(`
           username, display_name, bio, avatar_url, background_url,
           background_color, accent_color, card_color, effects_config,

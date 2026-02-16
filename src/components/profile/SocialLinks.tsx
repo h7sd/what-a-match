@@ -109,14 +109,12 @@ function detectPlatform(url: string): string {
   return 'link';
 }
 
-// Wrap external URLs with uservault.cc redirect
-function wrapWithRedirect(url: string): string {
-  if (url.includes('uservault.cc')) {
+// Ensure URL has proper protocol
+function ensureProtocol(url: string): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-
-  const cleanUrl = url.replace(/^https?:\/\//, '');
-  return `https://uservault.cc/${cleanUrl}`;
+  return `https://${url}`;
 }
 
 // Check if a URL is a Discord username (not a full URL)
@@ -209,7 +207,7 @@ export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = tru
           return (
             <motion.a
               key={link.id}
-              href={wrapWithRedirect(link.url)}
+              href={ensureProtocol(link.url)}
               target="_blank"
               rel="noopener noreferrer"
               variants={item}
@@ -300,7 +298,7 @@ export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = tru
         return (
           <motion.a
             key={link.id}
-            href={wrapWithRedirect(link.url)}
+            href={ensureProtocol(link.url)}
             target="_blank"
             rel="noopener noreferrer"
             variants={item}

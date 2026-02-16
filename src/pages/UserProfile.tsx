@@ -186,7 +186,11 @@ export default function UserProfile() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  
+
+  // Block UUID attempts - UUIDs should never be used in profile URLs
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuidAttempt = username && uuidPattern.test(username);
+
   // Use secure API proxy for all profile data
   const { data: profileData, isLoading: profileLoading, error } = useSecureProfile(username || '');
   const profile = profileData?.profile;
@@ -288,6 +292,29 @@ export default function UserProfile() {
   }, [volume]);
 
   const isLoading = profileLoading || !banCheckDone;
+
+  // Show 404 immediately if UUID is detected
+  if (isUuidAttempt) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <h1 className="text-4xl font-bold mb-2">404</h1>
+          <p className="text-muted-foreground mb-6">User not found</p>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Go back home
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
