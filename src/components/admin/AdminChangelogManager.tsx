@@ -67,20 +67,6 @@ export function AdminChangelogManager() {
         .insert([data]);
 
       if (error) throw error;
-
-      await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-changelog-update`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...data,
-            action: "created",
-          }),
-        }
-      ).catch((err) => console.error("Failed to send Discord notification:", err));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-changelogs"] });
@@ -102,20 +88,6 @@ export function AdminChangelogManager() {
         .eq("id", id);
 
       if (error) throw error;
-
-      await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-changelog-update`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...data,
-            action: "updated",
-          }),
-        }
-      ).catch((err) => console.error("Failed to send Discord notification:", err));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-changelogs"] });
@@ -131,31 +103,13 @@ export function AdminChangelogManager() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (changelog: Changelog) => {
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("changelogs")
         .delete()
-        .eq("id", changelog.id);
+        .eq("id", id);
 
       if (error) throw error;
-
-      await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-changelog-update`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            version: changelog.version,
-            title: changelog.title,
-            description: changelog.description,
-            category: changelog.category,
-            is_major: changelog.is_major,
-            action: "deleted",
-          }),
-        }
-      ).catch((err) => console.error("Failed to send Discord notification:", err));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-changelogs"] });
@@ -379,7 +333,7 @@ export function AdminChangelogManager() {
                         variant="destructive"
                         onClick={() => {
                           if (confirm("Are you sure you want to delete this changelog?")) {
-                            deleteMutation.mutate(changelog);
+                            deleteMutation.mutate(changelog.id);
                           }
                         }}
                       >

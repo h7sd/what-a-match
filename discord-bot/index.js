@@ -28,9 +28,12 @@ const BADGE_REQUEST_CHANNEL_ID = process.env.BADGE_REQUEST_CHANNEL_ID || '146658
 const BOT_BADGE_REQUESTS_URL = process.env.BOT_BADGE_REQUESTS_URL || 'https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/bot-badge-requests';
 const MINIGAME_EDGE_URL = process.env.MINIGAME_EDGE_URL || 'https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/minigame-reward';
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+const CHANGELOG_CHANNEL_ID = process.env.CHANGELOG_CHANNEL_ID;
+const CHANGELOGS_API_URL = process.env.CHANGELOGS_API_URL || 'https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/get-changelogs';
 
 // Track already notified requests to avoid duplicates
 const notifiedRequests = new Set();
+const notifiedChangelogs = new Set();
 
 // Config object for minigame handlers
 const minigameConfig = {
@@ -463,6 +466,84 @@ async function checkForNewBadgeRequests() {
 }
 
 // ============================================
+// CHANGELOG POLLING
+// ============================================
+async function checkForNewChangelogs() {
+  if (!CHANGELOG_CHANNEL_ID) {
+    return;
+  }
+
+  try {
+    console.log('🔍 Checking for new changelogs...');
+
+    const response = await fetch(`${CHANGELOGS_API_URL}?limit=5`);
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      console.error(`❌ Failed to fetch changelogs: ${response.status} ${response.statusText}${body ? `\n${body}` : ''}`);
+      return;
+    }
+
+    const data = await response.json();
+    const changelogs = data.changelogs || [];
+    console.log(`📦 Found ${changelogs.length} recent changelog(s)`);
+
+    const channel = client.channels.cache.get(CHANGELOG_CHANNEL_ID);
+
+    if (!channel) {
+      console.error(`❌ Changelog channel not found: ${CHANGELOG_CHANNEL_ID}`);
+      return;
+    }
+
+    console.log(`✅ Changelog Channel found: #${channel.name}`);
+
+    const categoryEmojis = {
+      feature: '✨',
+      bugfix: '🐛',
+      improvement: '⚡',
+      security: '🔒',
+    };
+
+    const categoryColors = {
+      feature: 0x3b82f6,
+      bugfix: 0xef4444,
+      improvement: 0x22c55e,
+      security: 0xeab308,
+    };
+
+    for (const changelog of changelogs) {
+      if (notifiedChangelogs.has(changelog.id)) continue;
+
+      const emoji = categoryEmojis[changelog.category] || '📢';
+      const color = categoryColors[changelog.category] || 0x6366f1;
+
+      const embed = new EmbedBuilder()
+        .setTitle(`${emoji} ${changelog.version} - ${changelog.title}`)
+        .setDescription(changelog.description)
+        .setColor(color)
+        .addFields(
+          { name: 'Category', value: changelog.category.charAt(0).toUpperCase() + changelog.category.slice(1), inline: true },
+          { name: 'Type', value: changelog.is_major ? '🔥 Major Update' : 'Minor Update', inline: true }
+        )
+        .setTimestamp(new Date(changelog.published_at))
+        .setFooter({ text: 'UserVault Changelog' });
+
+      await channel.send({ embeds: [embed] });
+      console.log(`📨 Sent changelog notification for ${changelog.version}`);
+
+      notifiedChangelogs.add(changelog.id);
+    }
+
+    if (changelogs.length === 0 || changelogs.every(c => notifiedChangelogs.has(c.id))) {
+      console.log('✅ No new changelogs to process');
+    }
+  } catch (err) {
+    console.error('❌ Error checking changelogs:', err.message);
+    console.error('Stack trace:', err.stack);
+  }
+}
+
+// ============================================
 // BOT READY EVENT
 // ============================================
 client.once('ready', async () => {
@@ -531,9 +612,19 @@ client.once('ready', async () => {
   console.log('🔄 Starting badge request polling (every 30s)...');
   await checkForNewBadgeRequests(); // Initial check
   setInterval(checkForNewBadgeRequests, 30000);
-  
+
+  // Start changelog polling (every 60 seconds)
+  if (CHANGELOG_CHANNEL_ID) {
+    console.log('🔄 Starting changelog polling (every 60s)...');
+    console.log(`📢 Changelog Channel: ${CHANGELOG_CHANNEL_ID}`);
+    await checkForNewChangelogs(); // Initial check
+    setInterval(checkForNewChangelogs, 60000);
+  } else {
+    console.log('⚠️ CHANGELOG_CHANNEL_ID not set - changelog notifications disabled');
+  }
+
   console.log('');
-  console.log('👀 Watching for presence updates and badge requests...');
+  console.log('👀 Watching for presence updates, badge requests, and changelogs...');
   console.log('🎮 Minigame commands: /balance, /daily, /trivia, /coinflip, /slots, /rps, /blackjack, /link');
   console.log('');
 });

@@ -4,10 +4,11 @@ Tracks Discord presence and handles badge request approvals/denials.
 
 ## Features
 
-✅ Real-time Discord presence tracking  
-✅ Badge request management with buttons  
-✅ Approve/Deny/Edit badges via Discord  
-✅ HMAC signature verification  
+✅ Real-time Discord presence tracking
+✅ Badge request management with buttons
+✅ Approve/Deny/Edit badges via Discord
+✅ Automatic changelog announcements
+✅ HMAC signature verification
 ✅ Automatic email notifications  
 
 ## Setup
@@ -75,6 +76,17 @@ pm2 startup
 5. Edge function processes and sends email to user
 6. User sees status update in dashboard
 
+## Changelog Announcements
+
+The bot automatically polls for new changelogs every 60 seconds and posts them to a designated Discord channel.
+
+1. Admin creates/updates changelog on website
+2. Bot fetches latest changelogs from API every 60s
+3. New changelogs are posted as rich embeds in Discord
+4. Includes version, title, description, category, and type (major/minor)
+
+To enable: Set `CHANGELOG_CHANNEL_ID` in your .env file
+
 ## Admin Commands
 
 Badge requests appear with three buttons:
@@ -92,6 +104,8 @@ Badge requests appear with three buttons:
 | `GUILD_ID` | Your Discord server ID |
 | `DISCORD_WEBHOOK_SECRET` | Secret for HMAC signatures |
 | `ADMIN_USER_IDS` | Comma-separated Discord user IDs for admins |
+| `CHANGELOG_CHANNEL_ID` | Channel ID for changelog announcements (optional) |
+| `CHANGELOGS_API_URL` | API endpoint for fetching changelogs |
 
 ## Logs
 
