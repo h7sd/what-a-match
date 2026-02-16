@@ -48,6 +48,7 @@ export default function Status() {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uptimeLoaded, setUptimeLoaded] = useState(false);
 
   const loadServiceStatus = async () => {
     try {
@@ -73,6 +74,11 @@ export default function Status() {
 
         setServices(formattedServices);
         setError(null);
+
+        if (!uptimeLoaded && formattedServices.length > 0) {
+          setUptimeLoaded(true);
+          loadUptimeData(formattedServices);
+        }
       }
     } catch (err) {
       console.error('Error loading service status:', err);
@@ -83,6 +89,7 @@ export default function Status() {
   const triggerStatusCheck = async () => {
     setRefreshing(true);
     setError(null);
+    setUptimeLoaded(false);
 
     try {
       const { error: checkError } = await supabase.functions.invoke('check-service-status');
@@ -104,9 +111,9 @@ export default function Status() {
     }
   };
 
-  const loadUptimeData = async () => {
+  const loadUptimeData = async (servicesToLoad: Service[]) => {
     try {
-      const serviceIds = services.map(s => s.id);
+      const serviceIds = servicesToLoad.map(s => s.id);
 
       const uptimePromises = serviceIds.map(async (slug) => {
         const { data: serviceData } = await supabase
@@ -147,12 +154,6 @@ export default function Status() {
     const interval = setInterval(loadServiceStatus, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (services.length > 0) {
-      loadUptimeData();
-    }
-  }, [services.length]);
 
   const getStatusIcon = (status: ServiceStatus) => {
     switch (status) {
