@@ -192,17 +192,13 @@ function resolveRedirectUrl(src: string | null, username: string): string | null
 }
 
 function isAllowedHost(host: string): boolean {
-  // Primary domains
   if (host === 'uservault.cc' || host === 'www.uservault.cc') return true;
-
-  // Lovable hosted origins (preview + published)
-  // Examples:
-  // - what-a-match.lovable.app
-  // - id-preview--....lovable.app
-  // - ....lovableproject.com
   if (host.endsWith('.lovable.app')) return true;
   if (host.endsWith('.lovableproject.com')) return true;
-
+  if (host.endsWith('.bolt.host')) return true;
+  if (host.endsWith('.bolt.new')) return true;
+  if (host.endsWith('.webcontainer.io')) return true;
+  if (host === 'localhost' || host.startsWith('localhost:')) return true;
   return false;
 }
 
