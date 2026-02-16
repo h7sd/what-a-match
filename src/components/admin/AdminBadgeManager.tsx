@@ -43,7 +43,7 @@ export function AdminBadgeManager() {
   const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [editingBadge, setEditingBadge] = useState<GlobalBadge | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -138,18 +138,24 @@ export function AdminBadgeManager() {
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between pb-4 border-b border-border/50">
           <CollapsibleTrigger asChild>
-            <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Award className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">Badge Management</h3>
+            <button className="flex items-center gap-3 hover:opacity-80 transition-opacity group">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <Award className="w-5 h-5 text-primary" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-lg">Badge Manager</h3>
+                <p className="text-xs text-muted-foreground">
+                  {badges.length} {badges.length === 1 ? 'badge' : 'badges'} total
+                </p>
+              </div>
               {isExpanded ? (
-                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                <ChevronUp className="w-4 h-4 text-muted-foreground ml-2" />
               ) : (
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />
               )}
-              <span className="text-xs text-muted-foreground">({badges.length} badges)</span>
             </button>
           </CollapsibleTrigger>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -157,8 +163,8 @@ export function AdminBadgeManager() {
             if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="w-4 h-4 mr-2" />
+              <Button size="sm" className="gap-2">
+                <Plus className="w-4 h-4" />
                 Create Badge
               </Button>
             </DialogTrigger>
@@ -267,80 +273,95 @@ export function AdminBadgeManager() {
         </div>
 
         <CollapsibleContent>
-          <div className="grid gap-4 pt-2">
+          <div className="grid gap-3 pt-2">
             {badges.map((badge) => {
               return (
                 <motion.div
                   key={badge.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="glass-card p-4 flex items-center gap-4"
+                  className="group relative overflow-hidden rounded-lg border border-border/50 bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all duration-200"
                 >
-                  <div
-                    className="w-12 h-12 rounded-lg flex items-center justify-center relative"
-                    style={{ backgroundColor: `${badge.color}20` }}
-                  >
-                    {badge.icon_url && badge.icon_url.trim() !== '' ? (
-                      <img src={badge.icon_url} alt={badge.name} className="w-8 h-8" />
-                    ) : (
-                      <Award className="w-6 h-6" style={{ color: badge.color || '#8B5CF6' }} />
-                    )}
-                  </div>
-
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">
-                        {badge.name}
-                      </h4>
-                      <span
-                        className="text-xs px-2 py-0.5 rounded-full capitalize"
-                        style={{
-                          backgroundColor: `${badge.color}20`,
-                          color: badge.color || '#8B5CF6',
-                        }}
-                      >
-                        {badge.rarity}
-                      </span>
-                      {badge.is_limited && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-500">
-                          Limited
-                        </span>
+                  <div className="flex items-center gap-4 p-4">
+                    <div
+                      className="w-14 h-14 rounded-lg flex items-center justify-center relative flex-shrink-0 shadow-sm"
+                      style={{ backgroundColor: `${badge.color}20` }}
+                    >
+                      {badge.icon_url && badge.icon_url.trim() !== '' ? (
+                        <img src={badge.icon_url} alt={badge.name} className="w-9 h-9 object-contain" />
+                      ) : (
+                        <Award className="w-7 h-7" style={{ color: badge.color || '#8B5CF6' }} />
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {badge.description || 'No description'}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Claims: {badge.claims_count || 0}
-                      {badge.is_limited && badge.max_claims && ` / ${badge.max_claims}`}
-                    </p>
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditDialog(badge)}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(badge.id)}
-                      disabled={deleteBadge.isPending}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-base truncate">
+                          {badge.name}
+                        </h4>
+                        <span
+                          className="text-xs font-medium px-2.5 py-0.5 rounded-full capitalize flex-shrink-0"
+                          style={{
+                            backgroundColor: `${badge.color}20`,
+                            color: badge.color || '#8B5CF6',
+                          }}
+                        >
+                          {badge.rarity}
+                        </span>
+                        {badge.is_limited && (
+                          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-500 flex-shrink-0">
+                            Limited
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-1 mb-1">
+                        {badge.description || 'No description'}
+                      </p>
+                      <p className="text-xs text-muted-foreground/70">
+                        Claims: <span className="font-medium text-muted-foreground">{badge.claims_count || 0}</span>
+                        {badge.is_limited && badge.max_claims && ` / ${badge.max_claims}`}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => openEditDialog(badge)}
+                        className="h-9 w-9 hover:bg-primary/10 hover:border-primary/50"
+                        title="Edit Badge"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleDelete(badge.id)}
+                        disabled={deleteBadge.isPending}
+                        className="h-9 w-9 hover:bg-destructive/10 hover:border-destructive/50"
+                        title="Delete Badge"
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
+                  <div
+                    className="absolute bottom-0 left-0 right-0 h-0.5 opacity-50"
+                    style={{ backgroundColor: badge.color || '#8B5CF6' }}
+                  />
                 </motion.div>
               );
             })}
 
             {badges.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Award className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                <p>No badges yet. Create your first badge!</p>
+              <div className="text-center py-16 px-4">
+                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <Award className="w-10 h-10 text-primary/40" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No badges yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Create your first badge to get started
+                </p>
               </div>
             )}
           </div>
