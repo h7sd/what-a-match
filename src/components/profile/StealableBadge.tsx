@@ -143,12 +143,12 @@ export function StealableBadge({
             transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             onClick={handleBadgeClick}
           >
-            {badge.icon_url ? (
-              <img 
-                src={badge.icon_url} 
-                alt={badge.name} 
-                className={`w-5 h-5 object-contain ${transparentBadges ? 'opacity-80' : ''}`} 
-                loading="lazy" 
+            {badge.icon_url && badge.icon_url.trim() !== '' ? (
+              <img
+                src={badge.icon_url}
+                alt={badge.name}
+                className={`w-5 h-5 object-contain ${transparentBadges ? 'opacity-80' : ''}`}
+                loading="lazy"
               />
             ) : customImage ? (
               <img 

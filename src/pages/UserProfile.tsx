@@ -353,8 +353,8 @@ export default function UserProfile() {
   const customCursorUrl = profile.custom_cursor_url as string | null;
 
   // Determine if profile has audio (music OR video background which typically has sound)
-  const hasAudio = Boolean(profile.music_url || profile.background_video_url);
-  
+  const hasAudio = Boolean((profile.music_url && profile.music_url.trim() !== '') || (profile.background_video_url && profile.background_video_url.trim() !== ''));
+
   // Start screen is required if audio is present (browser autoplay policy)
   // Otherwise, respect the user's start_screen_enabled setting
   const shouldShowStartScreen = hasAudio ? true : (profile.start_screen_enabled !== false);
@@ -382,16 +382,16 @@ export default function UserProfile() {
       })()}
 
       {/* Hidden audio element */}
-      {profile.music_url && (
+      {profile.music_url && profile.music_url.trim() !== '' && (
         <audio ref={audioRef} src={profile.music_url} loop />
       )}
 
       {/* Custom cursor with trail or custom image - disabled on mobile */}
-      {!isMobile && (showCursorTrail || customCursorUrl) && hasInteracted && (
-        <CustomCursor 
-          color={accentColor} 
-          showTrail={!!showCursorTrail} 
-          cursorUrl={customCursorUrl || undefined}
+      {!isMobile && (showCursorTrail || (customCursorUrl && customCursorUrl.trim() !== '')) && hasInteracted && (
+        <CustomCursor
+          color={accentColor}
+          showTrail={!!showCursorTrail}
+          cursorUrl={(customCursorUrl && customCursorUrl.trim() !== '') ? customCursorUrl : undefined}
         />
       )}
 

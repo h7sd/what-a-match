@@ -10,7 +10,7 @@ export function VideoBackground({ videoUrl, fallbackColor = '#0a0a0a' }: VideoBa
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !videoUrl || videoUrl.trim() === '') return;
     
     // Ensure video starts from the beginning
     video.currentTime = 0;
