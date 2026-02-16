@@ -43,6 +43,12 @@ export function ChangelogSection() {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-changelogs?limit=20`
       );
+
+      if (!response.ok) {
+        console.error('Changelog API error:', response.status, await response.text());
+        return [];
+      }
+
       const data = await response.json();
       return data.changelogs || [];
     },
