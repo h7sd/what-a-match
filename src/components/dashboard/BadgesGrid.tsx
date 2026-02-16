@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Lock, X, Hash } from 'lucide-react';
 import { GlobalBadge } from '@/hooks/useBadges';
-import { getBadgeIcon } from '@/lib/badges';
+import { getBadgeIcon, getBadgeImage } from '@/lib/badges';
 
 interface BadgesGridProps {
   globalBadges: GlobalBadge[];
@@ -28,6 +28,7 @@ export function BadgesGrid({ globalBadges, userBadgeIds, userUid }: BadgesGridPr
         {globalBadges.map((badge) => {
           const isOwned = userBadgeSet.has(badge.id);
           const Icon = getBadgeIcon(badge.name);
+          const customImage = getBadgeImage(badge.name);
           const rarity = badge.rarity || 'common';
           const rarityStyle = rarityColors[rarity] || rarityColors.common;
 
@@ -40,15 +41,15 @@ export function BadgesGrid({ globalBadges, userBadgeIds, userUid }: BadgesGridPr
               className={`
                 relative p-4 rounded-xl border transition-all duration-300 cursor-pointer
                 bg-black/40 backdrop-blur-sm hover:scale-[1.02] active:scale-[0.98]
-                ${isOwned 
-                  ? 'border-primary/50' 
+                ${isOwned
+                  ? 'border-primary/50'
                   : 'border-white/5 hover:border-white/10'
                 }
               `}
             >
               {/* Rarity Badge - Top Right */}
               {rarity !== 'common' && (
-                <div 
+                <div
                   className={`absolute top-3 right-3 text-[10px] px-2 py-0.5 rounded-full capitalize font-medium ${rarityStyle.bg} ${rarityStyle.text}`}
                 >
                   {rarity}
@@ -62,7 +63,9 @@ export function BadgesGrid({ globalBadges, userBadgeIds, userUid }: BadgesGridPr
                   style={{ backgroundColor: `${badge.color || '#8B5CF6'}15` }}
                 >
                   {badge.icon_url ? (
-                    <img src={badge.icon_url} alt={badge.name} className="w-7 h-7" />
+                    <img src={badge.icon_url} alt={badge.name} className="w-7 h-7 object-contain" loading="lazy" />
+                  ) : customImage ? (
+                    <img src={customImage} alt={badge.name} className="w-7 h-7 object-contain" loading="lazy" />
                   ) : (
                     <Icon className="w-6 h-6" style={{ color: badge.color || '#8B5CF6' }} />
                   )}
@@ -116,7 +119,9 @@ export function BadgesGrid({ globalBadges, userBadgeIds, userUid }: BadgesGridPr
                   style={{ backgroundColor: `${selectedBadge.color || '#8B5CF6'}20` }}
                 >
                   {selectedBadge.icon_url ? (
-                    <img src={selectedBadge.icon_url} alt={selectedBadge.name} className="w-10 h-10" />
+                    <img src={selectedBadge.icon_url} alt={selectedBadge.name} className="w-10 h-10 object-contain" loading="lazy" />
+                  ) : getBadgeImage(selectedBadge.name) ? (
+                    <img src={getBadgeImage(selectedBadge.name)!} alt={selectedBadge.name} className="w-10 h-10 object-contain" loading="lazy" />
                   ) : (
                     (() => {
                       const BadgeIcon = getBadgeIcon(selectedBadge.name);

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { GlobalBadge } from '@/hooks/useBadges';
-import { getBadgeIcon } from '@/lib/badges';
+import { getBadgeIcon, getBadgeImage } from '@/lib/badges';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -80,6 +80,7 @@ function SortableBadgeItem({
 
   const badge = userBadge.badge;
   const Icon = getBadgeIcon(badge.name);
+  const customImage = getBadgeImage(badge.name);
   const isEnabled = userBadge.is_enabled !== false;
   const displayColor = userBadge.custom_color || badge.color || '#8B5CF6';
 
@@ -91,8 +92,8 @@ function SortableBadgeItem({
       animate={{ opacity: 1, y: 0 }}
       className={`
         relative p-4 rounded-xl border transition-all duration-300
-        ${isEnabled 
-          ? 'border-primary/50 bg-primary/5' 
+        ${isEnabled
+          ? 'border-primary/50 bg-primary/5'
           : 'border-border bg-secondary/10 opacity-60'
         }
         ${isDragging ? 'shadow-lg ring-2 ring-primary/50' : ''}
@@ -115,7 +116,9 @@ function SortableBadgeItem({
           style={{ backgroundColor: `${displayColor}20` }}
         >
           {badge.icon_url ? (
-            <img src={badge.icon_url} alt={badge.name} className="w-6 h-6" />
+            <img src={badge.icon_url} alt={badge.name} className="w-6 h-6 object-contain" loading="lazy" />
+          ) : customImage ? (
+            <img src={customImage} alt={badge.name} className="w-6 h-6 object-contain" loading="lazy" />
           ) : (
             <Icon className="w-5 h-5" style={{ color: displayColor }} />
           )}

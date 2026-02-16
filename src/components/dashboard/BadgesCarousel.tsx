@@ -2,6 +2,7 @@ import { useState, useRef, lazy, Suspense } from 'react';
 import { ChevronLeft, ChevronRight, Award, HelpCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getBadgeImage } from '@/lib/badges';
 
 // Lazy load Aurora for performance
 const Aurora = lazy(() => import('@/components/ui/Aurora'));
@@ -91,40 +92,45 @@ export function BadgesCarousel({ badges, totalBadges = 10 }: BadgesCarouselProps
 
           <div className="flex-1 flex items-center gap-2 overflow-hidden py-1">
             <AnimatePresence mode="popLayout">
-              {visibleBadges.map((badge, index) => (
-                <motion.div
-                  key={badge.id}
-                  initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: -10 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`
-                    flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium
-                    transition-all duration-200
-                    ${badge.unlocked 
-                      ? 'bg-gradient-to-r from-[#00B4D8]/20 to-[#00D9A5]/10 border border-[#00D9A5]/30 text-white' 
-                      : 'bg-white/[0.03] border border-white/[0.06] text-white/40'
-                    }
-                    ${index === 0 && badge.unlocked ? 'ring-2 ring-[#00D9A5]/50 ring-offset-2 ring-offset-[#0a0a0b]' : ''}
-                  `}
-                >
-                  {badge.unlocked ? (
-                    <>
-                      {badge.icon_url ? (
-                        <img src={badge.icon_url} alt={badge.name} className="w-4 h-4" />
-                      ) : (
-                        <Award className="w-4 h-4 text-[#00D9A5]" />
-                      )}
-                      <span className="whitespace-nowrap">{badge.name}</span>
-                    </>
-                  ) : (
-                    <>
-                      <HelpCircle className="w-4 h-4" />
-                      <span>???</span>
-                    </>
-                  )}
-                </motion.div>
-              ))}
+              {visibleBadges.map((badge, index) => {
+                const customImage = badge.unlocked ? getBadgeImage(badge.name) : null;
+                return (
+                  <motion.div
+                    key={badge.id}
+                    initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`
+                      flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium
+                      transition-all duration-200
+                      ${badge.unlocked
+                        ? 'bg-gradient-to-r from-[#00B4D8]/20 to-[#00D9A5]/10 border border-[#00D9A5]/30 text-white'
+                        : 'bg-white/[0.03] border border-white/[0.06] text-white/40'
+                      }
+                      ${index === 0 && badge.unlocked ? 'ring-2 ring-[#00D9A5]/50 ring-offset-2 ring-offset-[#0a0a0b]' : ''}
+                    `}
+                  >
+                    {badge.unlocked ? (
+                      <>
+                        {badge.icon_url ? (
+                          <img src={badge.icon_url} alt={badge.name} className="w-4 h-4 object-contain" loading="lazy" />
+                        ) : customImage ? (
+                          <img src={customImage} alt={badge.name} className="w-4 h-4 object-contain" loading="lazy" />
+                        ) : (
+                          <Award className="w-4 h-4 text-[#00D9A5]" />
+                        )}
+                        <span className="whitespace-nowrap">{badge.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <HelpCircle className="w-4 h-4" />
+                        <span>???</span>
+                      </>
+                    )}
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
 
