@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Edit2, Award, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Edit2, Award, Loader2, ChevronDown, ChevronUp, CheckSquare, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { BadgeIconUploader } from './BadgeIconUploader';
 import {
   Dialog,
@@ -45,6 +46,7 @@ export function AdminBadgeManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [editingBadge, setEditingBadge] = useState<GlobalBadge | null>(null);
+  const [selectedBadges, setSelectedBadges] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -118,13 +120,74 @@ export function AdminBadgeManager() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this badge?')) return;
-    
+    const confirmMessage = `⚠️ WARNING: Delete this badge?\n\n` +
+      `This will PERMANENTLY remove it from:\n` +
+      `• The global badge system\n` +
+      `• ALL users who have this badge\n\n` +
+      `This action CANNOT be undone!`;
+
+    if (!confirm(confirmMessage)) return;
+
     try {
       await deleteBadge.mutateAsync(id);
-      toast({ title: 'Badge deleted' });
+      toast({
+        title: 'Badge deleted',
+        description: 'Removed from all users'
+      });
+      setSelectedBadges(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     } catch (error: any) {
       toast({ title: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedBadges.size === 0) return;
+
+    const confirmMessage = `⚠️ WARNING: Are you sure you want to delete ${selectedBadges.size} badge(s)?\n\n` +
+      `This will PERMANENTLY remove these badges from:\n` +
+      `• The global badge system\n` +
+      `• ALL users who have these badges\n` +
+      `• All badge assignments\n\n` +
+      `This action CANNOT be undone!`;
+
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      const deletePromises = Array.from(selectedBadges).map(id =>
+        deleteBadge.mutateAsync(id)
+      );
+      await Promise.all(deletePromises);
+      toast({
+        title: 'Badges deleted successfully',
+        description: `${selectedBadges.size} badge(s) removed from all users`
+      });
+      setSelectedBadges(new Set());
+    } catch (error: any) {
+      toast({ title: error.message, variant: 'destructive' });
+    }
+  };
+
+  const toggleBadgeSelection = (id: string) => {
+    setSelectedBadges(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedBadges.size === badges.length) {
+      setSelectedBadges(new Set());
+    } else {
+      setSelectedBadges(new Set(badges.map(b => b.id)));
     }
   };
 
@@ -148,7 +211,10 @@ export function AdminBadgeManager() {
               <div className="text-left">
                 <h3 className="font-semibold text-lg">Badge Manager</h3>
                 <p className="text-xs text-muted-foreground">
-                  {badges.length} {badges.length === 1 ? 'badge' : 'badges'} total
+                  {selectedBadges.size > 0
+                    ? `${selectedBadges.size} selected of ${badges.length}`
+                    : `${badges.length} ${badges.length === 1 ? 'badge' : 'badges'} total`
+                  }
                 </p>
               </div>
               {isExpanded ? (
@@ -158,16 +224,39 @@ export function AdminBadgeManager() {
               )}
             </button>
           </CollapsibleTrigger>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-2">
-                <Plus className="w-4 h-4" />
-                Create Badge
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            {selectedBadges.size > 0 && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSelectedBadges(new Set())}
+                  className="gap-2"
+                >
+                  Clear Selection
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleDeleteSelected}
+                  disabled={deleteBadge.isPending}
+                  className="gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete {selectedBadges.size}
+                </Button>
+              </>
+            )}
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Create Badge
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
@@ -270,22 +359,59 @@ export function AdminBadgeManager() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <CollapsibleContent>
+          {badges.length > 0 && (
+            <div className="flex items-center justify-between py-3 px-2 border-b border-border/30">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={toggleSelectAll}
+                className="gap-2 h-8"
+              >
+                {selectedBadges.size === badges.length ? (
+                  <>
+                    <CheckSquare className="w-4 h-4" />
+                    Deselect All
+                  </>
+                ) : (
+                  <>
+                    <Square className="w-4 h-4" />
+                    Select All
+                  </>
+                )}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Click badges to select
+              </span>
+            </div>
+          )}
           <div className="grid gap-3 pt-2">
             {badges.map((badge) => {
+              const isSelected = selectedBadges.has(badge.id);
               return (
                 <motion.div
                   key={badge.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="group relative overflow-hidden rounded-lg border border-border/50 bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all duration-200"
+                  className={`group relative overflow-hidden rounded-lg border transition-all duration-200 ${
+                    isSelected
+                      ? 'border-primary bg-primary/10 shadow-md'
+                      : 'border-border/50 bg-card/50 hover:bg-card/80 hover:border-primary/30'
+                  }`}
                 >
                   <div className="flex items-center gap-4 p-4">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleBadgeSelection(badge.id)}
+                      className="flex-shrink-0"
+                    />
                     <div
-                      className="w-14 h-14 rounded-lg flex items-center justify-center relative flex-shrink-0 shadow-sm"
+                      className="w-14 h-14 rounded-lg flex items-center justify-center relative flex-shrink-0 shadow-sm cursor-pointer"
                       style={{ backgroundColor: `${badge.color}20` }}
+                      onClick={() => toggleBadgeSelection(badge.id)}
                     >
                       {badge.icon_url && badge.icon_url.trim() !== '' ? (
                         <img src={badge.icon_url} alt={badge.name} className="w-9 h-9 object-contain" />
@@ -294,7 +420,10 @@ export function AdminBadgeManager() {
                       )}
                     </div>
 
-                    <div className="flex-1 min-w-0">
+                    <div
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => toggleBadgeSelection(badge.id)}
+                    >
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-semibold text-base truncate">
                           {badge.name}
@@ -327,7 +456,10 @@ export function AdminBadgeManager() {
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => openEditDialog(badge)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditDialog(badge);
+                        }}
                         className="h-9 w-9 hover:bg-primary/10 hover:border-primary/50"
                         title="Edit Badge"
                       >
@@ -336,7 +468,10 @@ export function AdminBadgeManager() {
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => handleDelete(badge.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(badge.id);
+                        }}
                         disabled={deleteBadge.isPending}
                         className="h-9 w-9 hover:bg-destructive/10 hover:border-destructive/50"
                         title="Delete Badge"
