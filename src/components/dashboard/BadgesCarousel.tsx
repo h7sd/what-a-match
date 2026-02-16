@@ -113,7 +113,7 @@ export function BadgesCarousel({ badges, totalBadges = 10 }: BadgesCarouselProps
                   >
                     {badge.unlocked ? (
                       <>
-                        {badge.icon_url ? (
+                        {badge.icon_url && badge.icon_url.trim() !== '' ? (
                           <img src={badge.icon_url} alt={badge.name} className="w-4 h-4 object-contain" loading="lazy" />
                         ) : customImage ? (
                           <img src={customImage} alt={badge.name} className="w-4 h-4 object-contain" loading="lazy" />

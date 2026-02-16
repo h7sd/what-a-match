@@ -76,7 +76,7 @@
                boxShadow: `0 0 16px ${color}20`,
              }}
            >
-             {item.badge_icon_url ? (
+             {item.badge_icon_url && item.badge_icon_url.trim() !== '' ? (
                <img
                  src={item.badge_icon_url}
                  alt={item.badge_name || 'Badge'}
@@ -153,7 +153,7 @@
                      className="w-10 h-10 rounded-lg flex items-center justify-center"
                      style={{ backgroundColor: `${color}15`, border: `1px solid ${color}40` }}
                    >
-                     {item.badge_icon_url ? (
+                     {item.badge_icon_url && item.badge_icon_url.trim() !== '' ? (
                        <img src={item.badge_icon_url} alt="" className="w-6 h-6 object-contain" />
                      ) : (
                        <Sparkles className="w-5 h-5" style={{ color }} />

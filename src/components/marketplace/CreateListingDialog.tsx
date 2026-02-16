@@ -300,7 +300,7 @@ export function CreateListingDialog({ open, onOpenChange }: CreateListingDialogP
                           {userBadges.map((ub) => (
                             <SelectItem key={ub.badge_id} value={ub.badge_id}>
                               <div className="flex items-center gap-2">
-                                {ub.badge?.icon_url ? (
+                                {ub.badge?.icon_url && ub.badge.icon_url.trim() !== '' ? (
                                   <img src={ub.badge.icon_url} alt="" className="w-5 h-5 rounded object-cover" />
                                 ) : (
                                   <div

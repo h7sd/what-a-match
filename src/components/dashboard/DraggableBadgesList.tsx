@@ -115,7 +115,7 @@ function SortableBadgeItem({
           className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: `${displayColor}20` }}
         >
-          {badge.icon_url ? (
+          {badge.icon_url && badge.icon_url.trim() !== '' ? (
             <img src={badge.icon_url} alt={badge.name} className="w-6 h-6 object-contain" loading="lazy" />
           ) : customImage ? (
             <img src={customImage} alt={badge.name} className="w-6 h-6 object-contain" loading="lazy" />
@@ -417,7 +417,7 @@ export function DraggableBadgesList({ userBadges, userId }: DraggableBadgesListP
                     <div
                       className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-destructive/10"
                     >
-                      {badge.icon_url ? (
+                      {badge.icon_url && badge.icon_url.trim() !== '' ? (
                         <img src={badge.icon_url} alt={badge.name} className="w-6 h-6 grayscale opacity-50" />
                       ) : (
                         <Icon className="w-5 h-5 text-destructive opacity-50" />

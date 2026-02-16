@@ -853,7 +853,7 @@ export function AdminAccountLookup() {
                                   <div
                                     className="w-8 h-8 rounded-lg flex items-center justify-center bg-destructive/10"
                                   >
-                                    {ub.badge.icon_url ? (
+                                    {ub.badge.icon_url && ub.badge.icon_url.trim() !== '' ? (
                                       <img src={ub.badge.icon_url} alt="" className="w-5 h-5 opacity-40 grayscale" />
                                     ) : (
                                       <Icon className="w-4 h-4 text-destructive opacity-60" />
@@ -912,7 +912,7 @@ export function AdminAccountLookup() {
                                     className="w-8 h-8 rounded-lg flex items-center justify-center"
                                     style={{ backgroundColor: `${ub.badge.color || '#8B5CF6'}20` }}
                                   >
-                                    {ub.badge.icon_url ? (
+                                    {ub.badge.icon_url && ub.badge.icon_url.trim() !== '' ? (
                                       <img src={ub.badge.icon_url} alt="" className="w-5 h-5" />
                                     ) : (
                                       <Icon className="w-4 h-4" style={{ color: ub.badge.color || '#8B5CF6' }} />
@@ -976,7 +976,7 @@ export function AdminAccountLookup() {
                                     className="w-8 h-8 rounded-lg flex items-center justify-center"
                                     style={{ backgroundColor: `${ub.badge.color || '#8B5CF6'}10` }}
                                   >
-                                    {ub.badge.icon_url ? (
+                                    {ub.badge.icon_url && ub.badge.icon_url.trim() !== '' ? (
                                       <img src={ub.badge.icon_url} alt="" className="w-5 h-5 opacity-50" />
                                     ) : (
                                       <Icon className="w-4 h-4 opacity-50" style={{ color: ub.badge.color || '#8B5CF6' }} />

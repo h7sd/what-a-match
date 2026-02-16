@@ -56,7 +56,7 @@ export function MarketplacePopover() {
                 className="group p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all cursor-pointer"
               >
                 <div className="flex items-start gap-2">
-                  {item.badge_icon_url ? (
+                  {item.badge_icon_url && item.badge_icon_url.trim() !== '' ? (
                     <img 
                       src={item.badge_icon_url} 
                       alt={item.badge_name || ''} 

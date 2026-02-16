@@ -503,7 +503,7 @@ export function FriendBadgesManager() {
                     className="w-10 h-10 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: `${badge.color}20` }}
                   >
-                    {badge.icon_url ? (
+                    {badge.icon_url && badge.icon_url.trim() !== '' ? (
                       <img src={badge.icon_url} alt={badge.name} className="w-6 h-6" />
                     ) : (
                       <Gift className="w-5 h-5" style={{ color: badge.color }} />

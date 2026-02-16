@@ -131,7 +131,7 @@ export function BadgeAssignmentSection({ userId, userBadgeIds, onBadgeAssigned }
                 >
                   {isAssigning ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: badge.color || '#8B5CF6' }} />
-                  ) : badge.icon_url ? (
+                  ) : badge.icon_url && badge.icon_url.trim() !== '' ? (
                     <img src={badge.icon_url} alt={badge.name} className="w-4 h-4" />
                   ) : (
                     <Icon className="w-3.5 h-3.5" style={{ color: badge.color || '#8B5CF6' }} />

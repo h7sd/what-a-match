@@ -262,7 +262,7 @@ function MiniProfileCard({ profile }: { profile: ProfileWithBadges }) {
                     }}
                     title={badge.name}
                   >
-                    {badge.icon_url ? (
+                    {badge.icon_url && badge.icon_url.trim() !== '' ? (
                       <img src={badge.icon_url} alt={badge.name} className="w-4 h-4" />
                     ) : (
                       <span className="text-xs" style={{ color: badge.color || '#fff' }}>

@@ -135,7 +135,7 @@ export function CaseOpeningAnimation({
                                   {item.coin_amount} Coins
                                 </p>
                               </>
-                            ) : item.badge?.icon_url ? (
+                            ) : item.badge?.icon_url && item.badge.icon_url.trim() !== '' ? (
                               <>
                                 <img
                                   src={item.badge.icon_url}
@@ -232,7 +232,7 @@ export function CaseOpeningAnimation({
                       boxShadow: `0 0 50px ${colors.glow}`,
                     }}
                   >
-                    {wonItem.item_type === 'badge' && wonItem.badge?.icon_url ? (
+                    {wonItem.item_type === 'badge' && wonItem.badge?.icon_url && wonItem.badge.icon_url.trim() !== '' ? (
                       <img
                         src={wonItem.badge.icon_url}
                         alt={wonItem.badge.name}

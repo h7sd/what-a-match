@@ -252,7 +252,7 @@ export function InventoryView() {
 
               {/* Item Visual */}
               <div className="flex items-center justify-center h-24 mb-3">
-                {item.item_type === 'badge' && item.badge?.icon_url ? (
+                {item.item_type === 'badge' && item.badge?.icon_url && item.badge.icon_url.trim() !== '' ? (
                   <img
                     src={item.badge.icon_url}
                     alt={item.badge.name}

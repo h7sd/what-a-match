@@ -963,7 +963,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
                               className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
                               style={{ backgroundColor: `${ub.badge.color || '#8B5CF6'}20` }}
                             >
-                              {ub.badge.icon_url ? (
+                              {ub.badge.icon_url && ub.badge.icon_url.trim() !== '' ? (
                                 <img src={ub.badge.icon_url} alt="" className="w-6 h-6" />
                               ) : (
                                 <Icon className="w-5 h-5" style={{ color: ub.badge.color || '#8B5CF6' }} />

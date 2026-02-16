@@ -169,7 +169,7 @@ export function CaseCard({ case: caseItem, onOpen, userBalance, index }: CaseCar
                       {/* Item Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          {item.item_type === 'badge' && item.badge?.icon_url && (
+                          {item.item_type === 'badge' && item.badge?.icon_url && item.badge.icon_url.trim() !== '' && (
                             <img
                               src={item.badge.icon_url}
                               alt=""

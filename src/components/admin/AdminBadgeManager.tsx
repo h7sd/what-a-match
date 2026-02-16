@@ -282,7 +282,7 @@ export function AdminBadgeManager() {
                     className="w-12 h-12 rounded-lg flex items-center justify-center relative"
                     style={{ backgroundColor: `${badge.color}20` }}
                   >
-                    {badge.icon_url ? (
+                    {badge.icon_url && badge.icon_url.trim() !== '' ? (
                       <img src={badge.icon_url} alt={badge.name} className="w-8 h-8" />
                     ) : (
                       <Award className="w-6 h-6" style={{ color: badge.color || '#8B5CF6' }} />

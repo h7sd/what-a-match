@@ -174,7 +174,7 @@ export function TransactionHistory() {
                         rarityColors[item.rarity as keyof typeof rarityColors]
                       )}
                     >
-                      {item.item_type === 'badge' && item.badge?.icon_url ? (
+                      {item.item_type === 'badge' && item.badge?.icon_url && item.badge.icon_url.trim() !== '' ? (
                         <img
                           src={item.badge.icon_url}
                           alt=""

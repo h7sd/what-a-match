@@ -266,7 +266,7 @@ export function CaseOpeningDialog({ caseId, open, onOpenChange }: CaseOpeningDia
                     state === 'complete' && `shadow-[0_0_50px] ${colors.glow}`
                   )}
                 >
-                  {wonItem.item_type === 'badge' && wonItem.badge?.icon_url ? (
+                  {wonItem.item_type === 'badge' && wonItem.badge?.icon_url && wonItem.badge.icon_url.trim() !== '' ? (
                     <img
                       src={wonItem.badge.icon_url}
                       alt={wonItem.badge.name}

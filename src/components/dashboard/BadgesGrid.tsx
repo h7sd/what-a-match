@@ -62,7 +62,7 @@ export function BadgesGrid({ globalBadges, userBadgeIds, userUid }: BadgesGridPr
                   className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: `${badge.color || '#8B5CF6'}15` }}
                 >
-                  {badge.icon_url ? (
+                  {badge.icon_url && badge.icon_url.trim() !== '' ? (
                     <img src={badge.icon_url} alt={badge.name} className="w-7 h-7 object-contain" loading="lazy" />
                   ) : customImage ? (
                     <img src={customImage} alt={badge.name} className="w-7 h-7 object-contain" loading="lazy" />
@@ -118,7 +118,7 @@ export function BadgesGrid({ globalBadges, userBadgeIds, userUid }: BadgesGridPr
                   className="w-16 h-16 rounded-xl flex items-center justify-center"
                   style={{ backgroundColor: `${selectedBadge.color || '#8B5CF6'}20` }}
                 >
-                  {selectedBadge.icon_url ? (
+                  {selectedBadge.icon_url && selectedBadge.icon_url.trim() !== '' ? (
                     <img src={selectedBadge.icon_url} alt={selectedBadge.name} className="w-10 h-10 object-contain" loading="lazy" />
                   ) : getBadgeImage(selectedBadge.name) ? (
                     <img src={getBadgeImage(selectedBadge.name)!} alt={selectedBadge.name} className="w-10 h-10 object-contain" loading="lazy" />

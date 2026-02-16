@@ -241,7 +241,7 @@ export function AdminBadgeRemover() {
                               className="w-6 h-6 rounded flex items-center justify-center"
                               style={{ backgroundColor: `${ub.badge.color || '#8B5CF6'}20` }}
                             >
-                              {ub.badge.icon_url ? (
+                              {ub.badge.icon_url && ub.badge.icon_url.trim() !== '' ? (
                                 <img src={ub.badge.icon_url} alt={ub.badge.name} className="w-4 h-4" />
                               ) : (
                                 <span className="text-xs" style={{ color: ub.badge.color || '#8B5CF6' }}>
