@@ -217,9 +217,6 @@ export function useCreateGlobalBadge() {
 
         if (existingBadges && existingBadges.length > 0) {
           const existingBadge = existingBadges[0];
-          if (existingBadge.name.toUpperCase() === 'HUNTER') {
-            throw new Error('This badge icon is already used by the protected Hunter Badge. Please use a different icon.');
-          }
           throw new Error(`This badge icon is already used by "${existingBadge.name}". Please use a different icon.`);
         }
       }
@@ -270,18 +267,6 @@ export function useDeleteGlobalBadge() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data: badge, error: fetchError } = await supabase
-        .from('global_badges')
-        .select('name')
-        .eq('id', id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      if (badge && badge.name.toUpperCase() === 'HUNTER') {
-        throw new Error('Cannot delete the Hunter Badge. This is a protected system badge.');
-      }
-
       const { error } = await supabase
         .from('global_badges')
         .delete()
@@ -356,18 +341,6 @@ export function useRemoveBadge() {
 
   return useMutation({
     mutationFn: async ({ userId, badgeId }: { userId: string; badgeId: string }) => {
-      const { data: badge, error: fetchError } = await supabase
-        .from('global_badges')
-        .select('name')
-        .eq('id', badgeId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      if (badge && badge.name.toUpperCase() === 'HUNTER') {
-        throw new Error('Cannot remove the Hunter Badge. This badge is permanently locked during events.');
-      }
-
       const { error } = await supabase
         .from('user_badges')
         .delete()
