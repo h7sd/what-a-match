@@ -109,10 +109,16 @@ async function fetchOGHtml(username, originalUrl) {
   }
 }
 
-// Pass request through to the actual app on uservault.cc
-async function passThrough(request) {
+// Pass request through to origin (change YOUR_ORIGIN to your actual origin URL)
+// If using Cloudflare Pages: this should point to your Pages deployment
+// If using other hosting: point to your hosting URL (e.g., "https://your-origin.pages.dev")
+async function passThrough(request, env) {
   const url = new URL(request.url);
-  const targetUrl = new URL(url.pathname + url.search, "https://uservault.cc");
+
+  // If using Cloudflare Pages with _worker.js, use env.ASSETS.fetch(request)
+  // For standalone worker, replace with your origin URL
+  const originUrl = env.ORIGIN_URL || "https://your-pages-project.pages.dev";
+  const targetUrl = new URL(url.pathname + url.search, originUrl);
 
   return fetch(targetUrl, {
     method: request.method,
@@ -143,7 +149,7 @@ export default {
     // Not a profile page or not a bot -> pass through to app
     if (!username) {
       console.log(`[OG] No username extracted, passing through`);
-      const response = await passThrough(request);
+      const response = await passThrough(request, env);
       const newResponse = new Response(response.body, response);
       Object.entries(debugHeaders).forEach(([k, v]) => newResponse.headers.set(k, v));
       return newResponse;
@@ -151,7 +157,7 @@ export default {
 
     if (!botDetected) {
       console.log(`[OG] Not a bot, passing through for: ${username}`);
-      const response = await passThrough(request);
+      const response = await passThrough(request, env);
       const newResponse = new Response(response.body, response);
       Object.entries(debugHeaders).forEach(([k, v]) => newResponse.headers.set(k, v));
       return newResponse;
@@ -164,7 +170,7 @@ export default {
 
       if (!html) {
         console.log(`[OG] No HTML returned, passing through for: ${username}`);
-        const response = await passThrough(request);
+        const response = await passThrough(request, env);
         const newResponse = new Response(response.body, response);
         newResponse.headers.set("X-OG-Worker", "active-no-profile");
         return newResponse;
@@ -186,7 +192,7 @@ export default {
       });
     } catch (error) {
       console.error(`[OG] Error generating embed for ${username}:`, error);
-      const response = await passThrough(request);
+      const response = await passThrough(request, env);
       const newResponse = new Response(response.body, response);
       newResponse.headers.set("X-OG-Worker", "error");
       newResponse.headers.set("X-OG-Error", error.message);
