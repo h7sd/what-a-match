@@ -73,7 +73,7 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
       />
 
       <path
-        d="M12 20V32C12 37.523 16.477 42 22 42C27.523 42 32 37.523 32 32V20"
+        d="M10 20V32C10 37.523 14.477 42 20 42C25.523 42 30 37.523 30 32V20"
         stroke="url(#uv-gradient)"
         strokeWidth="4"
         strokeLinecap="round"
@@ -83,7 +83,7 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
       />
 
       <path
-        d="M38 20L47 44L56 20"
+        d="M39 20L49 44L59 20"
         stroke="url(#uv-gradient)"
         strokeWidth="4"
         strokeLinecap="round"
