@@ -42,7 +42,7 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
     <motion.svg
       width={size}
       height={size}
-      viewBox="0 0 48 48"
+      viewBox="0 0 64 64"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
@@ -51,38 +51,45 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
     >
       <defs>
         {gradient}
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
       </defs>
 
-      {/* Background rounded square */}
       <rect
-        x="2"
-        y="2"
-        width="44"
-        height="44"
-        rx="10"
+        x="4"
+        y="4"
+        width="56"
+        height="56"
+        rx="14"
         stroke="url(#uv-gradient)"
-        strokeWidth="2"
-        fill="none"
+        strokeWidth="2.5"
+        fill="rgba(0, 180, 216, 0.05)"
+        filter="url(#glow)"
       />
 
-      {/* U letter - clean and clear */}
       <path
-        d="M12 14V23C12 26.866 15.134 30 19 30C22.866 30 26 26.866 26 23V14"
+        d="M16 20V32C16 37.523 20.477 42 26 42C31.523 42 36 37.523 36 32V20"
         stroke="url(#uv-gradient)"
-        strokeWidth="3.5"
+        strokeWidth="4"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
+        filter="url(#glow)"
       />
 
-      {/* V letter - clean and clear */}
       <path
-        d="M28 14L33 34L38 14"
+        d="M40 20L48 44L56 20"
         stroke="url(#uv-gradient)"
-        strokeWidth="3.5"
+        strokeWidth="4"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
+        filter="url(#glow)"
       />
     </motion.svg>
   );
