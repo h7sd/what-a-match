@@ -38,6 +38,7 @@ import {
   Send,
   Crown,
   ShoppingBag,
+  FileText,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -92,6 +93,7 @@ import { FriendBadgesManager } from '@/components/dashboard/FriendBadgesManager'
 import { AdminEventController } from '@/components/admin/AdminEventController';
 import { AdminNotificationSender } from '@/components/admin/AdminNotificationSender';
 import { AdminMarketplaceManager } from '@/components/admin/AdminMarketplaceManager';
+import { AdminChangelogManager } from '@/components/admin/AdminChangelogManager';
 import { GlobalBadgeColorSettings } from '@/components/dashboard/GlobalBadgeColorSettings';
 import { StreakDisplay } from '@/components/dashboard/StreakDisplay';
 import { SupporterPanel } from '@/components/supporter/SupporterPanel';
@@ -1641,6 +1643,17 @@ export default function Dashboard() {
                     <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/30 hover:shadow-md transition-all">
                       <AdminMarketplaceManager />
                     </div>
+                  </div>
+                </div>
+
+                {/* Content Management Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 px-1">
+                    <FileText className="w-5 h-5 text-primary" />
+                    <h2 className="text-lg font-bold">Content Management</h2>
+                  </div>
+                  <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/30 hover:shadow-md transition-all">
+                    <AdminChangelogManager />
                   </div>
                 </div>
 

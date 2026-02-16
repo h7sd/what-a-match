@@ -32,6 +32,7 @@ const Cases = lazy(() => import("./pages/Cases"));
 const PublishBookmarklet = lazy(() => import("./pages/PublishBookmarklet"));
 const SecretDatabaseViewer = lazy(() => import("./pages/SecretDatabaseViewer"));
 const DiscordOAuthCallback = lazy(() => import("./pages/DiscordOAuthCallback"));
+const Changelog = lazy(() => import("./pages/Changelog"));
 
 const queryClient = new QueryClient();
 
@@ -167,6 +168,7 @@ function MaintenanceRouter() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/imprint" element={<Imprint />} />
+            <Route path="/changelog" element={<Changelog />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
@@ -204,6 +206,7 @@ function MaintenanceRouter() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/imprint" element={<Imprint />} />
+            <Route path="/changelog" element={<Changelog />} />
             <Route path="/status" element={<Status />} />
             <Route path="/alias-respond" element={<AliasRespond />} />
             <Route path="/s/:username" element={<ShareRedirect />} />
@@ -240,6 +243,7 @@ function MaintenanceRouter() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/imprint" element={<Imprint />} />
+          <Route path="/changelog" element={<Changelog />} />
           {/* Everything else redirects to landing */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -296,6 +300,7 @@ const App = () => {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/imprint" element={<Imprint />} />
+                <Route path="/changelog" element={<Changelog />} />
                 <Route path="/status" element={<Status />} />
                 <Route path="/alias-respond" element={<AliasRespond />} />
                 <Route path="/s/:username" element={<ShareRedirect />} />
