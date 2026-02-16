@@ -19,11 +19,13 @@ Deno.serve(async (req) => {
   const src = url.searchParams.get("src");
 
   console.log(`[OG-EMBED] Request for username/uid: ${username}, src: ${src}`);
+  console.log(`[OG-EMBED] Full URL: ${req.url}`);
 
   if (!username) {
-    return new Response("Username required. Use ?u=username", { 
+    console.log(`[OG-EMBED] Error: No username provided`);
+    return new Response("Username required. Use ?u=username", {
       status: 400,
-      headers: corsHeaders 
+      headers: corsHeaders
     });
   }
 
@@ -32,45 +34,58 @@ Deno.serve(async (req) => {
   // Try to find profile by username, alias, OR uid_number
   const lowerUsername = username.toLowerCase();
   const maybeUid = parseInt(username, 10);
-  
+
   let profile = null;
   let error = null;
+  let searchMethod = "none";
+
+  console.log(`[OG-EMBED] Searching for: ${lowerUsername}`);
+  console.log(`[OG-EMBED] Is numeric: ${!isNaN(maybeUid)}, value: ${maybeUid}`);
 
   // First try by username or alias
   const { data: byName, error: nameErr } = await supabase
     .from("profiles")
-    .select("username, display_name, bio, avatar_url, og_title, og_description, og_image_url, og_icon_url, uid_number")
+    .select("username, display_name, bio, avatar_url, og_title, og_description, og_image_url, og_icon_url, uid_number, og_embed_color")
     .or(`username.eq.${lowerUsername},alias_username.eq.${lowerUsername}`)
     .maybeSingle();
 
   if (byName) {
     profile = byName;
+    searchMethod = "username_or_alias";
+    console.log(`[OG-EMBED] Found by username/alias: ${byName.username}`);
   } else if (!isNaN(maybeUid) && maybeUid > 0) {
     // If not found and input looks like a number, try by uid_number
+    console.log(`[OG-EMBED] Trying uid_number lookup: ${maybeUid}`);
     const { data: byUid, error: uidErr } = await supabase
       .from("profiles")
-      .select("username, display_name, bio, avatar_url, og_title, og_description, og_image_url, og_icon_url, uid_number")
+      .select("username, display_name, bio, avatar_url, og_title, og_description, og_image_url, og_icon_url, uid_number, og_embed_color")
       .eq("uid_number", maybeUid)
       .maybeSingle();
-    
+
     if (byUid) {
       profile = byUid;
+      searchMethod = "uid_number";
+      console.log(`[OG-EMBED] Found by uid_number: ${byUid.username} (uid: ${byUid.uid_number})`);
     } else {
       error = uidErr || nameErr;
+      console.log(`[OG-EMBED] Not found by uid_number: ${maybeUid}`);
     }
   } else {
     error = nameErr;
+    console.log(`[OG-EMBED] Not found by username/alias: ${lowerUsername}`);
   }
 
   if (error || !profile) {
     console.log(`[OG-EMBED] Profile not found: ${username}`);
-    return new Response("Profile not found", { 
+    console.log(`[OG-EMBED] Search method used: ${searchMethod}`);
+    if (error) console.log(`[OG-EMBED] Error details:`, error);
+    return new Response("Profile not found", {
       status: 404,
-      headers: corsHeaders 
+      headers: corsHeaders
     });
   }
 
-  console.log(`[OG-EMBED] Found profile: ${profile.username} (uid: ${profile.uid_number})`);
+  console.log(`[OG-EMBED] ✅ Found profile: ${profile.username} (uid: ${profile.uid_number}) via ${searchMethod}`);
 
   // Build OG data with fallbacks
   const ogTitle = profile.og_title || `@${profile.username} | uservault.cc`;
