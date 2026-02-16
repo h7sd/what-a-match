@@ -31,9 +31,6 @@ const BOT_PATTERNS = [
 // Edge Function URL for OG HTML generation
 const OG_FUNCTION_URL = "https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/share";
 
-// Lovable origin URL (where the actual app is hosted)
-const LOVABLE_ORIGIN = "https://uservault.cc";
-
 function isBot(request) {
   const ua = request.headers.get("User-Agent") || "";
   const url = new URL(request.url);
@@ -112,34 +109,10 @@ async function fetchOGHtml(username, originalUrl) {
   }
 }
 
-// Proxy request to Lovable origin
-async function proxyToOrigin(request) {
-  const url = new URL(request.url);
-  // Rewrite host to Lovable origin
-  const originUrl = new URL(url.pathname + url.search, LOVABLE_ORIGIN);
-
-  // IMPORTANT: Ensure origin receives the correct Host header.
-  // If we forward the incoming Host (uservault.cc) some origins return a placeholder.
-  const originHost = new URL(LOVABLE_ORIGIN).host;
-  const headers = new Headers(request.headers);
-
-  // Explicitly set host + forwarded host for better compatibility.
-  headers.set("Host", originHost);
-  headers.set("X-Forwarded-Host", url.host);
-  headers.set("X-Forwarded-Proto", url.protocol.replace(":", ""));
-
-  // Avoid sending a body for GET/HEAD requests
-  const method = request.method.toUpperCase();
-  const body = method === "GET" || method === "HEAD" ? undefined : request.body;
-
-  const newRequest = new Request(originUrl.toString(), {
-    method,
-    headers,
-    body,
-    redirect: "follow",
-  });
-
-  return fetch(newRequest);
+// Pass request through to the app (no proxying needed, app runs directly on this domain)
+async function passThrough(request) {
+  // Simply fetch the original request - the app is already here
+  return fetch(request);
 }
 
 export default {
@@ -161,18 +134,18 @@ export default {
     console.log(`[OG] Bot detected: ${botDetected}`);
     console.log(`[OG] User-Agent: ${userAgent.substring(0, 100)}`);
 
-    // Not a profile page or not a bot -> proxy to Lovable origin
+    // Not a profile page or not a bot -> pass through to app
     if (!username) {
-      console.log(`[OG] No username extracted, proxying to origin`);
-      const response = await proxyToOrigin(request);
+      console.log(`[OG] No username extracted, passing through`);
+      const response = await passThrough(request);
       const newResponse = new Response(response.body, response);
       Object.entries(debugHeaders).forEach(([k, v]) => newResponse.headers.set(k, v));
       return newResponse;
     }
 
     if (!botDetected) {
-      console.log(`[OG] Not a bot, proxying to origin for: ${username}`);
-      const response = await proxyToOrigin(request);
+      console.log(`[OG] Not a bot, passing through for: ${username}`);
+      const response = await passThrough(request);
       const newResponse = new Response(response.body, response);
       Object.entries(debugHeaders).forEach(([k, v]) => newResponse.headers.set(k, v));
       return newResponse;
@@ -184,8 +157,8 @@ export default {
       const html = await fetchOGHtml(username, url.toString());
 
       if (!html) {
-        console.log(`[OG] No HTML returned, falling back to origin for: ${username}`);
-        const response = await proxyToOrigin(request);
+        console.log(`[OG] No HTML returned, passing through for: ${username}`);
+        const response = await passThrough(request);
         const newResponse = new Response(response.body, response);
         newResponse.headers.set("X-OG-Worker", "active-no-profile");
         return newResponse;
@@ -207,7 +180,7 @@ export default {
       });
     } catch (error) {
       console.error(`[OG] Error generating embed for ${username}:`, error);
-      const response = await proxyToOrigin(request);
+      const response = await passThrough(request);
       const newResponse = new Response(response.body, response);
       newResponse.headers.set("X-OG-Worker", "error");
       newResponse.headers.set("X-OG-Error", error.message);
