@@ -109,10 +109,16 @@ async function fetchOGHtml(username, originalUrl) {
   }
 }
 
-// Pass request through to the app (no proxying needed, app runs directly on this domain)
+// Pass request through to the actual app on uservault.cc
 async function passThrough(request) {
-  // Simply fetch the original request - the app is already here
-  return fetch(request);
+  const url = new URL(request.url);
+  const targetUrl = new URL(url.pathname + url.search, "https://uservault.cc");
+
+  return fetch(targetUrl, {
+    method: request.method,
+    headers: request.headers,
+    body: request.body
+  });
 }
 
 export default {
