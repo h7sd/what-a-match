@@ -22,8 +22,10 @@ export function useDiscordOAuth() {
   const { toast } = useToast();
 
   const getRedirectUri = useCallback(() => {
-    // Use API proxy to hide the real Supabase URL from Discord and browser dev tools
-    return `https://api.uservault.cc/functions/v1/discord-oauth-callback`;
+    // Using direct Supabase URL until API proxy is deployed
+    // TODO: Switch to https://api.uservault.cc after deploying Cloudflare Worker
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://nuszlhxbyxdjlaubuwzd.supabase.co';
+    return `${supabaseUrl}/functions/v1/discord-oauth-callback`;
   }, []);
 
   const initiateDiscordLogin = useCallback(async () => {
