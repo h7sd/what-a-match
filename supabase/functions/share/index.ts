@@ -100,13 +100,10 @@ Deno.serve(async (req) => {
   
   const ogIcon = profile.og_icon_url || "https://storage.googleapis.com/gpt-engineer-file-uploads/N7OIoQRjNPSXaLFdJjQDPkdaXHs1/uploads/1769473434323-UserVault%204%20(1).png";
   const defaultProfileUrl = `https://uservault.cc/${profile.username}`;
+  const boltRedirectUrl = `https://h7sd-what-a-match-im-n7az.bolt.host/${profile.username}`;
 
-  // Discord can de-dupe/cache based on og:url. When users paste cache-busters like ?v=123
-  // we need og:url to reflect the original request URL. The Cloudflare Worker should pass
-  // the original URL as `src`.
-  // Use original request URL (incl. cache-busters like ?v=123) to avoid Discord caching old cards.
   const resolvedOgUrl = resolveOgUrl(src) || defaultProfileUrl;
-  const resolvedRedirectUrl = resolveRedirectUrl(src, profile.username) || defaultProfileUrl;
+  const resolvedRedirectUrl = resolveRedirectUrl(src, profile.username) || boltRedirectUrl;
   const updatedTime = new Date().toISOString();
 
   const html = `<!DOCTYPE html>

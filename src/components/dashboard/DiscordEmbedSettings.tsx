@@ -88,15 +88,15 @@ export function DiscordEmbedSettings({
   const animationRef = useRef<NodeJS.Timeout | null>(null);
 
   const displayTitle = ogTitle || `@${username} | uservault.cc`;
-  const shareUrl = `https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/share?u=${encodeURIComponent(username)}&src=${encodeURIComponent(window.location.origin)}`;
+  const shareUrl = `https://uservault.cc/${username}`;
 
   const copyShareLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast({
-        title: 'Discord share link copied!',
-        description: 'This link shows your custom Discord embed and redirects visitors to your profile.'
+        title: 'Share link copied!',
+        description: 'Post this URL on Discord to show your custom embed.'
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
