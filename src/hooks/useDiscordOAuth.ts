@@ -22,9 +22,9 @@ export function useDiscordOAuth() {
   const { toast } = useToast();
 
   const getRedirectUri = useCallback(() => {
-    // IMPORTANT: This must be a backend callback URL that Discord can reach.
-    // Using the API proxy keeps the backend project URL hidden and is whitelisted in Discord.
-    return `https://api.uservault.cc/functions/v1/discord-oauth-callback`;
+    // FIXED: Use the actual Supabase project URL instead of non-existent api.uservault.cc
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://nuszlhxbyxdjlaubuwzd.supabase.co';
+    return `${supabaseUrl}/functions/v1/discord-oauth-callback`;
   }, []);
 
   const initiateDiscordLogin = useCallback(async () => {

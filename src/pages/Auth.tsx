@@ -890,13 +890,15 @@ export default function Auth() {
                 backButtonText="Previous"
                 isNextDisabled={
                   loginStepperStep === 1
-                    ? !emailOrUsername
+                    ? false
                     : loginStepperStep === 2
+                    ? !emailOrUsername
+                    : loginStepperStep === 3
                     ? !password
                     : loading || !turnstileToken
                 }
                 onExternalNext={async () => {
-                  if (loginStepperStep < 3) {
+                  if (loginStepperStep < 4) {
                     setLoginStepperStep(loginStepperStep + 1);
                   } else {
                     await handleSubmit(new Event('submit') as any);
@@ -905,19 +907,21 @@ export default function Auth() {
                 onExternalBack={() => {
                   if (loginStepperStep > 1) {
                     setLoginStepperStep(loginStepperStep - 1);
-                    if (loginStepperStep === 3) {
+                    if (loginStepperStep === 4) {
                       setTurnstileToken(null);
                     }
                   }
                 }}
                 nextButtonProps={{
-                  children: loading && loginStepperStep === 3 ? (
+                  children: loading && loginStepperStep === 4 ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Signing in...
                     </>
-                  ) : loginStepperStep === 3 ? (
+                  ) : loginStepperStep === 4 ? (
                     'Sign in'
+                  ) : loginStepperStep === 1 ? (
+                    'Continue with Email'
                   ) : (
                     'Next'
                   )
@@ -928,6 +932,43 @@ export default function Auth() {
                     <div className="text-center mb-6">
                       <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
                         Welcome back
+                      </h1>
+                      <p className="text-white/50 text-sm">
+                        Choose how you want to sign in
+                      </p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={initiateDiscordLogin}
+                      disabled={discordLoading}
+                      variant="outline"
+                      className="w-full h-12 bg-[#5865F2]/10 border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 text-white font-semibold rounded-xl transition-all duration-300"
+                    >
+                      {discordLoading ? (
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      ) : (
+                        <FaDiscord className="w-5 h-5 mr-2 text-[#5865F2]" />
+                      )}
+                      Continue with Discord
+                    </Button>
+
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-white/10" />
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="px-3 bg-black/60 text-white/40">or</span>
+                      </div>
+                    </div>
+                  </div>
+                </Step>
+
+                <Step>
+                  <div className="space-y-4">
+                    <div className="text-center mb-6">
+                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
+                        Enter your credentials
                       </h1>
                       <p className="text-white/50 text-sm">
                         Enter your email or username
@@ -1006,30 +1047,6 @@ export default function Auth() {
                     <div className="flex justify-center py-2">
                       <div ref={turnstileRef} />
                     </div>
-
-                    <div className="relative my-4">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-white/10" />
-                      </div>
-                      <div className="relative flex justify-center text-xs">
-                        <span className="px-3 bg-black/60 text-white/40">or continue with</span>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="button"
-                      onClick={initiateDiscordLogin}
-                      disabled={discordLoading}
-                      variant="outline"
-                      className="w-full h-12 bg-[#5865F2]/10 border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 text-white font-semibold rounded-xl transition-all duration-300"
-                    >
-                      {discordLoading ? (
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      ) : (
-                        <FaDiscord className="w-5 h-5 mr-2 text-[#5865F2]" />
-                      )}
-                      Discord
-                    </Button>
                   </div>
                 </Step>
               </Stepper>
@@ -1045,15 +1062,17 @@ export default function Auth() {
                 backButtonText="Previous"
                 isNextDisabled={
                   signupStepperStep === 1
-                    ? !username
+                    ? false
                     : signupStepperStep === 2
-                    ? !email
+                    ? !username
                     : signupStepperStep === 3
+                    ? !email
+                    : signupStepperStep === 4
                     ? !password || !getPasswordStrength(password).isStrong
                     : loading || !turnstileToken
                 }
                 onExternalNext={async () => {
-                  if (signupStepperStep < 4) {
+                  if (signupStepperStep < 5) {
                     setSignupStepperStep(signupStepperStep + 1);
                   } else {
                     await handleSubmit(new Event('submit') as any);
@@ -1062,24 +1081,63 @@ export default function Auth() {
                 onExternalBack={() => {
                   if (signupStepperStep > 1) {
                     setSignupStepperStep(signupStepperStep - 1);
-                    if (signupStepperStep === 4) {
+                    if (signupStepperStep === 5) {
                       setTurnstileToken(null);
                     }
                   }
                 }}
                 nextButtonProps={{
-                  children: loading && signupStepperStep === 4 ? (
+                  children: loading && signupStepperStep === 5 ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Creating...
                     </>
-                  ) : signupStepperStep === 4 ? (
+                  ) : signupStepperStep === 5 ? (
                     'Create account'
+                  ) : signupStepperStep === 1 ? (
+                    'Continue with Email'
                   ) : (
                     'Next'
                   )
                 }}
               >
+                <Step>
+                  <div className="space-y-4">
+                    <div className="text-center mb-6">
+                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
+                        Create account
+                      </h1>
+                      <p className="text-white/50 text-sm">
+                        Choose how you want to sign up
+                      </p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={initiateDiscordLogin}
+                      disabled={discordLoading}
+                      variant="outline"
+                      className="w-full h-12 bg-[#5865F2]/10 border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 text-white font-semibold rounded-xl transition-all duration-300"
+                    >
+                      {discordLoading ? (
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      ) : (
+                        <FaDiscord className="w-5 h-5 mr-2 text-[#5865F2]" />
+                      )}
+                      Continue with Discord
+                    </Button>
+
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-white/10" />
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="px-3 bg-black/60 text-white/40">or</span>
+                      </div>
+                    </div>
+                  </div>
+                </Step>
+
                 <Step>
                   <div className="space-y-4">
                     <div className="text-center mb-6">
@@ -1185,30 +1243,6 @@ export default function Auth() {
                     <div className="flex justify-center py-2">
                       <div ref={turnstileRef} />
                     </div>
-
-                    <div className="relative my-4">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-white/10" />
-                      </div>
-                      <div className="relative flex justify-center text-xs">
-                        <span className="px-3 bg-black/60 text-white/40">or sign up with</span>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="button"
-                      onClick={initiateDiscordLogin}
-                      disabled={discordLoading}
-                      variant="outline"
-                      className="w-full h-12 bg-[#5865F2]/10 border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 text-white font-semibold rounded-xl transition-all duration-300"
-                    >
-                      {discordLoading ? (
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      ) : (
-                        <FaDiscord className="w-5 h-5 mr-2 text-[#5865F2]" />
-                      )}
-                      Discord
-                    </Button>
                   </div>
                 </Step>
               </Stepper>
