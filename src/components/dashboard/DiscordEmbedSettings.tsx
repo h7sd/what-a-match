@@ -88,7 +88,7 @@ export function DiscordEmbedSettings({
   const animationRef = useRef<NodeJS.Timeout | null>(null);
 
   const displayTitle = ogTitle || `@${username} | uservault.cc`;
-  const shareUrl = `https://uservault.cc/${username}`;
+  const shareUrl = `https://share.uservault.cc/?u=${username}`;
 
   const copyShareLink = async () => {
     try {
