@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UserVault Profile Share</title>
+  <style>
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .loader {
+      text-align: center;
+    }
+    .spinner {
+      border: 3px solid rgba(139, 92, 246, 0.1);
+      border-radius: 50%;
+      border-top: 3px solid #8B5CF6;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    a { color: #8B5CF6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+  <script>
+    // Immediately redirect to Edge Function for Discord to read meta tags
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const username = params.get('u') || params.get('username');
+
+      if (!username) {
+        document.addEventListener('DOMContentLoaded', function() {
+          document.body.innerHTML = '<div class="loader"><p>Error: No username provided. Use ?u=username</p></div>';
+        });
+        return;
+      }
+
+      // Build Edge Function URL with original source
+      const edgeUrl = 'https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/share';
+      const fullUrl = `${edgeUrl}?u=${encodeURIComponent(username)}&src=${encodeURIComponent(window.location.origin)}`;
+
+      // Immediate redirect
+      window.location.replace(fullUrl);
+    })();
+  </script>
+</head>
+<body>
+  <div class="loader">
+    <div class="spinner"></div>
+    <p>Loading profile...</p>
+  </div>
+</body>
+</html>
