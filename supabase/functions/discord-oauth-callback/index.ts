@@ -231,22 +231,54 @@ Deno.serve(async (req) => {
       // Login/Register mode
       console.log('Processing Discord login/register...');
 
-      // Check if user exists with this email
-      // IMPORTANT: listUsers() is paginated and defaults to a small page size.
-      // If we don't raise perPage, we can miss existing users and then createUser() fails with "email_exists".
-      const { data: existingUsers, error: listUsersError } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-      if (listUsersError) {
-        console.error('listUsers error:', listUsersError);
-        throw new Error('Failed to look up existing users');
-      }
-      const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === discordUser.email?.toLowerCase());
-
       let userId: string;
       let isNewUser = false;
 
-      if (existingUser) {
-        // User exists - sign them in
-        console.log('Existing user found, signing in...');
+      // First: check if Discord ID is already linked to an account
+      const { data: discordIntegration } = await supabase
+        .from('discord_integrations')
+        .select('user_id')
+        .eq('discord_id', discordUser.id)
+        .maybeSingle();
+
+      // Second: if not found by Discord ID, look up by email
+      // IMPORTANT: listUsers() is paginated and defaults to a small page size.
+      // If we don't raise perPage, we can miss existing users and then createUser() fails with "email_exists".
+      let existingUser = null;
+      if (!discordIntegration) {
+        const { data: existingUsers, error: listUsersError } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+        if (listUsersError) {
+          console.error('listUsers error:', listUsersError);
+          throw new Error('Failed to look up existing users');
+        }
+        existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === discordUser.email?.toLowerCase());
+      }
+
+      if (discordIntegration) {
+        // User found by Discord ID - sign them in
+        console.log('Existing user found by Discord ID, signing in...');
+        userId = discordIntegration.user_id;
+
+        // Update Discord integration with latest info
+        await supabase
+          .from('discord_integrations')
+          .update({
+            username: discordUser.global_name || discordUser.username,
+            discriminator: discordUser.discriminator,
+            avatar: discordUser.avatar,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('discord_id', discordUser.id);
+
+        // Update profile discord_user_id
+        await supabase
+          .from('profiles')
+          .update({ discord_user_id: discordUser.id })
+          .eq('user_id', userId);
+
+      } else if (existingUser) {
+        // User exists by email - sign them in
+        console.log('Existing user found by email, signing in...');
         userId = existingUser.id;
         
         // Update their Discord integration
