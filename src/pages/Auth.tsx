@@ -226,8 +226,8 @@ export default function Auth() {
   // Render Turnstile when step changes to login/signup or when reaching final step
   useEffect(() => {
     const shouldRender =
-      (step === 'login' && loginStepperStep === 3) ||
-      (step === 'signup' && signupStepperStep === 4);
+      (step === 'login' && loginStepperStep === 4) ||
+      (step === 'signup' && signupStepperStep === 5);
 
     if (shouldRender && !turnstileToken) {
       if (turnstileLoaded) {
