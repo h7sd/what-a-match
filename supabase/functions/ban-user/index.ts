@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -8,21 +7,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": [
-    "authorization",
-    "x-client-info",
-    "apikey",
-    "content-type",
-    "x-supabase-client-platform",
-    "x-supabase-client-platform-version",
-    "x-supabase-client-runtime",
-    "x-supabase-client-runtime-version",
-    "x-forwarded-for",
-    "x-real-ip",
-    "cf-connecting-ip",
-    "x-client-ip",
-  ].join(", "),
-  "Access-Control-Max-Age": "86400",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
 async function sendEmail(to: string, subject: string, html: string) {
@@ -39,39 +24,35 @@ async function sendEmail(to: string, subject: string, html: string) {
       html,
     }),
   });
-  
+
   if (!res.ok) {
     const errorText = await res.text();
     console.error("Resend API error:", errorText);
-    // Don't throw - we still want to ban even if email fails
   }
-  
+
   return res.ok;
 }
 
-const handler = async (req: Request): Promise<Response> => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
-    // Get auth user from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error("No authorization header");
     }
 
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    
-    // Verify the JWT token and check admin role
+
     const token = authHeader.replace('Bearer ', '');
     const { data: { user: adminUser }, error: authError } = await supabaseClient.auth.getUser(token);
-    
+
     if (authError || !adminUser) {
       throw new Error("Unauthorized");
     }
 
-    // Check if user is admin
     const { data: isAdmin } = await supabaseClient.rpc('has_role', {
       _user_id: adminUser.id,
       _role: 'admin'
@@ -87,7 +68,6 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Missing user ID or username");
     }
 
-    // Basic UUID validation (fail-closed)
     if (typeof userId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
       throw new Error('Invalid user ID');
     }
@@ -96,7 +76,6 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Invalid username');
     }
 
-    // Ensure the user exists and the username matches the profile (prevents banning arbitrary UUIDs)
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('user_id, username')
@@ -107,15 +86,12 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('User not found');
     }
 
-    // Get user's email
     const { data: userData } = await supabaseClient.auth.admin.getUserById(userId);
     const userEmail = userData?.user?.email;
 
-    // Calculate appeal deadline (30 days from now)
     const appealDeadline = new Date();
     appealDeadline.setDate(appealDeadline.getDate() + 30);
 
-    // Insert into banned_users table
     const { error: banError } = await supabaseClient
       .from('banned_users')
       .insert({
@@ -132,7 +108,6 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Failed to ban user");
     }
 
-    // Send ban notification email if we have email
     if (userEmail) {
       const html = `
         <!DOCTYPE html>
@@ -146,7 +121,6 @@ const handler = async (req: Request): Promise<Response> => {
             <tr>
               <td align="center">
                 <table width="100%" max-width="500" cellpadding="0" cellspacing="0" style="max-width: 500px;">
-                  <!-- Logo -->
                   <tr>
                     <td align="center" style="padding-bottom: 30px;">
                       <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
@@ -159,27 +133,19 @@ const handler = async (req: Request): Promise<Response> => {
                       <h1 style="color: #ffffff; margin: 20px 0 0 0; font-size: 28px; font-weight: 700; text-align: center;">UserVault</h1>
                     </td>
                   </tr>
-                  
-                  <!-- Main Card -->
                   <tr>
                     <td style="background: linear-gradient(180deg, rgba(239, 68, 68, 0.1) 0%, rgba(0,0,0,0.8) 100%); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 20px; padding: 40px;">
-                      <h2 style="color: #ef4444; margin: 0 0 16px 0; font-size: 22px; text-align: center;">
-                        Account Suspended
-                      </h2>
+                      <h2 style="color: #ef4444; margin: 0 0 16px 0; font-size: 22px; text-align: center;">Account Suspended</h2>
                       <p style="color: #a1a1aa; margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; text-align: center;">
                         Your UserVault account <strong style="color: #ffffff;">@${username}</strong> has been suspended.
                       </p>
-                      
-                      <!-- Reason Box -->
                       <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 20px; margin: 20px 0;">
                         <p style="color: #71717a; font-size: 12px; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 1px;">Reason</p>
                         <p style="color: #ffffff; font-size: 15px; margin: 0; line-height: 1.5;">${reason || 'No reason provided'}</p>
                       </div>
-                      
                       <p style="color: #a1a1aa; margin: 20px 0; font-size: 14px; line-height: 1.6; text-align: center;">
                         You have <strong style="color: #f59e0b;">30 days</strong> to submit an appeal request when you try to log in.
                       </p>
-                      
                       <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; margin-top: 20px;">
                         <p style="color: #71717a; font-size: 13px; margin: 0; text-align: center;">
                           Appeal deadline: <strong style="color: #a1a1aa;">${appealDeadline.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
@@ -187,16 +153,10 @@ const handler = async (req: Request): Promise<Response> => {
                       </div>
                     </td>
                   </tr>
-                  
-                  <!-- Footer -->
                   <tr>
                     <td style="padding-top: 30px; text-align: center;">
-                      <p style="color: #52525b; font-size: 12px; margin: 0;">
-                        If you believe this was a mistake, please submit an appeal when logging in.
-                      </p>
-                      <p style="color: #3f3f46; font-size: 11px; margin: 16px 0 0 0;">
-                        © ${new Date().getFullYear()} UserVault. All rights reserved.
-                      </p>
+                      <p style="color: #52525b; font-size: 12px; margin: 0;">If you believe this was a mistake, please submit an appeal when logging in.</p>
+                      <p style="color: #3f3f46; font-size: 11px; margin: 16px 0 0 0;">© ${new Date().getFullYear()} UserVault. All rights reserved.</p>
                     </td>
                   </tr>
                 </table>
@@ -206,12 +166,8 @@ const handler = async (req: Request): Promise<Response> => {
         </body>
         </html>
       `;
-
       await sendEmail(userEmail, "Account Suspended - UserVault", html);
-      console.log("Ban notification email sent to:", userEmail);
     }
-
-    console.log("User banned successfully:", username);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -222,22 +178,14 @@ const handler = async (req: Request): Promise<Response> => {
     console.error("Error banning user:", message);
 
     const status =
-      message === 'Unauthorized'
-        ? 401
-        : message === 'Admin access required'
-          ? 403
-          : message === 'Missing user ID or username' ||
-              message === 'Invalid user ID' ||
-              message === 'Invalid username' ||
-              message === 'User not found'
-            ? 400
-            : 500;
+      message === 'Unauthorized' ? 401
+      : message === 'Admin access required' ? 403
+      : ['Missing user ID or username', 'Invalid user ID', 'Invalid username', 'User not found'].includes(message) ? 400
+      : 500;
 
     return new Response(JSON.stringify({ error: message }), {
       status,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }
-};
-
-serve(handler);
+});
