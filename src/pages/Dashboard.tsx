@@ -101,6 +101,8 @@ import { SupporterManager } from '@/components/admin/SupporterManager';
 import { NotificationsSection } from '@/components/dashboard/NotificationsSection';
 import { LiveFeed } from '@/components/cases/LiveFeed';
 import { cn } from '@/lib/utils';
+// FIXED: Imported new OwnerPanelTabs component for better organization
+import { OwnerPanelTabs } from '@/components/admin/OwnerPanelTabs';
 
 // Removed local TabType - using exported type from DashboardLayout
 
@@ -909,11 +911,13 @@ export default function Dashboard() {
             {/* Stats Grid */}
             <div>
               <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">Statistics</h2>
+              {/* FIXED: Added hasPremium prop to show premium upgrade button */}
               <OverviewStats
                 profileViews={profile.views_count || 0}
                 uidNumber={(profile as any).uid_number || 1}
                 username={profile.username}
                 profileId={profile.id}
+                hasPremium={(profile as any)?.is_premium ?? false}
               />
             </div>
 
@@ -1494,196 +1498,35 @@ export default function Dashboard() {
               <SupporterPanel />
             )}
 
-            {/* Owner Panel Tab */}
+            {/* Owner Panel Tab - FIXED: Reorganized with better tabbed navigation */}
             {activeTab === 'owner' && isAdmin && (
-              <div className="space-y-8 max-w-7xl">
-                {/* Modern Header */}
-                <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10" />
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-accent border border-primary/50 flex items-center justify-center shadow-lg shadow-primary/20">
-                      <Shield className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">Owner Panel</h1>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Complete administrative control over all platform features
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Actions Grid */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-1">
-                    <Settings className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-bold">Quick Actions</h2>
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Secret DB Viewer */}
-                    {SECRET_DB_ALLOWED_UIDS.includes((profile?.uid_number as any) ?? -1) && (
-                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 backdrop-blur-sm p-6 hover:border-amber-500/30 hover:shadow-md transition-all">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Shield className="w-5 h-5 text-amber-500" />
-                              <h3 className="font-semibold">Database Viewer</h3>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              Read-Only Datenbank-Ansicht (UID-Whitelist + MFA)
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={() => navigate(SECRET_DB_VIEWER_PATH)}
-                            className="flex-shrink-0"
-                          >
-                            Öffnen
-                          </Button>
+              <div className="space-y-6 max-w-7xl">
+                {/* Secret DB Viewer (only for specific UIDs) */}
+                {SECRET_DB_ALLOWED_UIDS.includes((profile?.uid_number as any) ?? -1) && (
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 backdrop-blur-sm p-6 hover:border-amber-500/30 hover:shadow-md transition-all">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-5 h-5 text-amber-500" />
+                          <h3 className="font-semibold">Database Viewer</h3>
                         </div>
+                        <p className="text-sm text-muted-foreground">
+                          Read-Only Datenbank-Ansicht (UID-Whitelist + MFA)
+                        </p>
                       </div>
-                    )}
-
-                    {/* Account Lookup */}
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AdminAccountLookup />
+                      <Button
+                        size="sm"
+                        onClick={() => navigate(SECRET_DB_VIEWER_PATH)}
+                        className="flex-shrink-0"
+                      >
+                        Öffnen
+                      </Button>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Communication Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-1">
-                    <Send className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-bold">Communication</h2>
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AdminDiscordSender />
-                    </div>
-
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AdminNotificationSender />
-                    </div>
-                  </div>
-                </div>
-
-                {/* User Management Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-1">
-                    <User className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-bold">User Management</h2>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-5 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AdminPremiumManager />
-                    </div>
-
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-5 hover:border-primary/30 hover:shadow-md transition-all">
-                      <UserBanManager />
-                    </div>
-
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-5 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AdminUserManager />
-                    </div>
-
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-5 hover:border-primary/30 hover:shadow-md transition-all">
-                      <SupporterManager />
-                    </div>
-
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-5 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AdminUIDManager />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Badge Management Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-1">
-                    <Award className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-bold">Badge Management</h2>
-                  </div>
-
-                  {/* Main Badge Manager - Full Width */}
-                  <div className="rounded-xl border border-primary/10 bg-card/40 backdrop-blur-sm p-6 shadow-lg hover:border-primary/20 transition-all">
-                    <AdminBadgeManager />
-                  </div>
-
-                  {/* Badge Tools Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-5 hover:border-primary/30 hover:shadow-md transition-all">
-                      <LimitedBadgeAssigner />
-                    </div>
-
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-5 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AllBadgeAssigner />
-                    </div>
-
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-5 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AdminBadgeRemover />
-                    </div>
-
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-5 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AdminEarlyBadgeCounter />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Events & Features Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-1">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-bold">Events & Features</h2>
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AdminEventController />
-                    </div>
-
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AdminMarketplaceManager />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Content Management Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-1">
-                    <FileText className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-bold">Content Management</h2>
-                  </div>
-                  <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/30 hover:shadow-md transition-all">
-                    <AdminChangelogManager />
-                  </div>
-                </div>
-
-                {/* Financial Management Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-1">
-                    <ShoppingBag className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-bold">Financial Management</h2>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/30 hover:shadow-md transition-all">
-                      <AdminPromoCodeManager />
-                    </div>
-
-                    <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm hover:border-primary/30 hover:shadow-md transition-all overflow-hidden">
-                      <AdminPurchaseHistory />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Developer Tools Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-1">
-                    <Puzzle className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-bold">Developer Tools</h2>
-                  </div>
-                  <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/30 hover:shadow-md transition-all">
-                    <AdminBotNotificationTester />
-                  </div>
-                </div>
+                {/* New Organized Owner Panel Tabs */}
+                <OwnerPanelTabs />
               </div>
             )}
 
