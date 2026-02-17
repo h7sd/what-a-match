@@ -53,12 +53,14 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { data: isAdmin } = await supabaseClient.rpc('has_role', {
-      _user_id: adminUser.id,
-      _role: 'admin'
-    });
+    const { data: roleData, error: roleError } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', adminUser.id)
+      .eq('role', 'admin')
+      .maybeSingle();
 
-    if (!isAdmin) {
+    if (roleError || !roleData) {
       throw new Error("Admin access required");
     }
 
