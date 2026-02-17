@@ -1,4 +1,4 @@
-# Discord Login - REPARIERT ✅
+# Discord Login - Setup Guide ✅
 
 ## Problem
 
@@ -6,36 +6,113 @@ Discord Login funktionierte nicht und zeigte **Error 1016 - Origin DNS error** v
 
 ### Root Cause
 
-Die Redirect URI verwendete eine **nicht existierende Domain**:
+Die Redirect URI verwendet `api.uservault.cc`, aber:
+- ❌ Domain existiert noch nicht / kein DNS-Eintrag
+- ❌ Cloudflare Worker ist nicht deployed
+- ❌ Keine Route konfiguriert
+
+### Warum API Proxy?
+
+Der API Proxy **versteckt die echte Supabase URL**:
+- ✅ Keine Supabase URL in Browser Dev Tools
+- ✅ Keine Supabase URL im Source Code sichtbar
+- ✅ Sicherheit durch Verschleierung
+
+**Ohne Proxy**:
 ```
-❌ https://api.uservault.cc/functions/v1/discord-oauth-callback
+https://nuszlhxbyxdjlaubuwzd.supabase.co ← Überall sichtbar
 ```
 
-Diese Domain hat keinen DNS-Eintrag, daher konnte Cloudflare sie nicht auflösen.
+**Mit Proxy**:
+```
+https://api.uservault.cc ← Leitet intern zu Supabase
+```
 
 ---
 
 ## Lösung
 
-### 1. Redirect URI Korrigiert
+### Option 1: API Proxy Deployen (Empfohlen für Production)
 
-**Datei**: `src/hooks/useDiscordOAuth.ts:27`
+**Status**: Code ist fertig, muss nur deployed werden!
 
-**Vorher**:
+#### Datei: `src/hooks/useDiscordOAuth.ts:27`
+
 ```typescript
+// Verwendet API Proxy (versteckt Supabase URL)
 return `https://api.uservault.cc/functions/v1/discord-oauth-callback`;
 ```
 
-**Nachher**:
+#### Deployment Schritte:
+
+1. **Cloudflare Worker deployen**:
+   - Siehe: `cloudflare-worker/DEPLOYMENT_GUIDE.md`
+   - DNS für `api.uservault.cc` konfigurieren
+   - Worker Code aus `api-proxy.js` deployen
+   - Route `api.uservault.cc/*` einrichten
+
+2. **Environment Variable NICHT ändern**:
+   ```env
+   # In .env - BLEIBT SO!
+   VITE_SUPABASE_URL=https://nuszlhxbyxdjlaubuwzd.supabase.co
+   ```
+
+   **Wichtig**: Der Frontend-Code nutzt die Proxy URL durch den Hook, aber der Supabase Client braucht die echte URL für interne Calls.
+
+3. **Discord Developer Portal**:
+   - Redirect URI: `https://api.uservault.cc/functions/v1/discord-oauth-callback`
+
+#### Vorteile:
+- ✅ Supabase URL komplett versteckt
+- ✅ Production-ready
+- ✅ Professionelles Setup
+- ✅ Kostenlos (Cloudflare Free Plan)
+
+#### Zeitaufwand: 15-30 Minuten
+
+---
+
+### Option 2: Direkte Supabase URL (Schnelle Lösung für Development)
+
+Falls du den Proxy erstmal nicht deployen willst:
+
+#### Datei: `src/hooks/useDiscordOAuth.ts:27`
+
 ```typescript
+// Temporär: Direkte Supabase URL (für Development)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://nuszlhxbyxdjlaubuwzd.supabase.co';
 return `${supabaseUrl}/functions/v1/discord-oauth-callback`;
 ```
 
-Die Redirect URI zeigt jetzt auf die **echte Supabase Edge Function URL**, die:
-- ✅ Existiert und erreichbar ist
-- ✅ Aus der `.env` Datei geladen wird
-- ✅ DNS-Auflösung funktioniert
+#### Discord Developer Portal:
+- Redirect URI: `https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/discord-oauth-callback`
+
+#### Nachteile:
+- ❌ Supabase URL ist überall sichtbar
+- ❌ Weniger sicher
+- ❌ Nicht für Production empfohlen
+
+#### Zeitaufwand: 2 Minuten
+
+---
+
+## Aktuelle Konfiguration
+
+**Status**: Code nutzt API Proxy (`api.uservault.cc`)
+
+### Um Discord Login zu aktivieren, musst du:
+
+**Option A** - API Proxy deployen (empfohlen):
+1. Folge `cloudflare-worker/DEPLOYMENT_GUIDE.md`
+2. Deploy Cloudflare Worker
+3. DNS konfigurieren
+4. Discord Redirect URI setzen
+5. ✅ Fertig!
+
+**Option B** - Temporär ohne Proxy (schnell):
+1. Ändere `useDiscordOAuth.ts` zu direkter URL
+2. Discord Redirect URI auf Supabase URL setzen
+3. ⚠️ Nur für Development!
 
 ---
 
