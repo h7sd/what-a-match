@@ -1044,7 +1044,7 @@ export default function Auth() {
                       </p>
                     </div>
 
-                    <div className="flex justify-center py-2">
+                    <div className="flex justify-center py-2" style={{ minHeight: '74px' }}>
                       <div ref={turnstileRef} />
                     </div>
                   </div>
@@ -1240,7 +1240,7 @@ export default function Auth() {
                       </p>
                     </div>
 
-                    <div className="flex justify-center py-2">
+                    <div className="flex justify-center py-2" style={{ minHeight: '74px' }}>
                       <div ref={turnstileRef} />
                     </div>
                   </div>
