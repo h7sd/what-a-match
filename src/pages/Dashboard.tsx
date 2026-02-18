@@ -1371,11 +1371,7 @@ export default function Dashboard() {
                         setIsSavingMc(true);
                         try {
                           const val = mcUsername.trim() || null;
-                          const { error } = await supabase
-                            .from('profiles')
-                            .update({ mc_username: val } as any)
-                            .eq('user_id', user.id);
-                          if (error) throw error;
+                          await updateProfile.mutateAsync({ mc_username: val } as any);
                           toast({ title: val ? 'Minecraft username saved' : 'Minecraft username removed' });
                         } catch {
                           toast({ title: 'Failed to save', variant: 'destructive' });
