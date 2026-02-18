@@ -193,7 +193,7 @@ function StepContentWrapper({ isCompleted, currentStep, direction, children, cla
   return (
     <motion.div
       className={className}
-      style={{ position: 'relative', overflowX: 'clip', overflowY: 'visible' }}
+      style={{ position: 'relative', overflow: 'visible' }}
       animate={{ height: isCompleted ? 0 : parentHeight }}
       transition={{ type: 'spring', duration: 0.4 }}
     >
@@ -232,7 +232,7 @@ function SlideTransition({ children, direction, onHeightReady }: SlideTransition
       animate="center"
       exit="exit"
       transition={{ duration: 0.4 }}
-      style={{ position: 'absolute', left: 0, right: 0, top: 0 }}
+      style={{ position: 'absolute', left: 0, right: 0, top: 0, zIndex: 0 }}
     >
       {children}
     </motion.div>
