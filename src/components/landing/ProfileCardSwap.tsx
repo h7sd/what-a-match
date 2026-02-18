@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import CardSwap, { Card } from '@/components/ui/CardSwap';
 import { Sparkles, Eye, AtSign } from 'lucide-react';
 import { OrbitingAvatar } from '@/components/profile/OrbitingAvatar';
+import { getBadgeImage, getBadgeIcon, isValidIconUrl } from '@/lib/badges';
 
 interface ProfileWithBadges {
   id: string;
@@ -251,28 +252,30 @@ function MiniProfileCard({ profile }: { profile: ProfileWithBadges }) {
 
             {/* Badges - matching ProfileCard style */}
             {profile.badges.length > 0 && (
-              <div className="inline-flex items-center justify-center -space-x-1 mb-4 px-2.5 py-1 rounded-full border border-white/10 bg-black/20 backdrop-blur-sm">
-                {profile.badges.slice(0, 5).map((badge) => (
-                  <div
-                    key={badge.id}
-                    className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-black/50"
-                    style={{
-                      backgroundColor: badge.color ? `${badge.color}30` : 'rgba(255,255,255,0.1)',
-                      boxShadow: badge.color ? `0 0 8px ${badge.color}40` : undefined
-                    }}
-                    title={badge.name}
-                  >
-                    {badge.icon_url && badge.icon_url.trim() !== '' ? (
-                      <img src={badge.icon_url} alt={badge.name} className="w-4 h-4" />
-                    ) : (
-                      <span className="text-xs" style={{ color: badge.color || '#fff' }}>
-                        {badge.name.charAt(0)}
-                      </span>
-                    )}
-                  </div>
-                ))}
+              <div className="inline-flex items-center justify-center gap-1 mb-4 px-2.5 py-1.5 rounded-full border border-white/10 bg-black/20 backdrop-blur-sm flex-wrap max-w-[200px]">
+                {profile.badges.slice(0, 5).map((badge) => {
+                  const badgeImage = isValidIconUrl(badge.icon_url) ? badge.icon_url : getBadgeImage(badge.name);
+                  const BadgeIcon = getBadgeIcon(badge.name);
+                  return (
+                    <div
+                      key={badge.id}
+                      className="w-7 h-7 rounded-full flex items-center justify-center border border-white/20"
+                      style={{
+                        backgroundColor: badge.color ? `${badge.color}25` : 'rgba(255,255,255,0.1)',
+                        boxShadow: badge.color ? `0 0 8px ${badge.color}50` : undefined
+                      }}
+                      title={badge.name}
+                    >
+                      {badgeImage ? (
+                        <img src={badgeImage} alt={badge.name} className="w-4 h-4 object-contain" />
+                      ) : (
+                        <BadgeIcon className="w-3.5 h-3.5" style={{ color: badge.color || '#fff' }} />
+                      )}
+                    </div>
+                  );
+                })}
                 {profile.badges.length > 5 && (
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-black/50 bg-white/5 text-xs text-muted-foreground">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center border border-white/20 bg-white/5 text-xs text-muted-foreground">
                     +{profile.badges.length - 5}
                   </div>
                 )}
