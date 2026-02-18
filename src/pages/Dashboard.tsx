@@ -1374,7 +1374,7 @@ export default function Dashboard() {
                           const { error } = await supabase
                             .from('profiles')
                             .update({ mc_username: val } as any)
-                            .eq('id', user.id);
+                            .eq('user_id', user.id);
                           if (error) throw error;
                           toast({ title: val ? 'Minecraft username saved' : 'Minecraft username removed' });
                         } catch {
