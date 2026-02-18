@@ -230,8 +230,8 @@ export default function Auth() {
   // Render Turnstile when step changes to login/signup or when reaching final step
   useEffect(() => {
     const shouldRender =
-      (step === 'login' && loginStepperStep === 4) ||
-      (step === 'signup' && signupStepperStep === 5);
+      (step === 'login' && loginStepperStep === 3) ||
+      (step === 'signup' && signupStepperStep === 4);
 
     if (shouldRender && !turnstileToken) {
       if (turnstileLoaded) {
@@ -902,15 +902,13 @@ export default function Auth() {
                 backButtonText="Previous"
                 isNextDisabled={
                   loginStepperStep === 1
-                    ? false
-                    : loginStepperStep === 2
                     ? !emailOrUsername
-                    : loginStepperStep === 3
+                    : loginStepperStep === 2
                     ? !password
                     : loading || !turnstileToken
                 }
                 onExternalNext={async () => {
-                  if (loginStepperStep < 4) {
+                  if (loginStepperStep < 3) {
                     setLoginStepperStep(loginStepperStep + 1);
                   } else {
                     await handleSubmit(new Event('submit') as any);
@@ -919,21 +917,19 @@ export default function Auth() {
                 onExternalBack={() => {
                   if (loginStepperStep > 1) {
                     setLoginStepperStep(loginStepperStep - 1);
-                    if (loginStepperStep === 4) {
+                    if (loginStepperStep === 3) {
                       setTurnstileToken(null);
                     }
                   }
                 }}
                 nextButtonProps={{
-                  children: loading && loginStepperStep === 4 ? (
+                  children: loading && loginStepperStep === 3 ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Signing in...
                     </>
-                  ) : loginStepperStep === 4 ? (
+                  ) : loginStepperStep === 3 ? (
                     'Sign in'
-                  ) : loginStepperStep === 1 ? (
-                    'Continue with Email'
                   ) : (
                     'Next'
                   )
@@ -972,19 +968,6 @@ export default function Auth() {
                       <div className="relative flex justify-center text-xs">
                         <span className="px-3 bg-black/60 text-white/40">or</span>
                       </div>
-                    </div>
-                  </div>
-                </Step>
-
-                <Step>
-                  <div className="space-y-4">
-                    <div className="text-center mb-6">
-                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
-                        Enter your credentials
-                      </h1>
-                      <p className="text-white/50 text-sm">
-                        Enter your email or username
-                      </p>
                     </div>
 
                     <div className="space-y-2">
@@ -1074,17 +1057,15 @@ export default function Auth() {
                 backButtonText="Previous"
                 isNextDisabled={
                   signupStepperStep === 1
-                    ? false
-                    : signupStepperStep === 2
                     ? !username
-                    : signupStepperStep === 3
+                    : signupStepperStep === 2
                     ? !email
-                    : signupStepperStep === 4
+                    : signupStepperStep === 3
                     ? !password || !getPasswordStrength(password).isStrong
                     : loading || !turnstileToken
                 }
                 onExternalNext={async () => {
-                  if (signupStepperStep < 5) {
+                  if (signupStepperStep < 4) {
                     setSignupStepperStep(signupStepperStep + 1);
                   } else {
                     await handleSubmit(new Event('submit') as any);
@@ -1093,21 +1074,19 @@ export default function Auth() {
                 onExternalBack={() => {
                   if (signupStepperStep > 1) {
                     setSignupStepperStep(signupStepperStep - 1);
-                    if (signupStepperStep === 5) {
+                    if (signupStepperStep === 4) {
                       setTurnstileToken(null);
                     }
                   }
                 }}
                 nextButtonProps={{
-                  children: loading && signupStepperStep === 5 ? (
+                  children: loading && signupStepperStep === 4 ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Creating...
                     </>
-                  ) : signupStepperStep === 5 ? (
+                  ) : signupStepperStep === 4 ? (
                     'Create account'
-                  ) : signupStepperStep === 1 ? (
-                    'Continue with Email'
                   ) : (
                     'Next'
                   )
@@ -1146,19 +1125,6 @@ export default function Auth() {
                       <div className="relative flex justify-center text-xs">
                         <span className="px-3 bg-black/60 text-white/40">or</span>
                       </div>
-                    </div>
-                  </div>
-                </Step>
-
-                <Step>
-                  <div className="space-y-4">
-                    <div className="text-center mb-6">
-                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
-                        Choose username
-                      </h1>
-                      <p className="text-white/50 text-sm">
-                        Pick a unique username for your profile
-                      </p>
                     </div>
 
                     <div className="space-y-2">
