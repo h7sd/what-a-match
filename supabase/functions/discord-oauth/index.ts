@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { action, redirect_uri, frontend_origin, mode } = await req.json();
+    const { action, redirect_uri, frontend_origin, mode, user_id } = await req.json();
 
     const DISCORD_CLIENT_ID = Deno.env.get('DISCORD_CLIENT_ID');
 
@@ -20,12 +20,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'get_auth_url') {
-      // Encode frontend_origin and mode in state for callback to use
-      const stateData = {
+      // Encode all context in state so it survives the redirect (sessionStorage can be lost)
+      const stateData: Record<string, string> = {
         nonce: crypto.randomUUID(),
         origin: frontend_origin || 'https://uservault.cc',
-        mode: mode || 'login'
+        mode: mode || 'login',
       };
+      if (user_id) stateData.user_id = user_id;
       const state = btoa(JSON.stringify(stateData));
       const scope = 'identify email guilds';
       

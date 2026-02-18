@@ -71,6 +71,7 @@ export function useDiscordOAuth() {
           redirect_uri: getRedirectUri(),
           frontend_origin: targetOrigin,
           mode: 'link',
+          user_id: userId,
         }
       });
 
@@ -101,7 +102,7 @@ export function useDiscordOAuth() {
     try {
       // The state is base64-encoded JSON from the backend, not from sessionStorage
       // Parse the state to extract nonce and origin for validation
-      let parsedState: { nonce?: string; origin?: string } = {};
+      let parsedState: { nonce?: string; origin?: string; mode?: string; user_id?: string } = {};
       try {
         const decodedState = atob(state);
         parsedState = JSON.parse(decodedState);
@@ -109,9 +110,9 @@ export function useDiscordOAuth() {
         console.warn('Could not parse state, proceeding anyway:', e);
       }
 
-      // Get mode from sessionStorage if available, default to login
-      const mode = sessionStorage.getItem('discord_oauth_mode') || 'login';
-      const userId = sessionStorage.getItem('discord_oauth_user_id');
+      // Read mode/user_id from state (reliable) with sessionStorage as fallback
+      let mode = parsedState.mode || sessionStorage.getItem('discord_oauth_mode') || 'login';
+      let userId = parsedState.user_id || sessionStorage.getItem('discord_oauth_user_id') || null;
 
       // Clear stored state
       sessionStorage.removeItem('discord_oauth_state');
@@ -130,7 +131,8 @@ export function useDiscordOAuth() {
       });
 
       if (error || data?.error) {
-        throw new Error(data?.error || error?.message || 'OAuth callback failed');
+        const msg = data?.message || data?.error || (error as any)?.message || 'OAuth callback failed';
+        throw new Error(msg);
       }
 
       // If login mode and we got an action link, use it to sign in

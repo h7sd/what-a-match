@@ -35,15 +35,15 @@ Deno.serve(async (req) => {
     let user_id: string | null = null;
     let frontend_origin: string = 'https://uservault.cc'; // Default
 
-    // Helper to extract origin from state
-    const extractStateData = (stateParam: string | null): { origin: string; mode: string } => {
-      const defaults = { origin: 'https://uservault.cc', mode: 'login' };
+    const extractStateData = (stateParam: string | null): { origin: string; mode: string; user_id: string | null } => {
+      const defaults = { origin: 'https://uservault.cc', mode: 'login', user_id: null };
       if (!stateParam) return defaults;
       try {
         const decoded = JSON.parse(atob(stateParam));
         return {
           origin: decoded.origin || defaults.origin,
           mode: decoded.mode || defaults.mode,
+          user_id: decoded.user_id || null,
         };
       } catch {
         return defaults;
@@ -104,8 +104,10 @@ Deno.serve(async (req) => {
       code = body.code;
       state = body.state;
       redirect_uri = body.redirect_uri;
-      mode = body.mode || 'login';
-      user_id = body.user_id;
+      // Read mode/user_id from state (survives redirects) with body as fallback
+      const stateData = extractStateData(state);
+      mode = body.mode || stateData.mode || 'login';
+      user_id = body.user_id || stateData.user_id;
     }
 
     if (!code) {
@@ -422,7 +424,7 @@ Deno.serve(async (req) => {
       return Response.redirect(errorUrl.toString(), 302);
     }
     
-    return new Response(JSON.stringify({ error: message, _version: VERSION }), {
+    return new Response(JSON.stringify({ message, error: message, _version: VERSION }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
