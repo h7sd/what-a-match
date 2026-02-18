@@ -13,9 +13,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "vite": "^5.4.19",
-    "@vitejs/plugin-react-swc": "^3.11.0",
-    "typescript": "^5.8.3",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -52,6 +49,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@supabase/supabase-js": "^2.91.1",
     "@tanstack/react-query": "^5.83.0",
+    "@vitejs/plugin-react-swc": "^3.11.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -71,11 +69,14 @@
     "react-resizable-panels": "^2.1.9",
     "react-router-dom": "^6.30.1",
     "recharts": "^2.15.4",
+    "skinview3d": "^3.4.1",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.128.0",
+    "typescript": "^5.8.3",
     "vaul": "^0.9.9",
+    "vite": "^5.4.19",
     "zod": "^3.25.76"
   },
   "devDependencies": {

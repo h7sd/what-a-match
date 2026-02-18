@@ -1,0 +1,109 @@
+import { useEffect, useRef, useState } from 'react';
+import { SkinViewer, WalkingAnimation } from 'skinview3d';
+import { Loader2 } from 'lucide-react';
+
+interface MinecraftSkinViewerProps {
+  mcUsername: string;
+  accentColor?: string;
+}
+
+export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: MinecraftSkinViewerProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const viewerRef = useRef<SkinViewer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!canvasRef.current || !mcUsername) return;
+
+    let destroyed = false;
+
+    const init = async () => {
+      setLoading(true);
+      setError(false);
+
+      try {
+        const skinUrl = `https://mc-heads.net/skin/${encodeURIComponent(mcUsername)}`;
+
+        if (viewerRef.current) {
+          viewerRef.current.dispose();
+          viewerRef.current = null;
+        }
+
+        const viewer = new SkinViewer({
+          canvas: canvasRef.current!,
+          width: 220,
+          height: 300,
+          skin: skinUrl,
+        });
+
+        viewer.autoRotate = true;
+        viewer.autoRotateSpeed = 0.8;
+        viewer.animation = new WalkingAnimation();
+        viewer.animation.speed = 0.8;
+        viewer.zoom = 0.85;
+        viewer.fov = 70;
+        viewer.globalLight.intensity = 3;
+        viewer.cameraLight.intensity = 1;
+
+        if (!destroyed) {
+          viewerRef.current = viewer;
+          setLoading(false);
+        } else {
+          viewer.dispose();
+        }
+      } catch {
+        if (!destroyed) {
+          setError(true);
+          setLoading(false);
+        }
+      }
+    };
+
+    init();
+
+    return () => {
+      destroyed = true;
+      if (viewerRef.current) {
+        viewerRef.current.dispose();
+        viewerRef.current = null;
+      }
+    };
+  }, [mcUsername]);
+
+  if (error) return null;
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div
+        className="relative rounded-2xl overflow-hidden"
+        style={{
+          background: 'rgba(0,0,0,0.35)',
+          border: `1px solid ${accentColor}33`,
+          backdropFilter: 'blur(12px)',
+          boxShadow: `0 0 24px ${accentColor}22`,
+        }}
+      >
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <Loader2 className="w-6 h-6 animate-spin" style={{ color: accentColor }} />
+          </div>
+        )}
+        <canvas
+          ref={canvasRef}
+          style={{
+            display: 'block',
+            opacity: loading ? 0 : 1,
+            transition: 'opacity 0.4s ease',
+          }}
+        />
+      </div>
+      <p
+        className="text-xs font-mono tracking-wider"
+        style={{ color: `${accentColor}bb` }}
+      >
+        {mcUsername}
+      </p>
+    </div>
+  );
+}
