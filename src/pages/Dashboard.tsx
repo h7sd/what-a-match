@@ -39,6 +39,7 @@ import {
   Crown,
   ShoppingBag,
   FileText,
+  Sword,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -207,6 +208,10 @@ export default function Dashboard() {
   const [glowBadges, setGlowBadges] = useState(false);
   const [iconOnlyLinks, setIconOnlyLinks] = useState(false);
   const [iconLinksOpacity, setIconLinksOpacity] = useState(100);
+
+  // Minecraft username state
+  const [mcUsername, setMcUsername] = useState('');
+  const [isSavingMc, setIsSavingMc] = useState(false);
 
   // Discord Card customization
   const [discordCardStyle, setDiscordCardStyle] = useState('glass');
@@ -464,6 +469,7 @@ export default function Dashboard() {
       // Global badge color settings
       setUseGlobalBadgeColor((profile as any).use_global_badge_color ?? false);
       setGlobalBadgeColor((profile as any).global_badge_color || '#8B5CF6');
+      setMcUsername((profile as any).mc_username || '');
       const config = profile.effects_config as Record<string, any> || {};
       setEffects({
         sparkles: config.sparkles ?? false,
@@ -1344,6 +1350,47 @@ export default function Dashboard() {
             {/* Links Tab */}
             {activeTab === 'links' && (
               <div className="space-y-6 max-w-4xl">
+                {/* Minecraft Username */}
+                <div className="glass-card p-6 space-y-3">
+                  <h3 className="font-semibold text-sm">Minecraft Username (IGN)</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-secondary/30 border border-border">
+                      <Sword className="w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={mcUsername}
+                        onChange={(e) => setMcUsername(e.target.value)}
+                        className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
+                        placeholder="YourMinecraftName"
+                        maxLength={16}
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        if (!user?.id) return;
+                        setIsSavingMc(true);
+                        try {
+                          const val = mcUsername.trim() || null;
+                          const { error } = await supabase
+                            .from('profiles')
+                            .update({ mc_username: val } as any)
+                            .eq('id', user.id);
+                          if (error) throw error;
+                          toast({ title: val ? 'Minecraft username saved' : 'Minecraft username removed' });
+                        } catch {
+                          toast({ title: 'Failed to save', variant: 'destructive' });
+                        } finally {
+                          setIsSavingMc(false);
+                        }
+                      }}
+                      disabled={isSavingMc}
+                    >
+                      {isSavingMc ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Shows a live 3D skin on your profile page</p>
+                </div>
+
                 <div className="glass-card p-6">
                   <SocialLinksGrid
                     existingLinks={socialLinks.map(l => ({ platform: l.platform }))}

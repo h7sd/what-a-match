@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   User, Mail, Shield, Key, LogOut, Loader2, Eye, EyeOff,
   Languages, MessageSquare, RefreshCw, Lock, ShieldCheck, ShieldOff,
-  Trash2, AlertTriangle, Hash, Sword
+  Trash2, AlertTriangle, Hash
 } from 'lucide-react';
 import { FaDiscord } from 'react-icons/fa6';
 import { Button } from '@/components/ui/button';
@@ -129,9 +129,6 @@ export function AccountSettings({ profile, onUpdateUsername, onSaveDisplayName, 
   const [discordIntegration, setDiscordIntegration] = useState<any>(null);
   const { initiateDiscordLink, loading: discordLoading } = useDiscordOAuth();
 
-  // Minecraft username state
-  const [mcUsername, setMcUsername] = useState('');
-  const [isSavingMc, setIsSavingMc] = useState(false);
 
   // Email Change State
   const [showEmailChangeDialog, setShowEmailChangeDialog] = useState(false);
@@ -156,17 +153,6 @@ export function AccountSettings({ profile, onUpdateUsername, onSaveDisplayName, 
     setAliasUsername(profile?.alias_username || '');
   }, [profile?.alias_username]);
 
-  useEffect(() => {
-    if (!user?.id) return;
-    supabase
-      .from('profiles')
-      .select('mc_username')
-      .eq('id', user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setMcUsername(data.mc_username || '');
-      });
-  }, [user?.id]);
 
   // Live alias availability check (debounced) - for redirect alias
   useEffect(() => {
@@ -716,47 +702,6 @@ export function AccountSettings({ profile, onUpdateUsername, onSaveDisplayName, 
               )}
             </div>
             
-          </div>
-
-          {/* Minecraft Username */}
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Minecraft Username (IGN)</label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-secondary/30 border border-border">
-                <Sword className="w-4 h-4 text-muted-foreground" />
-                <Input
-                  value={mcUsername}
-                  onChange={(e) => setMcUsername(e.target.value)}
-                  className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
-                  placeholder="YourMinecraftName"
-                  maxLength={16}
-                />
-              </div>
-              <Button
-                size="sm"
-                onClick={async () => {
-                  if (!user?.id) return;
-                  setIsSavingMc(true);
-                  try {
-                    const val = mcUsername.trim() || null;
-                    const { error } = await supabase
-                      .from('profiles')
-                      .update({ mc_username: val })
-                      .eq('id', user.id);
-                    if (error) throw error;
-                    toast({ title: val ? 'Minecraft username saved' : 'Minecraft username removed' });
-                  } catch {
-                    toast({ title: 'Failed to save', variant: 'destructive' });
-                  } finally {
-                    setIsSavingMc(false);
-                  }
-                }}
-                disabled={isSavingMc}
-              >
-                {isSavingMc ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">Shows a live 3D skin on your profile page</p>
           </div>
 
           {/* Username Request - to take over another user's username */}
