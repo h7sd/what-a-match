@@ -31,8 +31,8 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
 
     const viewer = new SkinViewer({
       canvas: canvasRef.current,
-      width: 320,
-      height: 480,
+      width: 380,
+      height: 560,
     });
 
     viewer.autoRotate = true;
@@ -71,8 +71,8 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
       <div
         className="relative rounded-2xl overflow-hidden"
         style={{
-          width: 320,
-          height: 480,
+          width: 380,
+          height: 560,
           background: 'transparent',
         }}
       >
