@@ -677,13 +677,12 @@ export default function Auth() {
         return;
       }
 
-      if (signUpData?.user) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        await supabase
-          .from('profiles')
-          .update({ email_verified: true })
-          .eq('user_id', signUpData.user.id);
+      const { error: signInError } = await signIn(email, password);
+
+      if (signInError) {
+        toast({ title: 'Account created!', description: 'Please log in.' });
+        navigate('/auth');
+        return;
       }
 
       toast({ title: 'Account created!', description: 'Welcome to UserVault!' });
