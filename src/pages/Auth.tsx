@@ -72,6 +72,7 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [usernameAvailability, setUsernameAvailability] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [verificationCode, setVerificationCode] = useState('');
   const [mfaCode, setMfaCode] = useState('');
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
@@ -157,6 +158,34 @@ export default function Auth() {
     
     checkAuthAndMfa();
   }, [user, mfaChallenge, step, mfaJustCompleted, navigate, toast, searchParams]);
+
+  // Debounced username availability check
+  useEffect(() => {
+    if (step !== 'signup') return;
+    const trimmed = username.trim();
+    if (trimmed.length < 1) {
+      setUsernameAvailability('idle');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmed) || trimmed.length > 20) {
+      setUsernameAvailability('idle');
+      return;
+    }
+    setUsernameAvailability('checking');
+    const t = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.rpc('check_username_available', { p_username: trimmed.toLowerCase() });
+        if (error) {
+          setUsernameAvailability('idle');
+          return;
+        }
+        setUsernameAvailability(data ? 'available' : 'taken');
+      } catch {
+        setUsernameAvailability('idle');
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [username, step]);
 
   // Load Turnstile script
   useEffect(() => {
@@ -1131,10 +1160,23 @@ export default function Auth() {
                         placeholder="cooluser"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
+                        className={`h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300 ${usernameAvailability === 'available' ? 'border-green-500/50' : usernameAvailability === 'taken' ? 'border-red-500/50' : ''}`}
                       />
                       {errors.username && (
                         <p className="text-sm text-red-400">{errors.username}</p>
+                      )}
+                      {!errors.username && usernameAvailability === 'checking' && (
+                        <p className="text-sm text-white/40 flex items-center gap-1">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Checking...
+                        </p>
+                      )}
+                      {!errors.username && usernameAvailability === 'available' && (
+                        <p className="text-sm text-green-400 flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Username is available
+                        </p>
+                      )}
+                      {!errors.username && usernameAvailability === 'taken' && (
+                        <p className="text-sm text-red-400">Username is already taken</p>
                       )}
                     </div>
 
