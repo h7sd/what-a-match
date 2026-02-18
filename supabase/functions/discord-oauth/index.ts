@@ -11,19 +11,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { action, redirect_uri, frontend_origin } = await req.json();
-    
+    const { action, redirect_uri, frontend_origin, mode } = await req.json();
+
     const DISCORD_CLIENT_ID = Deno.env.get('DISCORD_CLIENT_ID');
-    
+
     if (!DISCORD_CLIENT_ID) {
       throw new Error('Discord Client ID not configured');
     }
 
     if (action === 'get_auth_url') {
-      // Encode frontend_origin in state for callback to use
+      // Encode frontend_origin and mode in state for callback to use
       const stateData = {
         nonce: crypto.randomUUID(),
-        origin: frontend_origin || 'https://uservault.cc'
+        origin: frontend_origin || 'https://uservault.cc',
+        mode: mode || 'login'
       };
       const state = btoa(JSON.stringify(stateData));
       const scope = 'identify email guilds';

@@ -32,6 +32,7 @@ const Cases = lazy(() => import("./pages/Cases"));
 const PublishBookmarklet = lazy(() => import("./pages/PublishBookmarklet"));
 const SecretDatabaseViewer = lazy(() => import("./pages/SecretDatabaseViewer"));
 const DiscordOAuthCallback = lazy(() => import("./pages/DiscordOAuthCallback"));
+const DiscordLinkCallback = lazy(() => import("./pages/DiscordLinkCallback"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 
 const queryClient = new QueryClient();
@@ -194,6 +195,7 @@ function MaintenanceRouter() {
               path="/functions/v1/discord-oauth-callback"
               element={<DiscordOAuthCallback />}
             />
+            <Route path="/discord-link-callback" element={<DiscordLinkCallback />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/cases" element={<Cases />} />
@@ -288,6 +290,7 @@ const App = () => {
                   path="/functions/v1/discord-oauth-callback"
                   element={<DiscordOAuthCallback />}
                 />
+                <Route path="/discord-link-callback" element={<DiscordLinkCallback />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/cases" element={<Cases />} />

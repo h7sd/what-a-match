@@ -36,13 +36,17 @@ Deno.serve(async (req) => {
     let frontend_origin: string = 'https://uservault.cc'; // Default
 
     // Helper to extract origin from state
-    const extractOriginFromState = (stateParam: string | null): string => {
-      if (!stateParam) return 'https://uservault.cc';
+    const extractStateData = (stateParam: string | null): { origin: string; mode: string } => {
+      const defaults = { origin: 'https://uservault.cc', mode: 'login' };
+      if (!stateParam) return defaults;
       try {
         const decoded = JSON.parse(atob(stateParam));
-        return decoded.origin || 'https://uservault.cc';
+        return {
+          origin: decoded.origin || defaults.origin,
+          mode: decoded.mode || defaults.mode,
+        };
       } catch {
-        return 'https://uservault.cc';
+        return defaults;
       }
     };
 
@@ -50,15 +54,15 @@ Deno.serve(async (req) => {
       // Redirect callback from Discord
       code = url.searchParams.get('code');
       state = url.searchParams.get('state');
-      
-      // Extract origin from state
-      frontend_origin = extractOriginFromState(state);
-      console.log('GET callback - redirecting to:', frontend_origin);
-      
-      // IMPORTANT: return an HTML redirect page instead of a 302.
-      // Some proxies (e.g. Worker fetch with redirect: "follow") can swallow 302s and
-      // return the frontend HTML under the proxy origin, which breaks asset loading.
-      const redirectUrl = new URL('/auth', frontend_origin);
+
+      const stateData = extractStateData(state);
+      frontend_origin = stateData.origin;
+      const callbackMode = stateData.mode;
+      console.log('GET callback - mode:', callbackMode, 'redirecting to:', frontend_origin);
+
+      // Link mode: go to dedicated callback page so logged-in users never see the login screen
+      const callbackPath = callbackMode === 'link' ? '/discord-link-callback' : '/auth';
+      const redirectUrl = new URL(callbackPath, frontend_origin);
       if (code && state) {
         redirectUrl.searchParams.set('discord_code', code);
         redirectUrl.searchParams.set('discord_state', state);

@@ -66,10 +66,11 @@ export function useDiscordOAuth() {
       // Redirect back to the currently running app (preview or production)
       const targetOrigin = window.location.origin;
       const { data, error } = await supabase.functions.invoke('discord-oauth', {
-        body: { 
+        body: {
           action: 'get_auth_url',
           redirect_uri: getRedirectUri(),
-          frontend_origin: targetOrigin
+          frontend_origin: targetOrigin,
+          mode: 'link',
         }
       });
 
