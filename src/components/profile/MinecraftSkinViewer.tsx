@@ -33,8 +33,10 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
       canvas: canvasRef.current,
       width: 380,
       height: 560,
+      alpha: true,
     });
 
+    viewer.renderer.setClearColor(0x000000, 0);
     viewer.autoRotate = true;
     viewer.autoRotateSpeed = 0.8;
     viewer.animation = new WalkingAnimation();
