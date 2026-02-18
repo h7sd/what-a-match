@@ -505,13 +505,15 @@ export default function UserProfile() {
           )}
           </div>
 
-          {/* Minecraft Skin Viewer - shown on the right when mc_username is set */}
+        </motion.div>
+
+          {/* Minecraft Skin Viewer - fixed on the left side */}
           {(profile as any).mc_username && (
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: showStartScreen ? 0 : 1, x: showStartScreen ? 20 : 0 }}
+              initial={{ opacity: 0, x: -40 }}
+              animate={{ opacity: showStartScreen ? 0 : 1, x: showStartScreen ? -40 : 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="flex-shrink-0"
+              className="fixed left-4 top-1/2 -translate-y-1/2 z-40 hidden lg:block"
             >
               <MinecraftSkinViewer
                 mcUsername={(profile as any).mc_username}
@@ -519,7 +521,6 @@ export default function UserProfile() {
               />
             </motion.div>
           )}
-        </motion.div>
 
         {/* Volume control - fixed top right, below any banners */}
         {!showStartScreen && profile.music_url && (profile.show_volume_control ?? true) && (
