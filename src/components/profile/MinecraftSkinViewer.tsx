@@ -26,7 +26,8 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
       viewerRef.current = null;
     }
 
-    const skinUrl = `https://mc-heads.net/skin/${encodeURIComponent(mcUsername)}`;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const skinUrl = `${supabaseUrl}/functions/v1/mc-skin-proxy?username=${encodeURIComponent(mcUsername)}`;
 
     const viewer = new SkinViewer({
       canvas: canvasRef.current,
@@ -58,6 +59,7 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
       }
     };
     img.src = skinUrl;
+    img.crossOrigin = undefined;
 
     return () => {
       destroyed = true;
