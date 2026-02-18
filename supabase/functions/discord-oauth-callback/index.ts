@@ -417,15 +417,15 @@ Deno.serve(async (req) => {
   } catch (error: unknown) {
     console.error('Discord OAuth callback error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    
+
     if (req.method === 'GET') {
       const errorUrl = new URL('/auth', url.origin);
       errorUrl.searchParams.set('error', message);
       return Response.redirect(errorUrl.toString(), 302);
     }
-    
-    return new Response(JSON.stringify({ message, error: message, _version: VERSION }), {
-      status: 500,
+
+    return new Response(JSON.stringify({ success: false, message, error: message, _version: VERSION }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

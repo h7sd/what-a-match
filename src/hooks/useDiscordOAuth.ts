@@ -130,9 +130,19 @@ export function useDiscordOAuth() {
         }
       });
 
-      if (error || data?.error) {
-        const msg = data?.message || data?.error || (error as any)?.message || 'OAuth callback failed';
-        throw new Error(msg);
+      if (error) {
+        let errorMessage = (error as any)?.message || 'OAuth callback failed';
+        try {
+          const errorBody = await (error as any).context?.json?.();
+          if (errorBody) {
+            errorMessage = errorBody.message || errorBody.error || errorMessage;
+          }
+        } catch {}
+        throw new Error(errorMessage);
+      }
+
+      if (data?.error) {
+        throw new Error(data.message || data.error || 'OAuth callback failed');
       }
 
       // If login mode and we got an action link, use it to sign in
