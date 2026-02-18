@@ -7,11 +7,33 @@ interface MinecraftSkinViewerProps {
   accentColor?: string;
 }
 
+const DESKTOP_WIDTH = 380;
+const DESKTOP_HEIGHT = 560;
+const MOBILE_WIDTH = 220;
+const MOBILE_HEIGHT = 320;
+
+function getIsMobile() {
+  return window.innerWidth < 640;
+}
+
 export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: MinecraftSkinViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewerRef = useRef<SkinViewer | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [isMobile, setIsMobile] = useState(getIsMobile);
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(getIsMobile());
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const width = isMobile ? MOBILE_WIDTH : DESKTOP_WIDTH;
+  const height = isMobile ? MOBILE_HEIGHT : DESKTOP_HEIGHT;
 
   useEffect(() => {
     if (!canvasRef.current || !mcUsername) return;
@@ -31,8 +53,8 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
 
     const viewer = new SkinViewer({
       canvas: canvasRef.current,
-      width: 380,
-      height: 560,
+      width,
+      height,
       alpha: true,
     });
 
@@ -64,17 +86,18 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
         viewerRef.current = null;
       }
     };
-  }, [mcUsername]);
+  }, [mcUsername, width, height]);
 
   if (error) return null;
 
   return (
     <div className="flex flex-col items-center gap-2">
       <div
+        ref={containerRef}
         className="relative rounded-2xl overflow-hidden"
         style={{
-          width: 380,
-          height: 560,
+          width,
+          height,
           background: 'transparent',
         }}
       >
