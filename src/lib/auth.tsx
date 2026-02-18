@@ -291,21 +291,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) return { error };
 
-    // Create profile after signup
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: data.user.id,
-          username: username.toLowerCase(),
-          display_name: username,
-        });
-
-      if (profileError) {
-        return { error: profileError };
-      }
-    }
-
     return { error: null, data: { user: data.user } };
   };
 
