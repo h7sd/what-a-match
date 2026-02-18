@@ -130,10 +130,24 @@ export function UserBanManager() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        let errorMessage = error.message || 'Error banning user';
+        try {
+          const context = (error as any).context;
+          if (context) {
+            const body = await context.json();
+            errorMessage = body?.error || errorMessage;
+          }
+        } catch {}
+        throw new Error(errorMessage);
+      }
 
-      toast({ 
-        title: 'User Banned', 
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: 'User Banned',
         description: `${selectedUser.username} has been banned and notified via email.`,
       });
 
@@ -142,7 +156,7 @@ export function UserBanManager() {
       setBanReason('');
       setSearchQuery('');
       setSearchResults([]);
-      loadBannedUsers(); // Refresh the banned users list
+      loadBannedUsers();
     } catch (error: any) {
       console.error('Error banning user:', error);
       toast({ title: error.message || 'Error banning user', variant: 'destructive' });
@@ -166,14 +180,26 @@ export function UserBanManager() {
 
     setUnbanningId(selectedBanRecord.user_id);
     try {
-      const { error } = await supabase.functions.invoke('unban-user', {
+      const { data, error } = await supabase.functions.invoke('unban-user', {
         body: { odst4jf490: selectedBanRecord.user_id }
       });
 
-      if (error) throw error;
+      if (error) {
+        let errorMessage = error.message || 'Error unbanning user';
+        try {
+          const context = (error as any).context;
+          if (context) {
+            const body = await context.json();
+            errorMessage = body?.error || errorMessage;
+          }
+        } catch {}
+        throw new Error(errorMessage);
+      }
 
-      toast({ 
-        title: 'User Unbanned', 
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: 'User Unbanned',
         description: `${selectedBanRecord.username} has been unbanned.`,
       });
 
@@ -193,7 +219,7 @@ export function UserBanManager() {
 
     setIsDeletingAccount(true);
     try {
-      const { error } = await supabase.functions.invoke('admin-delete-account', {
+      const { data, error } = await supabase.functions.invoke('admin-delete-account', {
         body: {
           userId: selectedBanRecord.user_id,
           username: selectedBanRecord.username,
@@ -201,10 +227,22 @@ export function UserBanManager() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        let errorMessage = error.message || 'Error deleting account';
+        try {
+          const context = (error as any).context;
+          if (context) {
+            const body = await context.json();
+            errorMessage = body?.error || errorMessage;
+          }
+        } catch {}
+        throw new Error(errorMessage);
+      }
 
-      toast({ 
-        title: 'Account Deleted', 
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: 'Account Deleted',
         description: `${selectedBanRecord.username}'s account has been permanently deleted.`,
       });
 
