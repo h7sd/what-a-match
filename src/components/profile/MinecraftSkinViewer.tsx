@@ -33,7 +33,6 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
       canvas: canvasRef.current,
       width: 220,
       height: 300,
-      skin: skinUrl,
     });
 
     viewer.autoRotate = true;
@@ -47,19 +46,14 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
 
     viewerRef.current = viewer;
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
+    viewer.loadSkin(skinUrl).then(() => {
       if (!destroyed) setLoading(false);
-    };
-    img.onerror = () => {
+    }).catch(() => {
       if (!destroyed) {
         setError(true);
         setLoading(false);
       }
-    };
-    img.src = skinUrl;
-    img.crossOrigin = undefined;
+    });
 
     return () => {
       destroyed = true;

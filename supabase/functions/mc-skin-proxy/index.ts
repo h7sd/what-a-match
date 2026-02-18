@@ -6,6 +6,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+async function fetchWithFallback(username: string): Promise<Response | null> {
+  const sources = [
+    `https://mc-heads.net/skin/${encodeURIComponent(username)}`,
+    `https://crafatar.com/skins/${encodeURIComponent(username)}`,
+    `https://minotar.net/skin/${encodeURIComponent(username)}`,
+  ];
+
+  for (const url of sources) {
+    try {
+      const response = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; UserVault/1.0)" },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (response.ok) return response;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -22,16 +43,12 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const skinUrl = `https://mc-heads.net/skin/${encodeURIComponent(username)}`;
+    const response = await fetchWithFallback(username);
 
-    const response = await fetch(skinUrl, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; UserVault/1.0)" },
-    });
-
-    if (!response.ok) {
-      return new Response(null, {
-        status: response.status,
-        headers: corsHeaders,
+    if (!response) {
+      return new Response(JSON.stringify({ error: "Skin not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
