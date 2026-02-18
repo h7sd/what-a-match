@@ -265,6 +265,13 @@ Deno.serve(async (req) => {
         console.log('Existing user found by Discord ID, signing in...');
         userId = discordIntegration.user_id;
 
+        // Get the actual email of the linked account (NOT Discord email)
+        const { data: linkedUserData } = await supabase.auth.admin.getUserById(userId);
+        if (linkedUserData?.user?.email) {
+          // Use the real account email so the magic link signs into the correct account
+          discordUser.email = linkedUserData.user.email;
+        }
+
         // Update Discord integration with latest info
         await supabase
           .from('discord_integrations')
