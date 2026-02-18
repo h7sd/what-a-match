@@ -18,49 +18,46 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
 
     let destroyed = false;
 
-    const init = async () => {
-      setLoading(true);
-      setError(false);
+    setLoading(true);
+    setError(false);
 
-      try {
-        const skinUrl = `https://mc-heads.net/skin/${encodeURIComponent(mcUsername)}`;
+    if (viewerRef.current) {
+      viewerRef.current.dispose();
+      viewerRef.current = null;
+    }
 
-        if (viewerRef.current) {
-          viewerRef.current.dispose();
-          viewerRef.current = null;
-        }
+    const skinUrl = `https://mc-heads.net/skin/${encodeURIComponent(mcUsername)}`;
 
-        const viewer = new SkinViewer({
-          canvas: canvasRef.current!,
-          width: 220,
-          height: 300,
-          skin: skinUrl,
-        });
+    const viewer = new SkinViewer({
+      canvas: canvasRef.current,
+      width: 220,
+      height: 300,
+      skin: skinUrl,
+    });
 
-        viewer.autoRotate = true;
-        viewer.autoRotateSpeed = 0.8;
-        viewer.animation = new WalkingAnimation();
-        viewer.animation.speed = 0.8;
-        viewer.zoom = 0.85;
-        viewer.fov = 70;
-        viewer.globalLight.intensity = 3;
-        viewer.cameraLight.intensity = 1;
+    viewer.autoRotate = true;
+    viewer.autoRotateSpeed = 0.8;
+    viewer.animation = new WalkingAnimation();
+    (viewer.animation as WalkingAnimation).speed = 0.8;
+    viewer.zoom = 0.85;
+    viewer.fov = 70;
+    viewer.globalLight.intensity = 3;
+    viewer.cameraLight.intensity = 1;
 
-        if (!destroyed) {
-          viewerRef.current = viewer;
-          setLoading(false);
-        } else {
-          viewer.dispose();
-        }
-      } catch {
-        if (!destroyed) {
-          setError(true);
-          setLoading(false);
-        }
+    viewerRef.current = viewer;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (!destroyed) setLoading(false);
+    };
+    img.onerror = () => {
+      if (!destroyed) {
+        setError(true);
+        setLoading(false);
       }
     };
-
-    init();
+    img.src = skinUrl;
 
     return () => {
       destroyed = true;
@@ -78,6 +75,8 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
       <div
         className="relative rounded-2xl overflow-hidden"
         style={{
+          width: 220,
+          height: 300,
           background: 'rgba(0,0,0,0.35)',
           border: `1px solid ${accentColor}33`,
           backdropFilter: 'blur(12px)',
@@ -94,7 +93,7 @@ export function MinecraftSkinViewer({ mcUsername, accentColor = '#6366f1' }: Min
           style={{
             display: 'block',
             opacity: loading ? 0 : 1,
-            transition: 'opacity 0.4s ease',
+            transition: 'opacity 0.5s ease',
           }}
         />
       </div>
