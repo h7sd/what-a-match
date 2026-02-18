@@ -231,7 +231,7 @@ export default function Auth() {
   useEffect(() => {
     const shouldRender =
       (step === 'login' && loginStepperStep === 3) ||
-      (step === 'signup' && signupStepperStep === 3);
+      (step === 'signup' && signupStepperStep === 2);
 
     if (shouldRender && !turnstileToken) {
       if (turnstileLoaded) {
@@ -1058,12 +1058,10 @@ export default function Auth() {
                 isNextDisabled={
                   signupStepperStep === 1
                     ? !username || !email
-                    : signupStepperStep === 2
-                    ? !password || !getPasswordStrength(password).isStrong
-                    : loading || !turnstileToken
+                    : loading || !password || !getPasswordStrength(password).isStrong || !turnstileToken
                 }
                 onExternalNext={async () => {
-                  if (signupStepperStep < 3) {
+                  if (signupStepperStep < 2) {
                     setSignupStepperStep(signupStepperStep + 1);
                   } else {
                     await handleSubmit(new Event('submit') as any);
@@ -1072,18 +1070,16 @@ export default function Auth() {
                 onExternalBack={() => {
                   if (signupStepperStep > 1) {
                     setSignupStepperStep(signupStepperStep - 1);
-                    if (signupStepperStep === 3) {
-                      setTurnstileToken(null);
-                    }
+                    setTurnstileToken(null);
                   }
                 }}
                 nextButtonProps={{
-                  children: loading && signupStepperStep === 3 ? (
+                  children: loading && signupStepperStep === 2 ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Creating...
                     </>
-                  ) : signupStepperStep === 3 ? (
+                  ) : signupStepperStep === 2 ? (
                     'Create account'
                   ) : (
                     'Next'
@@ -1188,19 +1184,6 @@ export default function Auth() {
                         <p className="text-sm text-destructive">{errors.password}</p>
                       )}
                       <PasswordStrengthIndicator password={password} />
-                    </div>
-                  </div>
-                </Step>
-
-                <Step>
-                  <div className="space-y-4">
-                    <div className="text-center mb-6">
-                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
-                        Security check
-                      </h1>
-                      <p className="text-white/50 text-sm">
-                        Complete the verification to continue
-                      </p>
                     </div>
 
                     <div className="flex justify-center py-2" style={{ minHeight: '74px' }}>
