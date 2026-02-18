@@ -231,7 +231,7 @@ export default function Auth() {
   useEffect(() => {
     const shouldRender =
       (step === 'login' && loginStepperStep === 3) ||
-      (step === 'signup' && signupStepperStep === 4);
+      (step === 'signup' && signupStepperStep === 3);
 
     if (shouldRender && !turnstileToken) {
       if (turnstileLoaded) {
@@ -1057,15 +1057,13 @@ export default function Auth() {
                 backButtonText="Previous"
                 isNextDisabled={
                   signupStepperStep === 1
-                    ? !username
+                    ? !username || !email
                     : signupStepperStep === 2
-                    ? !email
-                    : signupStepperStep === 3
                     ? !password || !getPasswordStrength(password).isStrong
                     : loading || !turnstileToken
                 }
                 onExternalNext={async () => {
-                  if (signupStepperStep < 4) {
+                  if (signupStepperStep < 3) {
                     setSignupStepperStep(signupStepperStep + 1);
                   } else {
                     await handleSubmit(new Event('submit') as any);
@@ -1074,18 +1072,18 @@ export default function Auth() {
                 onExternalBack={() => {
                   if (signupStepperStep > 1) {
                     setSignupStepperStep(signupStepperStep - 1);
-                    if (signupStepperStep === 4) {
+                    if (signupStepperStep === 3) {
                       setTurnstileToken(null);
                     }
                   }
                 }}
                 nextButtonProps={{
-                  children: loading && signupStepperStep === 4 ? (
+                  children: loading && signupStepperStep === 3 ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Creating...
                     </>
-                  ) : signupStepperStep === 4 ? (
+                  ) : signupStepperStep === 3 ? (
                     'Create account'
                   ) : (
                     'Next'
@@ -1142,19 +1140,6 @@ export default function Auth() {
                       {errors.username && (
                         <p className="text-sm text-red-400">{errors.username}</p>
                       )}
-                    </div>
-                  </div>
-                </Step>
-
-                <Step>
-                  <div className="space-y-4">
-                    <div className="text-center mb-6">
-                      <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient mb-2">
-                        Enter email
-                      </h1>
-                      <p className="text-white/50 text-sm">
-                        We'll send you a verification code
-                      </p>
                     </div>
 
                     <div className="space-y-2">
