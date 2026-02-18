@@ -4,9 +4,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-function errorResponse(message: string, status = 500) {
-  return new Response(JSON.stringify({ message, error: message }), {
-    status,
+function okResponse(body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 }
@@ -23,15 +23,16 @@ Deno.serve(async (req) => {
     const DISCORD_CLIENT_ID = Deno.env.get('DISCORD_CLIENT_ID');
 
     if (!DISCORD_CLIENT_ID) {
-      return errorResponse('Discord Client ID not configured (set DISCORD_CLIENT_ID secret)');
+      console.error('DISCORD_CLIENT_ID secret is not set');
+      return okResponse({ error: 'Discord ist nicht konfiguriert. Bitte DISCORD_CLIENT_ID Secret setzen.' });
     }
 
     if (action !== 'get_auth_url') {
-      return errorResponse('Invalid action: expected get_auth_url', 400);
+      return okResponse({ error: 'Invalid action: expected get_auth_url' });
     }
 
     if (!redirect_uri) {
-      return errorResponse('redirect_uri is required', 400);
+      return okResponse({ error: 'redirect_uri is required' });
     }
 
     const stateData: Record<string, string> = {
@@ -54,13 +55,11 @@ Deno.serve(async (req) => {
 
     console.log('Discord OAuth URL generated, mode:', mode || 'login', 'origin:', stateData.origin);
 
-    return new Response(JSON.stringify({ url: authUrl.toString(), state }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return okResponse({ url: authUrl.toString(), state });
 
   } catch (error: unknown) {
     console.error('Discord OAuth error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return errorResponse(message);
+    return okResponse({ error: message });
   }
 });
