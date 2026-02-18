@@ -513,7 +513,8 @@ export default function UserProfile() {
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: showStartScreen ? 0 : 1, x: showStartScreen ? -40 : 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="fixed left-[calc(50%-600px)] top-1/2 -translate-y-1/2 z-40 hidden lg:block"
+              className="fixed z-40 hidden lg:block"
+              style={{ left: 'calc(50% - 680px)', top: 'calc(50% - 420px)' }}
             >
               <MinecraftSkinViewer
                 mcUsername={(profile as any).mc_username}
