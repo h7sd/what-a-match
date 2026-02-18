@@ -18,6 +18,9 @@ function useRandomProfiles() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url')
+        .not('avatar_url', 'is', null)
+        .neq('avatar_url', '')
+        .not('username', 'is', null)
         .limit(100);
       
       if (error) throw error;
