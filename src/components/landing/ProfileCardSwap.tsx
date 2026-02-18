@@ -58,35 +58,40 @@ function useRandomProfilesWithBadges() {
       // Shuffle and take 5
       const shuffled = profiles.sort(() => Math.random() - 0.5).slice(0, 5);
       
-      // Get badges for each profile
-      const profilesWithBadges: ProfileWithBadges[] = await Promise.all(
-        shuffled.map(async (profile) => {
-          const { data: userBadges } = await supabase
-            .from('user_badges')
-            .select(`
-              badge_id,
-              global_badges (
-                id,
-                name,
-                color,
-                icon_url
-              )
-            `)
-            .eq('user_id', profile.id)
-            .eq('is_enabled', true)
-            .order('display_order', { ascending: true })
-            .limit(6);
+      // Get badges for each profile via direct join
+      const userIds = shuffled.map(p => p.id);
+      const { data: allUserBadges } = await supabase
+        .from('user_badges')
+        .select('user_id, badge_id, display_order')
+        .in('user_id', userIds)
+        .eq('is_enabled', true);
 
-          const badges = (userBadges || [])
-            .map((ub: any) => ub.global_badges)
-            .filter(Boolean);
+      const badgeIds = [...new Set((allUserBadges || []).map(ub => ub.badge_id))];
 
-          return {
-            ...profile,
-            badges
-          };
-        })
-      );
+      let badgeDetails: Record<string, { id: string; name: string; color: string | null; icon_url: string | null }> = {};
+      if (badgeIds.length > 0) {
+        const { data: globalBadges } = await supabase
+          .from('global_badges')
+          .select('id, name, color, icon_url')
+          .in('id', badgeIds);
+
+        (globalBadges || []).forEach(b => {
+          badgeDetails[b.id] = b;
+        });
+      }
+
+      const profilesWithBadges: ProfileWithBadges[] = shuffled.map((profile) => {
+        const profileBadgeRows = (allUserBadges || [])
+          .filter(ub => ub.user_id === profile.id)
+          .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+          .slice(0, 6);
+
+        const badges = profileBadgeRows
+          .map(ub => badgeDetails[ub.badge_id])
+          .filter(Boolean);
+
+        return { ...profile, badges };
+      });
 
       return profilesWithBadges;
     },
