@@ -11,7 +11,10 @@ const SPOTIFY_CLIENT_ID = Deno.env.get("SPOTIFY_CLIENT_ID");
 const SPOTIFY_CLIENT_SECRET = Deno.env.get("SPOTIFY_CLIENT_SECRET");
 
 async function refreshAccessToken(refreshToken: string): Promise<{ access_token: string; expires_in: number } | null> {
-  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) return null;
+  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
+    console.error("[spotify-now-playing] Missing secrets: CLIENT_ID=", !!SPOTIFY_CLIENT_ID, "CLIENT_SECRET=", !!SPOTIFY_CLIENT_SECRET);
+    return null;
+  }
   const res = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
@@ -20,8 +23,14 @@ async function refreshAccessToken(refreshToken: string): Promise<{ access_token:
     },
     body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshToken }),
   });
-  if (!res.ok) return null;
-  return await res.json();
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error("[spotify-now-playing] Refresh failed:", res.status, body);
+    return null;
+  }
+  const json = await res.json();
+  console.log("[spotify-now-playing] Refreshed token, new expiry in", json.expires_in, "s");
+  return json;
 }
 
 Deno.serve(async (req: Request) => {
