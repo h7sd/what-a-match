@@ -532,7 +532,7 @@ export default function UserProfile() {
               animate={{ opacity: showStartScreen ? 0 : 1, x: showStartScreen ? 40 : 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
               className="fixed z-40 hidden lg:block"
-              style={{ right: 'calc(50% - 680px)', top: 'calc(50% - 200px)' }}
+              style={{ right: 'calc(50% - 680px)', top: 'calc(50% - 310px)' }}
             >
               <RobloxAvatarViewer
                 robloxUsername={(profile as any).roblox_username}

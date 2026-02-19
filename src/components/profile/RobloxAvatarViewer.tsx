@@ -47,13 +47,17 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
     };
   }, [robloxUsername]);
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+  const width = isMobile ? 220 : 380;
+  const height = isMobile ? 320 : 560;
+
   if (error) return null;
 
   return (
     <div className="flex flex-col items-center gap-2">
       <div
         className="relative rounded-2xl overflow-visible"
-        style={{ width: 180, height: 260 }}
+        style={{ width, height }}
       >
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -67,30 +71,30 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
             className="relative w-full h-full"
-            style={{ perspective: '600px' }}
+            style={{ perspective: '800px' }}
           >
             <motion.div
-              animate={{ rotateY: [0, 15, 0, -15, 0] }}
+              animate={{ rotateY: [0, 12, 0, -12, 0] }}
               transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
               style={{ transformStyle: 'preserve-3d' }}
-              className="w-full h-full"
+              className="w-full h-full flex items-center justify-center"
             >
               <div
-                className="absolute -inset-4 rounded-3xl blur-2xl opacity-30"
+                className="absolute inset-0 rounded-3xl blur-3xl opacity-25"
                 style={{ background: `radial-gradient(ellipse at center, ${accentColor}, transparent 70%)` }}
               />
               <img
                 src={imageUrl}
                 alt={robloxUsername}
-                className="w-full h-full object-contain relative z-10 drop-shadow-2xl"
-                style={{ filter: `drop-shadow(0 0 20px ${accentColor}40)` }}
+                className="w-full h-full object-contain relative z-10"
+                style={{ filter: `drop-shadow(0 8px 32px ${accentColor}50) drop-shadow(0 0 60px ${accentColor}20)` }}
               />
             </motion.div>
           </motion.div>
         )}
       </div>
 
-      {!loading && !error && (
+      {!loading && !error && imageUrl && (
         <p
           className="text-xs font-mono tracking-wider"
           style={{ color: `${accentColor}bb` }}
