@@ -482,14 +482,6 @@ export default function UserProfile() {
             </div>
           )}
 
-          {/* Spotify Now Playing Widget */}
-          {(profile as any).show_spotify_widget !== false && (
-            <SpotifyNowPlaying
-              userId={profile.id}
-              accentColor={accentColor}
-            />
-          )}
-
           {/* Social Links - respect visibility setting */}
           {(profile.show_links ?? true) && socialLinks.length > 0 && (
             <SocialLinks
@@ -532,7 +524,17 @@ export default function UserProfile() {
             </motion.div>
           )}
 
-        {/* Volume control - fixed top right, below any banners */}
+        {/* Spotify Now Playing Widget - fixed top right */}
+        {!showStartScreen && (profile as any).show_spotify_widget !== false && (
+          <div className="fixed top-4 right-4 z-50 w-72">
+            <SpotifyNowPlaying
+              userId={profile.id}
+              accentColor={accentColor}
+            />
+          </div>
+        )}
+
+        {/* Volume control - fixed top right, below Spotify widget */}
         {!showStartScreen && profile.music_url && (profile.show_volume_control ?? true) && (
           <div className="fixed top-32 right-4 z-50">
             <ElasticSlider

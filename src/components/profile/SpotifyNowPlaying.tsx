@@ -95,7 +95,7 @@ export function SpotifyNowPlaying({ userId, accentColor = '#1DB954' }: SpotifyNo
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -20, scale: 0.95 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="w-full max-w-sm mx-auto"
+        className="w-full"
       >
         <div
           className="relative overflow-hidden rounded-2xl border border-white/10 backdrop-blur-xl bg-black/50"
