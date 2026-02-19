@@ -139,10 +139,15 @@ export default {
     
     // Handle Spotify OAuth callback redirect
     if (pathname === "/api-proxy" && url.searchParams.get("spotify_callback") === "1") {
-      const spotifyParams = new URLSearchParams(url.search);
-      spotifyParams.set("action", "callback");
-      spotifyParams.delete("spotify_callback");
-      const targetUrl = `${SUPABASE_URL}/functions/v1/spotify-auth?${spotifyParams.toString()}`;
+      // Build params manually to avoid double-encoding issues with code/state
+      const code = url.searchParams.get("code");
+      const state = url.searchParams.get("state");
+      const error = url.searchParams.get("error");
+      const newParams = new URLSearchParams({ action: "callback" });
+      if (code) newParams.set("code", code);
+      if (state) newParams.set("state", state);
+      if (error) newParams.set("error", error);
+      const targetUrl = `${SUPABASE_URL}/functions/v1/spotify-auth?${newParams.toString()}`;
       try {
         // Use "manual" so we intercept the 302 from the edge function directly
         // instead of following it (which would fetch the HTML dashboard page)

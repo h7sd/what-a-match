@@ -97,14 +97,17 @@ Deno.serve(async (req: Request) => {
 
       let userId: string;
       try {
-        const parsed = JSON.parse(atob(state));
+        // state may arrive with spaces instead of + due to URL encoding - fix it
+        const fixedState = state.replace(/ /g, "+");
+        const parsed = JSON.parse(atob(fixedState));
         userId = parsed.userId;
         const age = Date.now() - parsed.ts;
         if (!userId || age > 10 * 60 * 1000) throw new Error("State expired");
-      } catch {
+      } catch (stateErr) {
+        console.error("State parse error:", stateErr, "raw state:", state);
         return new Response(null, {
           status: 302,
-          headers: { Location: `${appUrl}/dashboard?spotify=error` },
+          headers: { Location: `${appUrl}/dashboard?spotify=error&reason=state_parse` },
         });
       }
 
