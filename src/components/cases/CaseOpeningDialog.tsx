@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useOpenCase } from '@/hooks/useCases';
+import { BadgeIcon } from './BadgeIcon';
 import { formatUC } from '@/lib/uc';
 import { cn } from '@/lib/utils';
 
@@ -266,12 +267,8 @@ export function CaseOpeningDialog({ caseId, open, onOpenChange }: CaseOpeningDia
                     state === 'complete' && `shadow-[0_0_50px] ${colors.glow}`
                   )}
                 >
-                  {wonItem.item_type === 'badge' && wonItem.badge?.icon_url && wonItem.badge.icon_url.trim() !== '' ? (
-                    <img
-                      src={wonItem.badge.icon_url}
-                      alt={wonItem.badge.name}
-                      className="w-32 h-32 object-contain"
-                    />
+                  {wonItem.item_type === 'badge' && wonItem.badge?.icon_url ? (
+                    <BadgeIcon iconUrl={wonItem.badge.icon_url} name={wonItem.badge.name} className="w-32 h-32 object-contain" />
                   ) : wonItem.item_type === 'coins' ? (
                     <Coins className="w-32 h-32 text-amber-500" />
                   ) : (
@@ -300,6 +297,8 @@ export function CaseOpeningDialog({ caseId, open, onOpenChange }: CaseOpeningDia
                 <h3 className="text-3xl font-bold mb-2">
                   {wonItem.item_type === 'badge'
                     ? wonItem.badge?.name || 'Badge'
+                    : wonItem.item_type === 'premium_key'
+                    ? 'Premium Key'
                     : `${wonItem.coin_amount} Coins`}
                 </h3>
                 <p className="text-muted-foreground mb-4">

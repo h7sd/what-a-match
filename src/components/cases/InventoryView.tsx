@@ -9,6 +9,7 @@ import {
   Search,
   CheckCircle2,
   Sparkles,
+  Key,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useInventory, useSellItems, InventoryItem } from '@/hooks/useCases';
+import { BadgeIcon } from './BadgeIcon';
 import { formatUC } from '@/lib/uc';
 import { cn } from '@/lib/utils';
 
@@ -51,7 +53,7 @@ export function InventoryView() {
     const matchesSearch =
       !searchQuery ||
       (item.item_type === 'badge' &&
-        item.badge?.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        item.badge?.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (item.item_type === 'coins' &&
         item.coin_amount?.toString().includes(searchQuery));
 
@@ -252,14 +254,12 @@ export function InventoryView() {
 
               {/* Item Visual */}
               <div className="flex items-center justify-center h-24 mb-3">
-                {item.item_type === 'badge' && item.badge?.icon_url && item.badge.icon_url.trim() !== '' ? (
-                  <img
-                    src={item.badge.icon_url}
-                    alt={item.badge.name}
-                    className="w-16 h-16 object-contain"
-                  />
+                {item.item_type === 'badge' && item.badge?.icon_url ? (
+                  <BadgeIcon iconUrl={item.badge.icon_url} name={item.badge.name} className="w-16 h-16 object-contain" />
                 ) : item.item_type === 'coins' ? (
                   <Coins className="w-16 h-16 text-amber-500" />
+                ) : item.item_type === 'premium_key' ? (
+                  <Key className="w-16 h-16 text-yellow-400" />
                 ) : (
                   <Sparkles className="w-16 h-16 text-primary" />
                 )}
@@ -270,6 +270,8 @@ export function InventoryView() {
                 <h4 className="font-semibold text-sm truncate">
                   {item.item_type === 'badge'
                     ? item.badge?.name || 'Badge'
+                    : item.item_type === 'premium_key'
+                    ? 'Premium Key'
                     : `${item.coin_amount} Coins`}
                 </h4>
 

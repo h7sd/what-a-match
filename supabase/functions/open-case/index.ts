@@ -34,22 +34,22 @@ Deno.serve(async (req: Request) => {
       .eq('id', caseId)
       .eq('active', true)
       .single();
-    if (caseError || !caseData) throw new Error('Case not found or inactive: ' + (caseError?.message || ''));
+    if (caseError || !caseData) throw new Error('Case not found: ' + (caseError?.message || 'inactive'));
 
     // Load balance
     const { data: balanceRow, error: balanceReadError } = await supabase
       .from('user_balances')
-      .select('id, balance')
+      .select('id, balance, lifetime_earned, lifetime_spent')
       .eq('user_id', user.id)
       .maybeSingle();
     if (balanceReadError) throw new Error('Failed to read balance: ' + balanceReadError.message);
 
-    const currentBalance = BigInt(balanceRow?.balance ?? 0);
-    const casePrice = BigInt(caseData.price);
+    const currentBalance = Number(balanceRow?.balance ?? 0);
+    const casePrice = Number(caseData.price);
 
     if (currentBalance < casePrice) throw new Error('Insufficient coins');
 
-    // Load case items with joined badge/global_badge data
+    // Load case items with global badge data
     const { data: items, error: itemsError } = await supabase
       .from('case_items')
       .select(`
@@ -72,14 +72,14 @@ Deno.serve(async (req: Request) => {
       .eq('case_id', caseId);
 
     if (itemsError) throw new Error('Failed to load items: ' + itemsError.message);
-    if (!items || items.length === 0) throw new Error('No items found in case');
+    if (!items || items.length === 0) throw new Error('No items in case');
 
     // Pick random item by drop rate
-    const totalDropRate = items.reduce((sum, item) => sum + Number(item.drop_rate), 0);
+    const totalDropRate = items.reduce((sum: number, item: any) => sum + Number(item.drop_rate), 0);
     const random = Math.random() * totalDropRate;
 
     let cumulative = 0;
-    let wonItem: typeof items[0] | null = null;
+    let wonItem: any = null;
     for (const item of items) {
       cumulative += Number(item.drop_rate);
       if (random <= cumulative) {
@@ -92,20 +92,29 @@ Deno.serve(async (req: Request) => {
     // Calculate new balance
     let newBalance = currentBalance - casePrice;
     if (wonItem.item_type === 'coins' && wonItem.coin_amount) {
-      newBalance = newBalance + BigInt(wonItem.coin_amount);
+      newBalance = newBalance + Number(wonItem.coin_amount);
     }
 
-    // Update balance
+    // Update or create balance row
     if (balanceRow) {
       const { error: updateError } = await supabase
         .from('user_balances')
-        .update({ balance: Number(newBalance), updated_at: new Date().toISOString() })
+        .update({
+          balance: newBalance,
+          lifetime_spent: Number(balanceRow.lifetime_spent ?? 0) + casePrice,
+          updated_at: new Date().toISOString(),
+        })
         .eq('user_id', user.id);
       if (updateError) throw new Error('Failed to update balance: ' + updateError.message);
     } else {
       const { error: insertError } = await supabase
         .from('user_balances')
-        .insert({ user_id: user.id, balance: Number(newBalance), lifetime_earned: 0, lifetime_spent: Number(casePrice) });
+        .insert({
+          user_id: user.id,
+          balance: newBalance,
+          lifetime_earned: 0,
+          lifetime_spent: casePrice,
+        });
       if (insertError) throw new Error('Failed to create balance: ' + insertError.message);
     }
 
@@ -122,7 +131,7 @@ Deno.serve(async (req: Request) => {
       badge: globalBadge || null,
     };
 
-    // Insert inventory (only required fields: user_id, item_type, quantity)
+    // Insert to user_inventory — columns: id, user_id, item_type, item_id, item_data, quantity, acquired_at
     const { error: inventoryError } = await supabase
       .from('user_inventory')
       .insert({
@@ -133,10 +142,10 @@ Deno.serve(async (req: Request) => {
         quantity: 1,
       });
     if (inventoryError) {
-      console.error('Inventory insert error:', inventoryError.message);
+      console.error('Inventory insert error (non-fatal):', inventoryError.message);
     }
 
-    // Get profile for display name
+    // Get profile for live feed display name
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('username, display_name')
@@ -156,7 +165,7 @@ Deno.serve(async (req: Request) => {
       itemName = 'Mystery Item';
     }
 
-    // Case transaction
+    // case_transactions: columns: user_id, case_id, battle_id, transaction_type, items_won, total_value
     await supabase.from('case_transactions').insert({
       user_id: user.id,
       case_id: caseId,
@@ -165,15 +174,15 @@ Deno.serve(async (req: Request) => {
       total_value: Number(wonItem.display_value),
     });
 
-    // Opening history
+    // case_opening_history: columns: user_id, case_id, item_won_id, coins_spent, opened_at
     await supabase.from('case_opening_history').insert({
       user_id: user.id,
       case_id: caseId,
       item_won_id: wonItem.id,
-      coins_spent: Number(casePrice),
+      coins_spent: casePrice,
     });
 
-    // Live feed
+    // live_feed: columns: user_id, username, case_name, item_name, item_rarity, item_value
     await supabase.from('live_feed').insert({
       user_id: user.id,
       username: displayUsername,
@@ -184,11 +193,11 @@ Deno.serve(async (req: Request) => {
     });
 
     return new Response(
-      JSON.stringify({ success: true, item: itemWonData, newBalance: Number(newBalance) }),
+      JSON.stringify({ success: true, item: itemWonData, newBalance }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error opening case:', error);
     return new Response(
       JSON.stringify({ error: error.message }),

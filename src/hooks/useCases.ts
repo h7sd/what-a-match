@@ -192,23 +192,30 @@ export function useInventory() {
 
       const { data, error } = await supabase
         .from('user_inventory')
-        .select(`
-          *,
-          badge:badge_id (
-            name,
-            icon_url,
-            color
-          ),
-          case:won_from_case_id (
-            name
-          )
-        `)
+        .select('id, user_id, item_type, item_id, item_data, quantity, acquired_at')
         .eq('user_id', user.id)
-        .eq('sold', false)
-        .order('won_at', { ascending: false });
+        .order('acquired_at', { ascending: false });
 
       if (error) throw error;
-      return data as InventoryItem[];
+
+      return (data || []).map((row: any) => {
+        const d = row.item_data || {};
+        return {
+          id: row.id,
+          user_id: row.user_id,
+          item_type: row.item_type || d.item_type || 'badge',
+          badge_id: d.badge_id || d.global_badge_id || null,
+          coin_amount: d.coin_amount || null,
+          rarity: d.rarity || 'common',
+          estimated_value: d.display_value || 0,
+          won_from_case_id: null,
+          won_at: row.acquired_at,
+          sold: false,
+          sold_at: null,
+          badge: d.badge || null,
+          case: null,
+        } as InventoryItem;
+      });
     },
   });
 }

@@ -17,85 +17,60 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
+    if (!authHeader) throw new Error('No authorization header');
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
-
-    if (authError || !user) {
-      throw new Error('Unauthorized');
-    }
+    if (authError || !user) throw new Error('Unauthorized');
 
     const { itemIds, sellAll } = await req.json();
-
-    if (!sellAll && (!itemIds || itemIds.length === 0)) {
-      throw new Error('Item IDs required');
-    }
+    if (!sellAll && (!itemIds || itemIds.length === 0)) throw new Error('Item IDs required');
 
     let query = supabase
       .from('user_inventory')
-      .select('id, estimated_value')
-      .eq('user_id', user.id)
-      .eq('sold', false);
+      .select('id, item_data')
+      .eq('user_id', user.id);
 
     if (!sellAll) {
       query = query.in('id', itemIds);
     }
 
     const { data: items, error: itemsError } = await query;
+    if (itemsError || !items || items.length === 0) throw new Error('No items found to sell');
 
-    if (itemsError || !items || items.length === 0) {
-      throw new Error('No items found to sell');
+    const totalValue = items.reduce((sum: number, item: any) => {
+      const val = item.item_data?.display_value || 0;
+      return sum + Number(val);
+    }, 0);
+
+    // Update user_balances
+    const { data: balanceRow } = await supabase
+      .from('user_balances')
+      .select('id, balance')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (balanceRow) {
+      await supabase
+        .from('user_balances')
+        .update({ balance: Number(balanceRow.balance) + totalValue, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id);
+    } else {
+      await supabase
+        .from('user_balances')
+        .insert({ user_id: user.id, balance: totalValue, lifetime_earned: totalValue, lifetime_spent: 0 });
     }
 
-    const totalValue = items.reduce((sum, item) => sum + BigInt(item.estimated_value), 0n);
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('uc_balance')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      throw new Error('Profile not found');
-    }
-
-    const newBalance = BigInt(profile.uc_balance) + totalValue;
-
-    const { error: balanceError } = await supabase
-      .from('profiles')
-      .update({ uc_balance: newBalance.toString() })
-      .eq('id', user.id);
-
-    if (balanceError) {
-      throw new Error('Failed to update balance');
-    }
-
-    const itemIdsToUpdate = items.map(item => item.id);
-
-    const { error: updateError } = await supabase
-      .from('user_inventory')
-      .update({ sold: true, sold_at: new Date().toISOString() })
-      .in('id', itemIdsToUpdate);
-
-    if (updateError) {
-      throw new Error('Failed to mark items as sold');
-    }
+    const itemIdsToDelete = items.map((item: any) => item.id);
+    await supabase.from('user_inventory').delete().in('id', itemIdsToDelete);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        itemsSold: items.length,
-        coinsEarned: totalValue.toString(),
-        newBalance: newBalance.toString(),
-      }),
+      JSON.stringify({ success: true, itemsSold: items.length, coinsEarned: totalValue, newBalance: (Number(balanceRow?.balance ?? 0) + totalValue) }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error selling items:', error);
     return new Response(
       JSON.stringify({ error: error.message }),

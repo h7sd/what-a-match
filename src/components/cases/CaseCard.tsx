@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Case, CaseItem, useCaseItems } from '@/hooks/useCases';
 import { formatUC } from '@/lib/uc';
 import { CaseVisual } from './CaseVisual';
+import { BadgeIcon } from './BadgeIcon';
 
 interface CaseCardProps {
   case: Case;
@@ -47,7 +48,7 @@ function ItemRow({ item }: { item: CaseItem }) {
         ) : display.isCoins ? (
           <Coins className="w-5 h-5 text-amber-400" />
         ) : display.icon ? (
-          <img src={display.icon} alt="" className="w-6 h-6 object-contain" />
+          <BadgeIcon iconUrl={display.icon} className="w-6 h-6 object-contain" />
         ) : (
           <ShieldCheck className="w-5 h-5" style={{ color: rarity.color }} />
         )}
