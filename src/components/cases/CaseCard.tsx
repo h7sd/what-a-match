@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Case, CaseItem, useCaseItems } from '@/hooks/useCases';
 import { formatUC } from '@/lib/uc';
-import caseImage from '@/assets/cases/{D2CC4D6A-1901-4365-A297-C13584497777}.png';
+import { CaseVisual } from './CaseVisual';
 
 interface CaseCardProps {
   case: Case;
@@ -94,20 +94,20 @@ export function CaseCard({ case: caseItem, onOpen, userBalance, index }: CaseCar
             style={{ boxShadow: `inset 0 0 60px ${accentColor}20` }}
           />
 
-          {/* Case image */}
+          {/* Case visual */}
           <div className="relative h-44 flex items-center justify-center p-4 overflow-hidden">
             <div
               className="absolute inset-0 opacity-20"
               style={{ background: `radial-gradient(circle at 50% 60%, ${accentColor} 0%, transparent 70%)` }}
             />
-            <motion.img
-              src={caseImage}
-              alt={caseItem.name}
-              className="relative z-10 w-40 h-32 object-contain drop-shadow-2xl"
+            <motion.div
+              className="relative z-10"
               style={{ filter: `drop-shadow(0 0 20px ${accentColor}60)` }}
               whileHover={{ scale: 1.08, rotate: 2 }}
               transition={{ type: 'spring', stiffness: 300 }}
-            />
+            >
+              <CaseVisual caseName={caseItem.name} accentColor={accentColor} />
+            </motion.div>
           </div>
 
           {/* Accent bar */}
@@ -170,7 +170,9 @@ export function CaseCard({ case: caseItem, onOpen, userBalance, index }: CaseCar
               style={{ background: `radial-gradient(circle at 50% 100%, ${accentColor} 0%, transparent 60%)` }}
             />
             <div className="relative flex items-center gap-4">
-              <img src={caseImage} alt={caseItem.name} className="w-20 h-16 object-contain drop-shadow-xl" style={{ filter: `drop-shadow(0 0 12px ${accentColor}80)` }} />
+              <div className="w-20 h-16 flex-shrink-0" style={{ filter: `drop-shadow(0 0 12px ${accentColor}80)` }}>
+                <CaseVisual caseName={caseItem.name} accentColor={accentColor} />
+              </div>
               <div>
                 <DialogTitle className="text-xl font-bold text-white">{caseItem.name}</DialogTitle>
                 <p className="text-sm text-gray-300 mt-0.5">{caseItem.description}</p>
