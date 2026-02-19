@@ -7,7 +7,8 @@ import { CaseCard } from '@/components/cases/CaseCard';
 import { CaseOpeningAnimation } from '@/components/cases/CaseOpeningAnimation';
 import { LiveFeed } from '@/components/cases/LiveFeed';
 import { InventoryView } from '@/components/cases/InventoryView';
-import { useCases, useOpenCase, useCaseItems, useUserBalance } from '@/hooks/useCases';
+import { useCases, useOpenCase, useUserBalance } from '@/hooks/useCases';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { formatUC } from '@/lib/uc';
 import { Button } from '@/components/ui/button';
@@ -67,16 +68,24 @@ export default function Cases() {
   const [allCaseItems, setAllCaseItems] = useState<any[]>([]);
   const openCaseMutation = useOpenCase();
 
-  const { data: openingCaseItems } = useCaseItems(openingCaseId);
-
   const handleOpenCase = async (caseId: string) => {
     if (!user) return;
     setOpeningCaseId(caseId);
 
+    const { data: fetchedItems } = await supabase
+      .from('case_items')
+      .select(`
+        *,
+        badge:badge_id (name, icon_url, color),
+        global_badge:global_badge_id (name, icon_url, color)
+      `)
+      .eq('case_id', caseId)
+      .order('drop_rate', { ascending: false });
+
     openCaseMutation.mutate(caseId, {
       onSuccess: (data) => {
         setWonItem(data.item);
-        setAllCaseItems(openingCaseItems && openingCaseItems.length > 0 ? openingCaseItems : [data.item]);
+        setAllCaseItems(fetchedItems && fetchedItems.length > 0 ? fetchedItems : [data.item]);
         setAnimationOpen(true);
       },
       onError: () => {

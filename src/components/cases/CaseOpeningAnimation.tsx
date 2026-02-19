@@ -48,6 +48,17 @@ function getItemDisplay(item: CaseItem) {
   return { name: badge?.name || 'Badge', icon: badge?.icon_url || null, isPremiumKey: false, isCoins: false, isBadge: true };
 }
 
+function weightedPick(pool: CaseItem[]): CaseItem {
+  const totalRate = pool.reduce((s, it) => s + Number(it.drop_rate), 0);
+  const rand = Math.random() * totalRate;
+  let cum = 0;
+  for (const it of pool) {
+    cum += Number(it.drop_rate);
+    if (rand <= cum) return it;
+  }
+  return pool[pool.length - 1];
+}
+
 function generateStrip(allItems: CaseItem[], wonItem: CaseItem): CaseItem[] {
   const strip: CaseItem[] = [];
   const winIndex = 50;
@@ -57,11 +68,30 @@ function generateStrip(allItems: CaseItem[], wonItem: CaseItem): CaseItem[] {
     if (i === winIndex) {
       strip.push(wonItem);
     } else {
-      const r = pool[Math.floor(Math.random() * pool.length)];
+      const r = weightedPick(pool);
       strip.push({ ...r, id: `${r.id}-${i}` });
     }
   }
   return strip;
+}
+
+function cubicBezierEase(t: number): number {
+  // Approximates [0.12, 0.8, 0.32, 1] — fast start, slow end
+  const p1x = 0.12, p1y = 0.8, p2x = 0.32, p2y = 1.0;
+  // Newton's method to find t from x, then get y
+  let x = t;
+  for (let i = 0; i < 8; i++) {
+    const cx = 3 * p1x;
+    const bx = 3 * (p2x - p1x) - cx;
+    const ax = 1 - cx - bx;
+    const ex = ax * x * x * x + bx * x * x + cx * x - t;
+    const dex = 3 * ax * x * x + 2 * bx * x + cx;
+    x -= ex / dex;
+  }
+  const cy = 3 * p1y;
+  const by = 3 * (p2y - p1y) - cy;
+  const ay = 1 - cy - by;
+  return ay * x * x * x + by * x * x + cy * x;
 }
 
 function useCaseSounds() {
@@ -74,7 +104,7 @@ function useCaseSounds() {
     return ctxRef.current;
   }, []);
 
-  const playTick = useCallback(() => {
+  const playTickAt = useCallback((audioTime: number, speed: number) => {
     try {
       const ctx = getCtx();
       const osc = ctx.createOscillator();
@@ -82,14 +112,43 @@ function useCaseSounds() {
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.type = 'square';
-      osc.frequency.setValueAtTime(800, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.04);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.05);
+      const freq = 400 + speed * 600;
+      osc.frequency.setValueAtTime(freq, audioTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.5, audioTime + 0.04);
+      const vol = Math.min(0.12, 0.04 + speed * 0.1);
+      gain.gain.setValueAtTime(vol, audioTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioTime + 0.055);
+      osc.start(audioTime);
+      osc.stop(audioTime + 0.06);
     } catch {}
   }, [getCtx]);
+
+  const scheduleTicksForAnimation = useCallback((durationMs: number) => {
+    try {
+      const ctx = getCtx();
+      const startAudioTime = ctx.currentTime + 0.05;
+      const durationSec = durationMs / 1000;
+      const itemWidth = 147;
+      const totalItems = 100;
+      const totalDistance = totalItems * itemWidth;
+      let prevPos = 0;
+      let itemsCrossed = 0;
+
+      for (let ms = 0; ms <= durationMs; ms += 16) {
+        const t = ms / durationMs;
+        const eased = cubicBezierEase(Math.min(t, 1));
+        const pos = eased * totalDistance;
+        const newItemsCrossed = Math.floor(pos / itemWidth);
+        if (newItemsCrossed > itemsCrossed) {
+          itemsCrossed = newItemsCrossed;
+          const audioTime = startAudioTime + (ms / 1000);
+          const speed = (pos - prevPos) / (itemWidth * 16);
+          playTickAt(audioTime, Math.min(speed, 1));
+        }
+        prevPos = pos;
+      }
+    } catch {}
+  }, [getCtx, playTickAt]);
 
   const playReveal = useCallback((rarity: string) => {
     try {
@@ -116,7 +175,7 @@ function useCaseSounds() {
     } catch {}
   }, [getCtx]);
 
-  return { playTick, playReveal };
+  return { scheduleTicksForAnimation, playReveal };
 }
 
 function StripItem({ item }: { item: CaseItem }) {
@@ -146,46 +205,32 @@ function StripItem({ item }: { item: CaseItem }) {
   );
 }
 
+const SPIN_DURATION_MS = 5500;
+
 export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseOpeningAnimationProps) {
   const [state, setState] = useState<'spinning' | 'revealing' | 'complete'>('spinning');
   const [itemStrip, setItemStrip] = useState<CaseItem[]>([]);
-  const { playTick, playReveal } = useCaseSounds();
-  const tickIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { scheduleTicksForAnimation, playReveal } = useCaseSounds();
 
   useEffect(() => {
+
     if (open) {
       setState('spinning');
       setItemStrip(generateStrip(allItems, wonItem));
-
-      let tickDelay = 60;
-      let tickCount = 0;
-      const totalTicks = 55;
-
-      const scheduleTick = () => {
-        if (tickCount >= totalTicks) return;
-        tickIntervalRef.current = setTimeout(() => {
-          playTick();
-          tickCount++;
-          const progress = tickCount / totalTicks;
-          tickDelay = 60 + progress * progress * 400;
-          scheduleTick();
-        }, tickDelay);
-      };
-      scheduleTick();
+      scheduleTicksForAnimation(SPIN_DURATION_MS);
 
       const t1 = setTimeout(() => {
         setState('revealing');
         playReveal(wonItem.rarity);
-      }, 5500);
-      const t2 = setTimeout(() => setState('complete'), 6500);
+      }, SPIN_DURATION_MS);
+      const t2 = setTimeout(() => setState('complete'), SPIN_DURATION_MS + 1000);
 
       return () => {
-        if (tickIntervalRef.current) clearTimeout(tickIntervalRef.current);
         clearTimeout(t1);
         clearTimeout(t2);
       };
     }
-  }, [open, allItems, wonItem, playTick, playReveal]);
+  }, [open, allItems, wonItem, scheduleTicksForAnimation, playReveal]);
 
   const rarity = wonItem?.rarity || 'common';
   const colors = rarityColors[rarity as keyof typeof rarityColors] || rarityColors.common;
@@ -216,7 +261,7 @@ export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseO
                     className="flex absolute top-[10px]"
                     initial={{ x: 100 }}
                     animate={{ x: targetX }}
-                    transition={{ duration: 5.5, ease: [0.12, 0.8, 0.32, 1] }}
+                    transition={{ duration: SPIN_DURATION_MS / 1000, ease: [0.12, 0.8, 0.32, 1] }}
                   >
                     {itemStrip.map((item, idx) => (
                       <StripItem key={`${item.id}-${idx}`} item={item} />
