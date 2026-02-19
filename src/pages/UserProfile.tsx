@@ -7,6 +7,7 @@ import { getPublicProfile, getPublicProfileByAlias, getProfileLinks, getProfileB
 import { ProfileCard } from '@/components/profile/ProfileCard';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import { MinecraftSkinViewer } from '@/components/profile/MinecraftSkinViewer';
+import { RobloxAvatarViewer } from '@/components/profile/RobloxAvatarViewer';
 import { BackgroundEffects } from '@/components/profile/BackgroundEffects';
 import { CustomCursor } from '@/components/profile/CustomCursor';
 import { DiscordPresence } from '@/components/profile/DiscordPresence';
@@ -519,6 +520,22 @@ export default function UserProfile() {
             >
               <MinecraftSkinViewer
                 mcUsername={(profile as any).mc_username}
+                accentColor={accentColor}
+              />
+            </motion.div>
+          )}
+
+          {/* Roblox Avatar Viewer - fixed on the right side */}
+          {(profile as any).roblox_username && (
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: showStartScreen ? 0 : 1, x: showStartScreen ? 40 : 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="fixed z-40 hidden lg:block"
+              style={{ right: 'calc(50% - 680px)', top: 'calc(50% - 200px)' }}
+            >
+              <RobloxAvatarViewer
+                robloxUsername={(profile as any).roblox_username}
                 accentColor={accentColor}
               />
             </motion.div>

@@ -234,6 +234,10 @@ export default function Dashboard() {
   const [mcUsername, setMcUsername] = useState('');
   const [isSavingMc, setIsSavingMc] = useState(false);
 
+  // Roblox username state
+  const [robloxUsername, setRobloxUsername] = useState('');
+  const [isSavingRoblox, setIsSavingRoblox] = useState(false);
+
   // Discord Card customization
   const [discordCardStyle, setDiscordCardStyle] = useState('glass');
   const [discordCardOpacity, setDiscordCardOpacity] = useState(100);
@@ -493,6 +497,7 @@ export default function Dashboard() {
       setUseGlobalBadgeColor((profile as any).use_global_badge_color ?? false);
       setGlobalBadgeColor((profile as any).global_badge_color || '#8B5CF6');
       setMcUsername((profile as any).mc_username || '');
+      setRobloxUsername((profile as any).roblox_username || '');
       const config = profile.effects_config as Record<string, any> || {};
       setEffects({
         sparkles: config.sparkles ?? false,
@@ -1411,6 +1416,43 @@ export default function Dashboard() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">Shows a live 3D skin on your profile page</p>
+                </div>
+
+                {/* Roblox Username */}
+                <div className="glass-card p-6 space-y-3">
+                  <h3 className="font-semibold text-sm">Roblox Username</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-secondary/30 border border-border">
+                      <img src="https://www.roblox.com/favicon.ico" alt="Roblox" className="w-4 h-4 object-contain" />
+                      <Input
+                        value={robloxUsername}
+                        onChange={(e) => setRobloxUsername(e.target.value)}
+                        className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
+                        placeholder="YourRobloxName"
+                        maxLength={20}
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        if (!user?.id) return;
+                        setIsSavingRoblox(true);
+                        try {
+                          const val = robloxUsername.trim() || null;
+                          await updateProfile.mutateAsync({ roblox_username: val } as any);
+                          toast({ title: val ? 'Roblox username saved' : 'Roblox username removed' });
+                        } catch {
+                          toast({ title: 'Failed to save', variant: 'destructive' });
+                        } finally {
+                          setIsSavingRoblox(false);
+                        }
+                      }}
+                      disabled={isSavingRoblox}
+                    >
+                      {isSavingRoblox ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Shows your Roblox avatar on your profile page</p>
                 </div>
 
                 <div className="glass-card p-6">
