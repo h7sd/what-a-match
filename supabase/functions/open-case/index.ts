@@ -27,7 +27,6 @@ Deno.serve(async (req: Request) => {
     const { caseId } = await req.json();
     if (!caseId) throw new Error('Case ID is required');
 
-    // Load case
     const { data: caseData, error: caseError } = await supabase
       .from('cases')
       .select('id, name, price, active')
@@ -36,9 +35,8 @@ Deno.serve(async (req: Request) => {
       .single();
     if (caseError || !caseData) throw new Error('Case not found');
 
-    const casePrice = BigInt(caseData.price);
+    const casePrice = Number(caseData.price);
 
-    // Load balance
     const { data: balanceRow, error: balanceReadError } = await supabase
       .from('user_balances')
       .select('id, balance, lifetime_earned, lifetime_spent')
@@ -46,10 +44,9 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
     if (balanceReadError) throw new Error('Failed to read balance: ' + balanceReadError.message);
 
-    const currentBalance = BigInt(balanceRow?.balance ?? 0);
+    const currentBalance = Number(balanceRow?.balance ?? 0);
     if (currentBalance < casePrice) throw new Error('Insufficient coins');
 
-    // Load case items with global badge data
     const { data: items, error: itemsError } = await supabase
       .from('case_items')
       .select(`
@@ -60,21 +57,13 @@ Deno.serve(async (req: Request) => {
         coin_amount,
         rarity,
         drop_rate,
-        display_value,
-        global_badges!case_items_global_badge_id_fkey (
-          id,
-          name,
-          icon_url,
-          color,
-          rarity
-        )
+        display_value
       `)
       .eq('case_id', caseId);
 
     if (itemsError) throw new Error('Failed to load items: ' + itemsError.message);
     if (!items || items.length === 0) throw new Error('No items in case');
 
-    // Pick random item by drop rate
     const totalDropRate = items.reduce((sum: number, item: any) => sum + Number(item.drop_rate), 0);
     const random = Math.random() * totalDropRate;
 
@@ -89,20 +78,18 @@ Deno.serve(async (req: Request) => {
     }
     if (!wonItem) wonItem = items[items.length - 1];
 
-    // Calculate new balance using BigInt
     let newBalance = currentBalance - casePrice;
     if (wonItem.item_type === 'coins' && wonItem.coin_amount) {
-      newBalance = newBalance + BigInt(wonItem.coin_amount);
+      newBalance = newBalance + Number(wonItem.coin_amount);
     }
 
-    // Update or create balance row — store as string to preserve bigint precision
     if (balanceRow) {
-      const newSpent = BigInt(balanceRow.lifetime_spent ?? 0) + casePrice;
+      const newSpent = Number(balanceRow.lifetime_spent ?? 0) + casePrice;
       const { error: updateError } = await supabase
         .from('user_balances')
         .update({
-          balance: newBalance.toString(),
-          lifetime_spent: newSpent.toString(),
+          balance: newBalance,
+          lifetime_spent: newSpent,
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id);
@@ -112,17 +99,22 @@ Deno.serve(async (req: Request) => {
         .from('user_balances')
         .insert({
           user_id: user.id,
-          balance: newBalance.toString(),
-          lifetime_earned: '0',
-          lifetime_spent: casePrice.toString(),
+          balance: newBalance,
+          lifetime_earned: 0,
+          lifetime_spent: casePrice,
         });
       if (insertError) throw new Error('Failed to create balance: ' + insertError.message);
     }
 
-    const globalBadgeRaw = wonItem['global_badges!case_items_global_badge_id_fkey'];
-    const globalBadge = Array.isArray(globalBadgeRaw)
-      ? globalBadgeRaw[0]
-      : globalBadgeRaw;
+    let globalBadge: any = null;
+    if (wonItem.global_badge_id) {
+      const { data: gb } = await supabase
+        .from('global_badges')
+        .select('id, name, icon_url, color, rarity')
+        .eq('id', wonItem.global_badge_id)
+        .maybeSingle();
+      globalBadge = gb;
+    }
 
     const itemWonData = {
       id: wonItem.id,
@@ -135,21 +127,14 @@ Deno.serve(async (req: Request) => {
       badge: globalBadge || null,
     };
 
-    // Insert to user_inventory
-    const { error: inventoryError } = await supabase
-      .from('user_inventory')
-      .insert({
-        user_id: user.id,
-        item_type: wonItem.item_type,
-        item_id: wonItem.global_badge_id || wonItem.badge_id || null,
-        item_data: itemWonData,
-        quantity: 1,
-      });
-    if (inventoryError) {
-      console.error('Inventory insert error (non-fatal):', inventoryError.message);
-    }
+    await supabase.from('user_inventory').insert({
+      user_id: user.id,
+      item_type: wonItem.item_type,
+      item_id: wonItem.global_badge_id || wonItem.badge_id || null,
+      item_data: itemWonData,
+      quantity: 1,
+    });
 
-    // Get profile display name for live feed
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('username, display_name')
@@ -169,7 +154,6 @@ Deno.serve(async (req: Request) => {
       itemName = 'Mystery Item';
     }
 
-    // Record transaction
     await supabase.from('case_transactions').insert({
       user_id: user.id,
       case_id: caseId,
@@ -178,15 +162,13 @@ Deno.serve(async (req: Request) => {
       total_value: Number(wonItem.display_value),
     });
 
-    // Record opening history
     await supabase.from('case_opening_history').insert({
       user_id: user.id,
       case_id: caseId,
       item_won_id: wonItem.id,
-      coins_spent: Number(casePrice),
+      coins_spent: casePrice,
     });
 
-    // Record in live feed
     await supabase.from('live_feed').insert({
       user_id: user.id,
       username: displayUsername,
@@ -197,7 +179,7 @@ Deno.serve(async (req: Request) => {
     });
 
     return new Response(
-      JSON.stringify({ success: true, item: itemWonData, newBalance: newBalance.toString() }),
+      JSON.stringify({ success: true, item: itemWonData, newBalance }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
