@@ -88,8 +88,16 @@ export default function Cases() {
 
     openCaseMutation.mutate(caseId, {
       onSuccess: (data) => {
-        setWonItem(data.item);
-        setAllCaseItems(fetchedItems && fetchedItems.length > 0 ? fetchedItems : [data.item]);
+        const serverItem = data.item;
+        const normalizedWonItem = {
+          ...serverItem,
+          drop_rate: serverItem.drop_rate ?? 1,
+          badge: serverItem.badge || null,
+          global_badge: serverItem.badge || null,
+          coin_amount: serverItem.item_type === 'coins' ? Number(serverItem.coin_amount) : null,
+        };
+        setWonItem(normalizedWonItem);
+        setAllCaseItems(fetchedItems && fetchedItems.length > 0 ? fetchedItems : [normalizedWonItem]);
         setAnimationOpen(true);
       },
       onError: () => {

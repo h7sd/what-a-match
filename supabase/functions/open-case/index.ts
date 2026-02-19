@@ -59,24 +59,33 @@ Deno.serve(async (req: Request) => {
         drop_rate,
         display_value
       `)
-      .eq('case_id', caseId);
+      .eq('case_id', caseId)
+      .order('drop_rate', { ascending: false });
 
     if (itemsError) throw new Error('Failed to load items: ' + itemsError.message);
     if (!items || items.length === 0) throw new Error('No items in case');
 
-    const totalDropRate = items.reduce((sum: number, item: any) => sum + Number(item.drop_rate), 0);
+    const validItems = items.filter((item: any) => Number(item.drop_rate) > 0);
+    if (validItems.length === 0) throw new Error('No valid items in case');
+
+    const totalDropRate = validItems.reduce((sum: number, item: any) => sum + Number(item.drop_rate), 0);
     const random = Math.random() * totalDropRate;
 
     let cumulative = 0;
     let wonItem: any = null;
-    for (const item of items) {
+    for (const item of validItems) {
       cumulative += Number(item.drop_rate);
-      if (random <= cumulative) {
+      if (random < cumulative) {
         wonItem = item;
         break;
       }
     }
-    if (!wonItem) wonItem = items[items.length - 1];
+    if (!wonItem) wonItem = validItems[validItems.length - 1];
+
+    const resolvedItemType: string = (wonItem.item_type === 'coins' || wonItem.item_type === 'premium_key')
+      ? wonItem.item_type
+      : 'badge';
+    wonItem = { ...wonItem, item_type: resolvedItemType };
 
     let newBalance = currentBalance - casePrice;
     if (wonItem.item_type === 'coins' && wonItem.coin_amount) {
