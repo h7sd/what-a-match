@@ -139,38 +139,59 @@ export default {
     
     // Handle Spotify OAuth callback redirect
     if (pathname === "/api-proxy" && url.searchParams.get("spotify_callback") === "1") {
-      // Build params manually to avoid double-encoding issues with code/state
       const code = url.searchParams.get("code");
       const state = url.searchParams.get("state");
-      const error = url.searchParams.get("error");
+      const spotifyError = url.searchParams.get("error");
+
       const newParams = new URLSearchParams({ action: "callback" });
       if (code) newParams.set("code", code);
       if (state) newParams.set("state", state);
-      if (error) newParams.set("error", error);
+      if (spotifyError) newParams.set("error", spotifyError);
+
       const targetUrl = `${SUPABASE_URL}/functions/v1/spotify-auth?${newParams.toString()}`;
+
       try {
-        // Use "manual" so we intercept the 302 from the edge function directly
-        // instead of following it (which would fetch the HTML dashboard page)
         const res = await fetch(targetUrl, {
           method: "GET",
           redirect: "manual",
+          headers: {
+            "apikey": env.SUPABASE_ANON_KEY || "",
+          },
         });
-        // Edge function returns 302 with a Location header pointing to the dashboard
-        if (res.status === 301 || res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
-          let location = res.headers.get("Location") || "https://uservault.cc/dashboard?spotify=error";
-          // Fix wrong domain if edge function returns uservault.net instead of uservault.cc
-          location = location.replace("https://uservault.net/", "https://uservault.cc/");
-          return new Response(null, {
-            status: 302,
-            headers: { Location: location },
+
+        // Cloudflare Workers: opaqueredirect type means redirect happened, get Location header
+        let location = null;
+
+        if (res.type === "opaqueredirect") {
+          // Can't read Location from opaque redirect - fallback: follow the redirect ourselves
+          const res2 = await fetch(targetUrl, {
+            method: "GET",
+            redirect: "follow",
+            headers: {
+              "apikey": env.SUPABASE_ANON_KEY || "",
+            },
           });
+          // After following, we'll be at the dashboard URL
+          location = res2.url;
+          if (!location || location === targetUrl) {
+            location = "https://uservault.cc/dashboard?spotify=error";
+          }
+        } else if (res.status >= 300 && res.status < 400) {
+          location = res.headers.get("Location") || "https://uservault.cc/dashboard?spotify=error";
+        } else if (res.status === 200) {
+          location = "https://uservault.cc/dashboard?spotify=connected";
+        } else {
+          location = "https://uservault.cc/dashboard?spotify=error";
         }
-        // Non-redirect response (e.g. 503 not configured, 500 error) - redirect to error page
+
+        location = location.replace("https://uservault.net/", "https://uservault.cc/");
+
         return new Response(null, {
           status: 302,
-          headers: { Location: "https://uservault.cc/dashboard?spotify=error" },
+          headers: { Location: location },
         });
-      } catch {
+      } catch (err) {
+        console.error("[Spotify Callback] error:", err);
         return new Response(null, {
           status: 302,
           headers: { Location: "https://uservault.cc/dashboard?spotify=error" },
