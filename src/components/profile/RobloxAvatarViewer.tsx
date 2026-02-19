@@ -29,8 +29,8 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
   const [error, setError] = useState(false);
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-  const width = isMobile ? 220 : 380;
-  const height = isMobile ? 320 : 560;
+  const width = isMobile ? 260 : 460;
+  const height = isMobile ? 400 : 680;
 
   useEffect(() => {
     if (!canvasRef.current || !robloxUsername) return;
@@ -88,11 +88,14 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
         );
         if (cancelled) return;
 
-        // Step 4: Patch MTL to use blob URLs for textures
-        const patchedMtl = mtlText.replace(/map_\w+\s+(\S+)/g, (match, texName) => {
-          const blobUrl = textureMap[texName];
-          return blobUrl ? match.replace(texName, blobUrl) : match;
-        });
+        // Step 4: Patch MTL - replace texture IDs with blob URLs, remove map_d (alpha) to fix transparency
+        let patchedMtl = mtlText
+          .replace(/^\s*map_d\s+\S+.*$/gm, '')
+          .replace(/^\s*d\s+\d.*$/gm, 'd 1')
+          .replace(/map_\w+\s+(\S+)/g, (match, texName) => {
+            const blobUrl = textureMap[texName];
+            return blobUrl ? match.replace(texName, blobUrl) : match;
+          });
 
         // Step 5: Parse materials
         const mtlLoader = new MTLLoader();
