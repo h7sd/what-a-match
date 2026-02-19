@@ -85,16 +85,16 @@ export function SpotifyNowPlaying({ userId, accentColor = '#1DB954' }: SpotifyNo
     };
   }, [track.trackId, track.playing]);
 
-  if (!track.playing || !track.song) return null;
+  const isPlaying = track.playing && !!track.song;
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       <motion.div
-        key={track.trackId}
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        key={isPlaying ? (track.trackId ?? 'playing') : 'idle'}
+        initial={{ opacity: 0, y: -10, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
+        exit={{ opacity: 0, y: -10, scale: 0.97 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
         className="w-full"
       >
         <div
@@ -102,7 +102,7 @@ export function SpotifyNowPlaying({ userId, accentColor = '#1DB954' }: SpotifyNo
           style={{ boxShadow: `0 8px 32px ${accentColor}20, 0 0 0 1px ${accentColor}15` }}
         >
           {/* Album art blurred background */}
-          {track.albumArt && (
+          {isPlaying && track.albumArt && (
             <div
               className="absolute inset-0 opacity-20 scale-110 blur-2xl"
               style={{
@@ -115,85 +115,99 @@ export function SpotifyNowPlaying({ userId, accentColor = '#1DB954' }: SpotifyNo
 
           <div className="relative z-10 p-4">
             {/* Header */}
-            <div className="flex items-center gap-1.5 mb-4">
+            <div className="flex items-center gap-1.5 mb-3">
               <SiSpotify className="w-3.5 h-3.5" style={{ color: '#1DB954' }} />
-              <span className="text-[11px] font-medium text-white/50 uppercase tracking-widest">Now Playing</span>
+              <span className="text-[11px] font-medium text-white/50 uppercase tracking-widest">
+                {isPlaying ? 'Now Playing' : 'Spotify'}
+              </span>
             </div>
 
-            <div className="flex items-center gap-4">
-              {/* Spinning vinyl record */}
-              <div className="relative flex-shrink-0 w-20 h-20">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 3, ease: 'linear', repeat: Infinity }}
-                  className="absolute inset-0 rounded-full"
-                  style={{
-                    background: `conic-gradient(from 0deg, #111 0%, #222 25%, #111 50%, #1a1a1a 75%, #111 100%)`,
-                    boxShadow: `0 0 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.5)`,
-                  }}
-                >
-                  {[0.85, 0.72, 0.59].map((scale, i) => (
-                    <div
-                      key={i}
-                      className="absolute rounded-full border border-white/5"
-                      style={{ inset: `${((1 - scale) / 2) * 100}%` }}
-                    />
-                  ))}
-                </motion.div>
+            {isPlaying ? (
+              <div className="flex items-center gap-4">
+                {/* Spinning vinyl record */}
+                <div className="relative flex-shrink-0 w-20 h-20">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 3, ease: 'linear', repeat: Infinity }}
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      background: `conic-gradient(from 0deg, #111 0%, #222 25%, #111 50%, #1a1a1a 75%, #111 100%)`,
+                      boxShadow: `0 0 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.5)`,
+                    }}
+                  >
+                    {[0.85, 0.72, 0.59].map((scale, i) => (
+                      <div
+                        key={i}
+                        className="absolute rounded-full border border-white/5"
+                        style={{ inset: `${((1 - scale) / 2) * 100}%` }}
+                      />
+                    ))}
+                  </motion.div>
 
-                {/* Spinning album art */}
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 3, ease: 'linear', repeat: Infinity }}
-                  className="absolute rounded-full overflow-hidden border-2 border-black/60"
-                  style={{ inset: '20%' }}
-                >
-                  {track.albumArt ? (
-                    <img src={track.albumArt} alt={track.album} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-[#1DB954]/20 flex items-center justify-center">
-                      <SiSpotify className="w-4 h-4 text-[#1DB954]" />
-                    </div>
-                  )}
-                </motion.div>
+                  {/* Spinning album art */}
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 3, ease: 'linear', repeat: Infinity }}
+                    className="absolute rounded-full overflow-hidden border-2 border-black/60"
+                    style={{ inset: '20%' }}
+                  >
+                    {track.albumArt ? (
+                      <img src={track.albumArt} alt={track.album} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-[#1DB954]/20 flex items-center justify-center">
+                        <SiSpotify className="w-4 h-4 text-[#1DB954]" />
+                      </div>
+                    )}
+                  </motion.div>
 
-                <div
-                  className="absolute w-2 h-2 rounded-full bg-black border border-white/20"
-                  style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-                />
-              </div>
+                  <div
+                    className="absolute w-2 h-2 rounded-full bg-black border border-white/20"
+                    style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+                  />
+                </div>
 
-              {/* Track info */}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-white text-sm leading-tight truncate" title={track.song}>
-                  {track.song}
-                </p>
-                <p className="text-white/60 text-xs truncate mt-0.5" title={track.artist}>
-                  {track.artist}
-                </p>
-                {track.album && (
-                  <p className="text-white/35 text-[11px] truncate mt-0.5" title={track.album}>
-                    {track.album}
+                {/* Track info */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-white text-sm leading-tight truncate" title={track.song}>
+                    {track.song}
                   </p>
-                )}
+                  <p className="text-white/60 text-xs truncate mt-0.5" title={track.artist}>
+                    {track.artist}
+                  </p>
+                  {track.album && (
+                    <p className="text-white/35 text-[11px] truncate mt-0.5" title={track.album}>
+                      {track.album}
+                    </p>
+                  )}
 
-                {/* Progress bar */}
-                <div className="mt-3 space-y-1">
-                  <div className="relative h-1 rounded-full bg-white/10 overflow-hidden">
-                    <motion.div
-                      className="absolute inset-y-0 left-0 rounded-full"
-                      style={{ backgroundColor: '#1DB954' }}
-                      animate={{ width: `${progress}%` }}
-                      transition={{ duration: 0.8, ease: 'linear' }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-white/35">
-                    <span>{formatTime(elapsed)}</span>
-                    <span>{formatTime(track.durationMs ?? 0)}</span>
+                  {/* Progress bar */}
+                  <div className="mt-3 space-y-1">
+                    <div className="relative h-1 rounded-full bg-white/10 overflow-hidden">
+                      <motion.div
+                        className="absolute inset-y-0 left-0 rounded-full"
+                        style={{ backgroundColor: '#1DB954' }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 0.8, ease: 'linear' }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-white/35">
+                      <span>{formatTime(elapsed)}</span>
+                      <span>{formatTime(track.durationMs ?? 0)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Idle state */
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                  <SiSpotify className="w-5 h-5 text-white/20" />
+                </div>
+                <div>
+                  <p className="text-white/40 text-xs">Not listening right now</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
