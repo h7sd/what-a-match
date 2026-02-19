@@ -29,8 +29,8 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
   const [error, setError] = useState(false);
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-  const width = isMobile ? 260 : 440;
-  const height = isMobile ? 380 : 640;
+  const width = isMobile ? 300 : 520;
+  const height = isMobile ? 440 : 760;
 
   useEffect(() => {
     if (!canvasRef.current || !robloxUsername) return;
