@@ -103,7 +103,14 @@ function AddToBadgesDialog({ item, count, open, onClose, alreadyOwned }: AddToBa
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      if (alreadyOwned) {
+      const { data: existing } = await supabase
+        .from('user_badges')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('badge_id', badgeId)
+        .maybeSingle();
+
+      if (existing) {
         toast.info('You already have this badge on your profile!');
         onClose();
         return;
@@ -116,7 +123,14 @@ function AddToBadgesDialog({ item, count, open, onClose, alreadyOwned }: AddToBa
         display_order: 0,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+          toast.info('You already have this badge on your profile!');
+          onClose();
+          return;
+        }
+        throw error;
+      }
 
       queryClient.invalidateQueries({ queryKey: ['user-badges'] });
       queryClient.invalidateQueries({ queryKey: ['profile-badges'] });
@@ -329,7 +343,7 @@ export function InventoryView() {
   const [sellAll, setSellAll] = useState(false);
 
   const ownedBadgeIds = new Set<string>(
-    (userBadges || []).map((ub: any) => ub.badge_id).filter(Boolean)
+    (userBadges || []).flatMap((ub: any) => [ub.badge_id].filter(Boolean))
   );
 
   const filteredInventory = inventory?.filter((item) => {

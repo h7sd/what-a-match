@@ -1,16 +1,16 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import {
   Swords, Bot, User, Search, Trophy, X, Clock, CheckCircle, XCircle,
-  Coins, ShieldCheck, Key, Sparkles, Crown,
+  Coins, ShieldCheck, Key, Crown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Case } from '@/hooks/useCases';
+import { Case, CaseItem } from '@/hooks/useCases';
 import { CaseDuel, useCreateDuel, useAcceptDuel, useDeclineDuel, useOpenDuel, useDuels } from '@/hooks/useDuels';
 import { BadgeIcon } from './BadgeIcon';
+import { DuelOpeningAnimation } from './DuelOpeningAnimation';
 import { formatUC } from '@/lib/uc';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const rarityColors: Record<string, string> = {
-  common: '#b0c3d9', rare: '#5e98d9', epic: '#a855f7', legendary: '#eb4b4b', premium: '#ffd700',
+  common: '#b0c3d9', rare: '#5e98d9', epic: '#8b5cf6', legendary: '#eb4b4b', premium: '#ffd700',
 };
 
 function ItemDisplay({ item, label, isWinner, isLoser }: {
@@ -83,7 +83,14 @@ function DuelCard({ duel, currentUserId, cases }: {
   const declineDuel = useDeclineDuel();
   const openDuel = useOpenDuel();
   const [opening, setOpening] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [animationData, setAnimationData] = useState<{
+    allItems: CaseItem[];
+    playerItem: any;
+    botItem: any;
+    playerWon: boolean;
+    tie: boolean;
+  } | null>(null);
 
   const isChallenger = duel.challenger_id === currentUserId;
   const caseName = cases.find(c => c.id === duel.case_id)?.name || 'Unknown Case';
@@ -99,135 +106,178 @@ function DuelCard({ duel, currentUserId, cases }: {
   const handleOpen = async () => {
     setOpening(true);
     try {
+      const { data: caseItemsData } = await supabase
+        .from('case_items')
+        .select('id, item_type, badge_id, global_badge_id, coin_amount, rarity, drop_rate, display_value, global_badge:global_badges(name, icon_url, color)')
+        .eq('case_id', duel.case_id);
+
       const res = await openDuel.mutateAsync(duel.id);
-      setResult(res);
-      if (res.duel?.status === 'completed') {
-        if (res.duel.winner_id === currentUserId) {
-          toast.success('You won the duel!', { duration: 5000 });
-        } else if (res.duel.bot_won) {
-          toast.error('The bot won this round!');
-        } else if (!res.duel.winner_id) {
-          toast.info("It's a tie!");
-        } else {
-          toast.error('Your opponent won this round!');
-        }
-      }
+
+      const playerItemData = res.item;
+      const botItemData = res.duel?.opponent_item_data || res.duel?.challenger_item_data;
+      const updatedDuel = res.duel;
+
+      const pWon = updatedDuel?.winner_id === currentUserId;
+      const isTie = updatedDuel?.status === 'completed' && !updatedDuel?.winner_id && !updatedDuel?.bot_won;
+
+      setAnimationData({
+        allItems: (caseItemsData || []) as CaseItem[],
+        playerItem: playerItemData,
+        botItem: botItemData,
+        playerWon: pWon,
+        tie: isTie,
+      });
+      setShowAnimation(true);
+    } catch {
     } finally {
       setOpening(false);
+    }
+  };
+
+  const handleAnimationClose = () => {
+    setShowAnimation(false);
+    if (animationData) {
+      const { playerWon, tie } = animationData;
+      if (playerWon) {
+        toast.success('You won the duel!', { duration: 5000 });
+      } else if (tie) {
+        toast.info("It's a tie!");
+      } else {
+        toast.error(duel.is_bot_opponent ? 'The bot won this round!' : 'Your opponent won this round!');
+      }
     }
   };
 
   const statusConfig = {
     pending: { color: '#f59e0b', label: 'Pending', Icon: Clock },
     accepted: { color: '#3b82f6', label: 'Accepted', Icon: CheckCircle },
-    completed: { color: completed && userWon ? '#22c55e' : completed && !duel.winner_id ? '#94a3b8' : '#ef4444', label: completed ? (userWon ? 'Won' : botWon ? 'Lost to Bot' : duel.winner_id ? 'Lost' : 'Tie') : 'Completed', Icon: completed ? Trophy : CheckCircle },
+    completed: {
+      color: completed && userWon ? '#22c55e' : completed && !duel.winner_id ? '#94a3b8' : '#ef4444',
+      label: completed ? (userWon ? 'Won' : botWon ? 'Lost to Bot' : duel.winner_id ? 'Lost' : 'Tie') : 'Completed',
+      Icon: completed ? Trophy : CheckCircle,
+    },
     declined: { color: '#ef4444', label: 'Declined', Icon: XCircle },
     expired: { color: '#6b7280', label: 'Expired', Icon: XCircle },
   };
   const sc = statusConfig[duel.status] || statusConfig.pending;
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden"
-    >
-      <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Swords className="w-4 h-4 text-gray-400" />
-          <span className="text-sm font-semibold text-white">{caseName}</span>
-          {duel.is_bot_opponent && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">vs Bot</span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5">
-          <sc.Icon className="w-3.5 h-3.5" style={{ color: sc.color }} />
-          <span className="text-xs font-semibold" style={{ color: sc.color }}>{sc.label}</span>
-        </div>
-      </div>
-
-      <div className="p-4 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 flex items-center justify-center gap-2 p-2 rounded-xl bg-white/5">
-            {myItem ? (
-              <ItemDisplay
-                item={myItem}
-                label="You"
-                isWinner={completed && duel.winner_id === currentUserId}
-                isLoser={completed && duel.winner_id !== null && duel.winner_id !== currentUserId}
-              />
-            ) : (
-              <WaitingPlaceholder label="You" />
+    <>
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden"
+      >
+        <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Swords className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-semibold text-white">{caseName}</span>
+            {duel.is_bot_opponent && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">vs Bot</span>
             )}
           </div>
+          <div className="flex items-center gap-1.5">
+            <sc.Icon className="w-3.5 h-3.5" style={{ color: sc.color }} />
+            <span className="text-xs font-semibold" style={{ color: sc.color }}>{sc.label}</span>
+          </div>
+        </div>
 
-          <div className="flex flex-col items-center gap-1">
-            <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-              <Swords className="w-4 h-4 text-gray-400" />
+        <div className="p-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 flex items-center justify-center gap-2 p-2 rounded-xl bg-white/5">
+              {myItem ? (
+                <ItemDisplay
+                  item={myItem}
+                  label="You"
+                  isWinner={completed && duel.winner_id === currentUserId}
+                  isLoser={completed && duel.winner_id !== null && duel.winner_id !== currentUserId}
+                />
+              ) : (
+                <WaitingPlaceholder label="You" />
+              )}
             </div>
-            <div className="flex items-center gap-1">
-              <Coins className="w-3 h-3 text-amber-400" />
-              <span className="text-xs text-amber-400 font-bold">{formatUC(duel.coins_wagered)}</span>
+
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                <Swords className="w-4 h-4 text-gray-400" />
+              </div>
+              <div className="flex items-center gap-1">
+                <Coins className="w-3 h-3 text-amber-400" />
+                <span className="text-xs text-amber-400 font-bold">{formatUC(duel.coins_wagered)}</span>
+              </div>
+            </div>
+
+            <div className="flex-1 flex items-center justify-center gap-2 p-2 rounded-xl bg-white/5">
+              {theirItem ? (
+                <ItemDisplay
+                  item={theirItem}
+                  label={duel.is_bot_opponent ? 'Bot' : 'Opponent'}
+                  isWinner={completed && (duel.bot_won || (duel.winner_id && duel.winner_id !== currentUserId))}
+                  isLoser={completed && duel.winner_id === currentUserId}
+                />
+              ) : (
+                <WaitingPlaceholder label={duel.is_bot_opponent ? 'Bot' : 'Opponent'} />
+              )}
             </div>
           </div>
 
-          <div className="flex-1 flex items-center justify-center gap-2 p-2 rounded-xl bg-white/5">
-            {theirItem ? (
-              <ItemDisplay
-                item={theirItem}
-                label={duel.is_bot_opponent ? 'Bot' : 'Opponent'}
-                isWinner={completed && (duel.bot_won || (duel.winner_id && duel.winner_id !== currentUserId))}
-                isLoser={completed && duel.winner_id === currentUserId}
-              />
-            ) : (
-              <WaitingPlaceholder label={duel.is_bot_opponent ? 'Bot' : 'Opponent'} />
+          <div className="flex gap-2">
+            {isPending && (
+              <>
+                <Button
+                  onClick={() => acceptDuel.mutate(duel.id)}
+                  disabled={acceptDuel.isPending}
+                  size="sm"
+                  className="flex-1 bg-green-600 hover:bg-green-500 text-white text-xs"
+                >
+                  <CheckCircle className="w-3.5 h-3.5 mr-1" /> Accept
+                </Button>
+                <Button
+                  onClick={() => declineDuel.mutate(duel.id)}
+                  disabled={declineDuel.isPending}
+                  variant="ghost"
+                  size="sm"
+                  className="flex-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs"
+                >
+                  <X className="w-3.5 h-3.5 mr-1" /> Decline
+                </Button>
+              </>
+            )}
+
+            {canOpen && (
+              <Button
+                onClick={handleOpen}
+                disabled={opening || openDuel.isPending}
+                size="sm"
+                className="w-full text-xs font-bold"
+                style={{ background: 'linear-gradient(135deg, #3b82f6, #60a5fa)', color: '#000' }}
+              >
+                <Swords className="w-3.5 h-3.5 mr-1.5" />
+                {opening ? 'Opening...' : 'Open Case'}
+              </Button>
+            )}
+
+            {duel.status === 'pending' && isChallenger && (
+              <p className="text-xs text-gray-500 w-full text-center py-1">Waiting for opponent to accept...</p>
             )}
           </div>
         </div>
+      </motion.div>
 
-        <div className="flex gap-2">
-          {isPending && (
-            <>
-              <Button
-                onClick={() => acceptDuel.mutate(duel.id)}
-                disabled={acceptDuel.isPending}
-                size="sm"
-                className="flex-1 bg-green-600 hover:bg-green-500 text-white text-xs"
-              >
-                <CheckCircle className="w-3.5 h-3.5 mr-1" /> Accept
-              </Button>
-              <Button
-                onClick={() => declineDuel.mutate(duel.id)}
-                disabled={declineDuel.isPending}
-                variant="ghost"
-                size="sm"
-                className="flex-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs"
-              >
-                <X className="w-3.5 h-3.5 mr-1" /> Decline
-              </Button>
-            </>
-          )}
-
-          {canOpen && (
-            <Button
-              onClick={handleOpen}
-              disabled={opening || openDuel.isPending}
-              size="sm"
-              className="w-full text-xs font-bold"
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #60a5fa)', color: '#000' }}
-            >
-              <Swords className="w-3.5 h-3.5 mr-1.5" />
-              {opening ? 'Opening...' : 'Open Case'}
-            </Button>
-          )}
-
-          {duel.status === 'pending' && isChallenger && (
-            <p className="text-xs text-gray-500 w-full text-center py-1">Waiting for opponent to accept...</p>
-          )}
-        </div>
-      </div>
-    </motion.div>
+      {animationData && (
+        <DuelOpeningAnimation
+          allItems={animationData.allItems}
+          playerItem={animationData.playerItem}
+          botItem={animationData.botItem}
+          playerWon={animationData.playerWon}
+          tie={animationData.tie}
+          open={showAnimation}
+          onClose={handleAnimationClose}
+          isBot={duel.is_bot_opponent}
+        />
+      )}
+    </>
   );
 }
 
@@ -247,6 +297,7 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [searching, setSearching] = useState(false);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   const handleClose = () => {
     setStep('case');
@@ -260,18 +311,26 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
 
   const handleSearchUsers = async (q: string) => {
     setUserSearch(q);
-    if (q.length < 2) { setSearchResults([]); return; }
-    setSearching(true);
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('user_id, username, display_name, avatar_url')
-        .ilike('username', `%${q}%`)
-        .limit(5);
-      setSearchResults(data || []);
-    } finally {
-      setSearching(false);
+    clearTimeout(searchTimeout.current);
+
+    if (q.trim().length < 2) {
+      setSearchResults([]);
+      return;
     }
+
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('user_id, username, display_name, avatar_url')
+          .or(`username.ilike.%${q.trim()}%,display_name.ilike.%${q.trim()}%`)
+          .limit(8);
+        setSearchResults(data || []);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
   };
 
   const handleCreate = async () => {
@@ -300,7 +359,6 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
         </DialogHeader>
 
         <div className="space-y-5 py-2">
-          {/* Step indicator */}
           <div className="flex items-center gap-2">
             {['Select Case', 'Choose Opponent'].map((s, i) => (
               <div key={s} className="flex items-center gap-2">
@@ -322,7 +380,6 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
             ))}
           </div>
 
-          {/* Step 1: Case selection */}
           {step === 'case' && (
             <div className="space-y-3">
               <p className="text-sm text-gray-400">Pick a case to open in the duel. Both players open the same case.</p>
@@ -370,7 +427,6 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
             </div>
           )}
 
-          {/* Step 2: Opponent */}
           {step === 'opponent' && (
             <div className="space-y-4">
               <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
@@ -411,34 +467,37 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     <Input
-                      placeholder="Search by username..."
+                      placeholder="Search by username or display name..."
                       value={userSearch}
                       onChange={(e) => handleSearchUsers(e.target.value)}
                       className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                     />
                   </div>
                   {searching && <p className="text-xs text-gray-500 px-1">Searching...</p>}
+                  {!searching && userSearch.trim().length >= 2 && searchResults.length === 0 && (
+                    <p className="text-xs text-gray-600 px-1">No users found</p>
+                  )}
                   {searchResults.length > 0 && (
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                    <div className="space-y-1 max-h-40 overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-1">
                       {searchResults.map((u) => (
                         <button
                           key={u.user_id}
                           onClick={() => { setSelectedUser(u); setUserSearch(u.username || u.display_name); setSearchResults([]); }}
                           className={cn(
                             'w-full flex items-center gap-3 p-2 rounded-lg border transition-all text-left',
-                            selectedUser?.user_id === u.user_id ? 'border-blue-500/50 bg-blue-500/10' : 'border-white/5 hover:bg-white/5'
+                            selectedUser?.user_id === u.user_id ? 'border-blue-500/50 bg-blue-500/10' : 'border-transparent hover:bg-white/5'
                           )}
                         >
                           {u.avatar_url ? (
-                            <img src={u.avatar_url} className="w-7 h-7 rounded-full object-cover" alt="" />
+                            <img src={u.avatar_url} className="w-8 h-8 rounded-full object-cover flex-shrink-0" alt="" />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
                               <User className="w-4 h-4 text-gray-500" />
                             </div>
                           )}
-                          <div>
-                            <p className="text-sm font-semibold text-white">{u.display_name || u.username}</p>
-                            {u.display_name && <p className="text-xs text-gray-500">@{u.username}</p>}
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-white truncate">{u.display_name || u.username}</p>
+                            {u.display_name && u.username && <p className="text-xs text-gray-500 truncate">@{u.username}</p>}
                           </div>
                         </button>
                       ))}
@@ -446,9 +505,9 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
                   )}
                   {selectedUser && (
                     <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                      <CheckCircle className="w-4 h-4 text-blue-400" />
-                      <span className="text-xs text-blue-300">Challenging: {selectedUser.display_name || selectedUser.username}</span>
-                      <button onClick={() => setSelectedUser(null)} className="ml-auto text-gray-500 hover:text-white">
+                      <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                      <span className="text-xs text-blue-300 truncate">Challenging: {selectedUser.display_name || selectedUser.username}</span>
+                      <button onClick={() => { setSelectedUser(null); setUserSearch(''); }} className="ml-auto text-gray-500 hover:text-white flex-shrink-0">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
