@@ -41,47 +41,47 @@ function useRandomProfilesWithBadges() {
   return useQuery({
     queryKey: ['card-swap-profiles'],
     queryFn: async () => {
-      // Get random profiles with full customization fields
+      // Step 1: Get all badge assignments to find users who have badges
+      const { data: allUserBadges, error: badgesError } = await supabase
+        .from('user_badges')
+        .select('user_id, badge_id, display_order')
+        .eq('is_enabled', true)
+        .limit(500);
+
+      if (badgesError) throw badgesError;
+      if (!allUserBadges || allUserBadges.length === 0) return [];
+
+      // Step 2: Get unique user IDs that have badges, shuffle and take 5
+      const uniqueUserIds = [...new Set(allUserBadges.map(ub => ub.user_id))];
+      const shuffledUserIds = uniqueUserIds.sort(() => Math.random() - 0.5).slice(0, 5);
+
+      // Step 3: Load badge details
+      const badgeIds = [...new Set(allUserBadges.filter(ub => shuffledUserIds.includes(ub.user_id)).map(ub => ub.badge_id))];
+      const { data: globalBadges } = await supabase
+        .from('global_badges')
+        .select('id, name, color, icon_url')
+        .in('id', badgeIds);
+
+      const badgeDetails: Record<string, { id: string; name: string; color: string | null; icon_url: string | null }> = {};
+      (globalBadges || []).forEach(b => { badgeDetails[b.id] = b; });
+
+      // Step 4: Load profiles for those users
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
-          id, username, display_name, avatar_url, bio, views_count, accent_color, 
-          location, occupation, background_url, background_video_url, 
+          id, username, display_name, avatar_url, bio, views_count, accent_color,
+          location, occupation, background_url, background_video_url,
           profile_opacity, profile_blur, card_color, card_border_enabled,
           card_border_color, card_border_width, avatar_shape, name_font, glow_username
         `)
-        .limit(50);
-      
+        .in('id', shuffledUserIds);
+
       if (profilesError) throw profilesError;
       if (!profiles || profiles.length === 0) return [];
 
-      // Shuffle and take 5
-      const shuffled = profiles.sort(() => Math.random() - 0.5).slice(0, 5);
-      
-      // Get badges for each profile via direct join
-      const userIds = shuffled.map(p => p.id);
-      const { data: allUserBadges } = await supabase
-        .from('user_badges')
-        .select('user_id, badge_id, display_order')
-        .in('user_id', userIds)
-        .eq('is_enabled', true);
-
-      const badgeIds = [...new Set((allUserBadges || []).map(ub => ub.badge_id))];
-
-      let badgeDetails: Record<string, { id: string; name: string; color: string | null; icon_url: string | null }> = {};
-      if (badgeIds.length > 0) {
-        const { data: globalBadges } = await supabase
-          .from('global_badges')
-          .select('id, name, color, icon_url')
-          .in('id', badgeIds);
-
-        (globalBadges || []).forEach(b => {
-          badgeDetails[b.id] = b;
-        });
-      }
-
-      const profilesWithBadges: ProfileWithBadges[] = shuffled.map((profile) => {
-        const profileBadgeRows = (allUserBadges || [])
+      // Step 5: Attach badges to profiles
+      const profilesWithBadges: ProfileWithBadges[] = profiles.map((profile) => {
+        const profileBadgeRows = allUserBadges
           .filter(ub => ub.user_id === profile.id)
           .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
           .slice(0, 6);
