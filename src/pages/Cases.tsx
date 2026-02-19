@@ -60,8 +60,8 @@ function PremiumKeyBanner() {
 
 export default function Cases() {
   const { user } = useAuth();
-  const OWNER_ID = '42fe6f70-12d4-406f-bf3d-72550f52420c';
-  const isOwner = user?.id === OWNER_ID;
+  const ALLOWED_IDS = ['42fe6f70-12d4-406f-bf3d-72550f52420c', '6a793fac-cc2a-4ecf-a73a-3f4ceaeac3c6'];
+  const isOwner = user ? ALLOWED_IDS.includes(user.id) : false;
 
   const { data: cases, isLoading } = useCases();
   const { data: userBalance = BigInt(0) } = useUserBalance();
