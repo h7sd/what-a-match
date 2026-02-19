@@ -145,7 +145,7 @@ function useCaseSounds() {
       const ctx = getCtx();
       const startAudioTime = ctx.currentTime + 0.05;
       const durationSec = durationMs / 1000;
-      const itemWidth = 147;
+      const itemWidth = 142;
       const totalItems = 100;
       const totalDistance = totalItems * itemWidth;
       let prevPos = 0;
@@ -200,7 +200,7 @@ function StripItem({ item }: { item: CaseItem }) {
   const colors = rarityColors[item.rarity as keyof typeof rarityColors] || rarityColors.common;
   return (
     <div
-      className="flex-shrink-0 mx-1.5 w-[130px] h-[160px] rounded-xl flex flex-col items-center justify-center gap-2 border-2"
+      className="flex-shrink-0 w-[142px] h-[160px] rounded-xl flex flex-col items-center justify-center gap-2 border-2"
       style={{ backgroundColor: `${colors.bg}15`, borderColor: `${colors.border}60` }}
     >
       <div className="w-14 h-14 flex items-center justify-center">
@@ -253,7 +253,7 @@ export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseO
   const colors = rarityColors[rarity as keyof typeof rarityColors] || rarityColors.common;
   const display = getItemDisplay(wonItem);
 
-  const itemWidth = 147;
+  const itemWidth = 142;
   const winIndex = 50;
   const targetX = -(winIndex * itemWidth) + (typeof window !== 'undefined' ? window.innerWidth / 2 : 500) - itemWidth / 2;
 
@@ -276,7 +276,7 @@ export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseO
 
                   <motion.div
                     className="flex absolute top-[10px]"
-                    initial={{ x: 100 }}
+                    initial={{ x: 0 }}
                     animate={{ x: targetX }}
                     transition={{ duration: SPIN_DURATION_MS / 1000, ease: [0.12, 0.8, 0.32, 1] }}
                   >
