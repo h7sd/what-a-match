@@ -10,51 +10,74 @@ async function getRobloxUserId(username: string): Promise<number | null> {
   try {
     const res = await fetch("https://users.roblox.com/v1/usernames/users", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      },
       body: JSON.stringify({ usernames: [username], excludeBannedUsers: false }),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(10000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error("User lookup failed:", res.status, await res.text().catch(() => ""));
+      return null;
+    }
     const data = await res.json();
     return data?.data?.[0]?.id ?? null;
-  } catch {
+  } catch (e) {
+    console.error("User lookup error:", e);
     return null;
   }
 }
 
-async function getRobloxThumbnail(userId: number): Promise<string | null> {
-  const sizes = ["720x720", "420x420", "352x352"];
+async function getAvatarImageUrl(userId: number): Promise<string | null> {
+  const endpoints = [
+    `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=720x720&format=Png&isCircular=false`,
+    `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=420x420&format=Png&isCircular=false`,
+    `https://thumbnails.roblox.com/v1/users/avatar-full?userIds=${userId}&size=720x720&format=Png&isCircular=false`,
+    `https://thumbnails.roblox.com/v1/users/avatar-full?userIds=${userId}&size=420x420&format=Png&isCircular=false`,
+  ];
 
-  for (const size of sizes) {
+  for (const url of endpoints) {
     try {
-      const res = await fetch(
-        `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=${size}&format=Png&isCircular=false`,
-        { signal: AbortSignal.timeout(8000) }
-      );
-      if (!res.ok) continue;
+      const res = await fetch(url, {
+        headers: {
+          "Accept": "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) {
+        console.log(`Endpoint ${url} returned ${res.status}`);
+        continue;
+      }
       const data = await res.json();
       const item = data?.data?.[0];
-      if (item?.state === "Completed" && item?.imageUrl) {
+      console.log(`Endpoint result for ${url}:`, JSON.stringify(item));
+      if (item?.imageUrl) {
         return item.imageUrl;
       }
-    } catch {
+    } catch (e) {
+      console.log(`Endpoint ${url} error:`, e);
       continue;
     }
   }
 
+  // Fallback: try the legacy render URL directly (no auth needed)
   try {
-    const res = await fetch(
-      `https://thumbnails.roblox.com/v1/users/avatar-bust?userIds=${userId}&size=420x420&format=Png&isCircular=false`,
-      { signal: AbortSignal.timeout(8000) }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      const item = data?.data?.[0];
-      if (item?.state === "Completed" && item?.imageUrl) {
-        return item.imageUrl;
-      }
+    const renderUrl = `https://www.roblox.com/Thumbs/Avatar.ashx?x=420&y=420&userId=${userId}`;
+    const res = await fetch(renderUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      },
+      signal: AbortSignal.timeout(10000),
+      redirect: "follow",
+    });
+    if (res.ok && res.headers.get("content-type")?.startsWith("image/")) {
+      return renderUrl;
     }
-  } catch {
+  } catch (e) {
+    console.log("Legacy render fallback error:", e);
   }
 
   return null;
@@ -84,24 +107,40 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const thumbnailUrl = await getRobloxThumbnail(userId);
-    if (!thumbnailUrl) {
-      return new Response(JSON.stringify({ error: "Thumbnail not available", userId }), {
+    const imageUrl = await getAvatarImageUrl(userId);
+    if (!imageUrl) {
+      return new Response(JSON.stringify({ error: "Thumbnail unavailable", userId }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const imgRes = await fetch(thumbnailUrl, { signal: AbortSignal.timeout(10000) });
+    // Fetch the actual image and proxy it
+    const imgRes = await fetch(imageUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      },
+      signal: AbortSignal.timeout(12000),
+      redirect: "follow",
+    });
+
     if (!imgRes.ok) {
-      return new Response(JSON.stringify({ error: "Failed to fetch image", thumbnailUrl }), {
+      return new Response(JSON.stringify({ error: "Image fetch failed", status: imgRes.status }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const contentType = imgRes.headers.get("content-type") || "image/png";
+    if (!contentType.startsWith("image/")) {
+      const body = await imgRes.text();
+      return new Response(JSON.stringify({ error: "Not an image", contentType, body: body.slice(0, 200) }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const imageData = await imgRes.arrayBuffer();
-    const contentType = imgRes.headers.get("content-type") || "image/png";
 
     return new Response(imageData, {
       status: 200,
@@ -112,6 +151,7 @@ Deno.serve(async (req: Request) => {
       },
     });
   } catch (err) {
+    console.error("Unhandled error:", err);
     return new Response(JSON.stringify({ error: "Internal error", detail: String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

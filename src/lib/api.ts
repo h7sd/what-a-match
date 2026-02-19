@@ -153,6 +153,7 @@ export interface PublicProfile {
   global_badge_color: string | null;
   og_embed_color: string | null;
   mc_username: string | null;
+  roblox_username: string | null;
 }
 
 export async function getPublicProfile(username: string): Promise<PublicProfile | null> {

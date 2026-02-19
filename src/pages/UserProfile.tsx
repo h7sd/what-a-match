@@ -526,7 +526,7 @@ export default function UserProfile() {
           )}
 
           {/* Roblox Avatar Viewer - fixed on the right side */}
-          {(profile as any).roblox_username && (
+          {profile.roblox_username && (
             <motion.div
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: showStartScreen ? 0 : 1, x: showStartScreen ? 40 : 0 }}
@@ -535,7 +535,7 @@ export default function UserProfile() {
               style={{ right: 'calc(50% - 680px)', top: 'calc(50% - 310px)' }}
             >
               <RobloxAvatarViewer
-                robloxUsername={(profile as any).roblox_username}
+                robloxUsername={profile.roblox_username}
                 accentColor={accentColor}
               />
             </motion.div>
