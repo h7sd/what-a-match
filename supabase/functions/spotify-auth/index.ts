@@ -26,11 +26,17 @@ Deno.serve(async (req: Request) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 
     if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
-      const appUrl = Deno.env.get("APP_URL") || "https://uservault.cc";
-      if (action === "callback") {
+      console.error("Spotify secrets missing - SPOTIFY_CLIENT_ID:", !!SPOTIFY_CLIENT_ID, "SPOTIFY_CLIENT_SECRET:", !!SPOTIFY_CLIENT_SECRET);
+      if (action === "callback" || action === "callback_json") {
+        if (action === "callback_json") {
+          return new Response(JSON.stringify({ redirect: "https://uservault.cc/dashboard?spotify=error&reason=not_configured" }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         return new Response(null, {
           status: 302,
-          headers: { Location: `${appUrl}/dashboard?spotify=error&reason=not_configured` },
+          headers: { Location: "https://uservault.cc/dashboard?spotify=error&reason=not_configured" },
         });
       }
       return new Response(
