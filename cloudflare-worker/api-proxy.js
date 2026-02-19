@@ -152,7 +152,9 @@ export default {
         });
         // Edge function returns 302 with a Location header pointing to the dashboard
         if (res.status === 301 || res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
-          const location = res.headers.get("Location") || "https://uservault.net/dashboard?spotify=error";
+          let location = res.headers.get("Location") || "https://uservault.cc/dashboard?spotify=error";
+          // Fix wrong domain if edge function returns uservault.net instead of uservault.cc
+          location = location.replace("https://uservault.net/", "https://uservault.cc/");
           return new Response(null, {
             status: 302,
             headers: { Location: location },
@@ -161,12 +163,12 @@ export default {
         // Non-redirect response (e.g. 503 not configured, 500 error) - redirect to error page
         return new Response(null, {
           status: 302,
-          headers: { Location: "https://uservault.net/dashboard?spotify=error" },
+          headers: { Location: "https://uservault.cc/dashboard?spotify=error" },
         });
       } catch {
         return new Response(null, {
           status: 302,
-          headers: { Location: "https://uservault.net/dashboard?spotify=error" },
+          headers: { Location: "https://uservault.cc/dashboard?spotify=error" },
         });
       }
     }

@@ -26,7 +26,7 @@ Deno.serve(async (req: Request) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 
     if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
-      const appUrl = Deno.env.get("APP_URL") || "https://uservault.net";
+      const appUrl = Deno.env.get("APP_URL") || "https://uservault.cc";
       if (action === "callback") {
         return new Response(null, {
           status: 302,
@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
       const state = url.searchParams.get("state");
       const error = url.searchParams.get("error");
 
-      const appUrl = Deno.env.get("APP_URL") || "https://uservault.net";
+      const appUrl = Deno.env.get("APP_URL") || "https://uservault.cc";
 
       if (error || !code || !state) {
         return new Response(null, {
