@@ -137,6 +137,36 @@ export default {
       return proxyToSupabase(request, pathname);
     }
     
+    // Handle Spotify OAuth callback redirect
+    if (pathname === "/api-proxy" && url.searchParams.get("spotify_callback") === "1") {
+      const spotifyParams = new URLSearchParams(url.search);
+      spotifyParams.set("action", "callback");
+      spotifyParams.delete("spotify_callback");
+      const targetUrl = `${SUPABASE_URL}/functions/v1/spotify-auth?${spotifyParams.toString()}`;
+      return fetch(targetUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        redirect: "manual",
+      }).then(async (res) => {
+        const newHeaders = new Headers(res.headers);
+        Object.entries(corsHeaders).forEach(([key, value]) => {
+          newHeaders.set(key, value);
+        });
+        return new Response(res.body, {
+          status: res.status,
+          statusText: res.statusText,
+          headers: newHeaders,
+        });
+      }).catch(() => {
+        return new Response(JSON.stringify({ error: "Spotify callback failed" }), {
+          status: 502,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      });
+    }
+
     // Not an API request - return 404 or pass through
     return new Response(JSON.stringify({ error: "Not found" }), {
       status: 404,
