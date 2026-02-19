@@ -29,8 +29,8 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
   const [error, setError] = useState(false);
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-  const width = isMobile ? 220 : 380;
-  const height = isMobile ? 320 : 560;
+  const width = isMobile ? 260 : 440;
+  const height = isMobile ? 380 : 640;
 
   useEffect(() => {
     if (!canvasRef.current || !robloxUsername) return;
@@ -109,12 +109,25 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
         const object = objLoader.parse(objText);
         if (cancelled) return;
 
+        // Remove specularity/shininess from all materials
+        object.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            mats.forEach((mat) => {
+              if (mat instanceof THREE.MeshPhongMaterial) {
+                mat.shininess = 0;
+                mat.specular = new THREE.Color(0x000000);
+              }
+            });
+          }
+        });
+
         // Step 7: Setup Three.js scene
         const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(width, height);
         renderer.setClearColor(0x000000, 0);
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
         rendererRef.current = renderer;
 
         const scene = new THREE.Scene();
@@ -135,14 +148,11 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
         threeCamera.position.set(0, 0, camDist);
         threeCamera.lookAt(0, 0, 0);
 
-        // Lighting - natural, no bloom/glow
-        scene.add(new THREE.AmbientLight(0xffffff, 2.5));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(3, 8, 5);
+        // Lighting - flat/matte, no specularity
+        scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLight.position.set(2, 5, 4);
         scene.add(dirLight);
-        const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
-        backLight.position.set(-3, -2, -4);
-        scene.add(backLight);
 
         if (!cancelled) setLoading(false);
 
