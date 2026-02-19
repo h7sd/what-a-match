@@ -4,8 +4,9 @@ import { toast } from 'sonner';
 
 export interface CaseItem {
   id: string;
-  item_type: 'badge' | 'coins';
+  item_type: 'badge' | 'coins' | 'premium_key';
   badge_id: string | null;
+  global_badge_id: string | null;
   coin_amount: number | null;
   rarity: string;
   drop_rate: number;
@@ -14,7 +15,12 @@ export interface CaseItem {
     name: string;
     icon_url: string;
     color: string;
-  };
+  } | null;
+  global_badge?: {
+    name: string;
+    icon_url: string;
+    color: string;
+  } | null;
 }
 
 export interface Case {
@@ -22,6 +28,8 @@ export interface Case {
   name: string;
   description: string | null;
   image_url: string | null;
+  gradient_css: string | null;
+  accent_color: string | null;
   price: number;
   active: boolean;
   order_index: number;
@@ -31,7 +39,7 @@ export interface Case {
 export interface InventoryItem {
   id: string;
   user_id: string;
-  item_type: 'badge' | 'coins';
+  item_type: 'badge' | 'coins' | 'premium_key';
   badge_id: string | null;
   coin_amount: number | null;
   rarity: string;
@@ -68,19 +76,13 @@ export function useCases() {
   return useQuery({
     queryKey: ['cases'],
     queryFn: async () => {
-      console.log('[useCases] Fetching cases...');
       const { data, error } = await supabase
         .from('cases')
         .select('*')
         .eq('active', true)
         .order('order_index', { ascending: true });
 
-      if (error) {
-        console.error('[useCases] Error fetching cases:', error);
-        throw error;
-      }
-
-      console.log('[useCases] Cases fetched:', data);
+      if (error) throw error;
       return data as Case[];
     },
   });
@@ -97,6 +99,11 @@ export function useCaseItems(caseId: string | null) {
         .select(`
           *,
           badge:badge_id (
+            name,
+            icon_url,
+            color
+          ),
+          global_badge:global_badge_id (
             name,
             icon_url,
             color
@@ -145,10 +152,10 @@ export function useOpenCase() {
       queryClient.invalidateQueries({ queryKey: ['case-transactions'] });
 
       const rarity = data.item.rarity;
-      if (rarity === 'legendary' || rarity === 'premium') {
-        toast.success(`Amazing! You won a ${rarity} item!`, {
-          duration: 5000,
-        });
+      if (rarity === 'legendary') {
+        toast.success('Legendary drop! Amazing!', { duration: 5000 });
+      } else if (rarity === 'premium') {
+        toast.success('PREMIUM KEY! Unbelievably rare!', { duration: 8000 });
       }
     },
     onError: (error: Error) => {

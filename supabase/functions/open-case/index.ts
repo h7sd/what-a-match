@@ -8,8 +8,9 @@ const corsHeaders = {
 
 interface CaseItem {
   id: string;
-  item_type: 'badge' | 'coins';
+  item_type: 'badge' | 'coins' | 'premium_key';
   badge_id: string | null;
+  global_badge_id: string | null;
   coin_amount: number | null;
   rarity: string;
   drop_rate: number;
@@ -18,7 +19,12 @@ interface CaseItem {
     name: string;
     icon_url: string;
     color: string;
-  };
+  } | null;
+  global_badge?: {
+    name: string;
+    icon_url: string;
+    color: string;
+  } | null;
 }
 
 Deno.serve(async (req: Request) => {
@@ -84,11 +90,17 @@ Deno.serve(async (req: Request) => {
         id,
         item_type,
         badge_id,
+        global_badge_id,
         coin_amount,
         rarity,
         drop_rate,
         display_value,
-        badges:badge_id (
+        badge:badge_id (
+          name,
+          icon_url,
+          color
+        ),
+        global_badge:global_badge_id (
           name,
           icon_url,
           color
@@ -137,7 +149,20 @@ Deno.serve(async (req: Request) => {
         .eq('id', user.id);
     }
 
-    const { error: inventoryError } = await supabase
+    const resolvedBadge = wonItem.badge || wonItem.global_badge || null;
+
+    const itemWonData = {
+      id: wonItem.id,
+      item_type: wonItem.item_type,
+      badge_id: wonItem.badge_id,
+      global_badge_id: wonItem.global_badge_id,
+      coin_amount: wonItem.coin_amount,
+      rarity: wonItem.rarity,
+      display_value: wonItem.display_value,
+      badge: resolvedBadge,
+    };
+
+    await supabase
       .from('user_inventory')
       .insert({
         user_id: user.id,
@@ -148,20 +173,6 @@ Deno.serve(async (req: Request) => {
         estimated_value: wonItem.display_value,
         won_from_case_id: caseId,
       });
-
-    if (inventoryError) {
-      console.error('Inventory error:', inventoryError);
-    }
-
-    const itemWonData = {
-      id: wonItem.id,
-      item_type: wonItem.item_type,
-      badge_id: wonItem.badge_id,
-      coin_amount: wonItem.coin_amount,
-      rarity: wonItem.rarity,
-      display_value: wonItem.display_value,
-      badge: wonItem.badge,
-    };
 
     const { data: userProfile } = await supabase
       .from('profiles')
@@ -174,8 +185,10 @@ Deno.serve(async (req: Request) => {
     let itemName = '';
     if (wonItem.item_type === 'coins') {
       itemName = `${wonItem.coin_amount} Coins`;
-    } else if (wonItem.badge) {
-      itemName = wonItem.badge.name;
+    } else if (wonItem.item_type === 'premium_key') {
+      itemName = 'Premium Key';
+    } else if (resolvedBadge) {
+      itemName = resolvedBadge.name;
     } else {
       itemName = 'Mystery Item';
     }
