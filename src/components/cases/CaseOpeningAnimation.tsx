@@ -59,11 +59,28 @@ function weightedPick(pool: CaseItem[]): CaseItem {
   return pool[pool.length - 1];
 }
 
+function buildDisplayPool(allItems: CaseItem[], wonItem: CaseItem): CaseItem[] {
+  if (allItems.length === 0) return [wonItem];
+  const seen = new Set<string>();
+  const pool: CaseItem[] = [];
+  for (const item of allItems) {
+    const key = item.item_type === 'coins'
+      ? `coins-${item.coin_amount}`
+      : item.item_type === 'premium_key'
+      ? 'premium_key'
+      : `badge-${item.global_badge_id || item.badge_id}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      pool.push(item);
+    }
+  }
+  return pool.length > 0 ? pool : [wonItem];
+}
+
 function generateStrip(allItems: CaseItem[], wonItem: CaseItem): CaseItem[] {
   const strip: CaseItem[] = [];
   const winIndex = 50;
-  const fallbackItem: CaseItem = { ...wonItem, id: `${wonItem.id}-fallback` };
-  const pool = allItems.length > 0 ? allItems : [fallbackItem];
+  const pool = buildDisplayPool(allItems, wonItem);
   for (let i = 0; i < 100; i++) {
     if (i === winIndex) {
       strip.push(wonItem);
