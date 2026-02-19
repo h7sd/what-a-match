@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Lock } from 'lucide-react';
 import { Coins, Key, Package, Zap } from 'lucide-react';
 import { ModernHeader } from '@/components/landing/ModernHeader';
 import { ModernFooter } from '@/components/landing/ModernFooter';
@@ -59,6 +60,9 @@ function PremiumKeyBanner() {
 
 export default function Cases() {
   const { user } = useAuth();
+  const OWNER_ID = '42fe6f70-12d4-406f-bf3d-72550f52420c';
+  const isOwner = user?.id === OWNER_ID;
+
   const { data: cases, isLoading } = useCases();
   const { data: userBalance = BigInt(0) } = useUserBalance();
   const [activeTab, setActiveTab] = useState<ActiveTab>('cases');
@@ -152,7 +156,17 @@ export default function Cases() {
           {/* Cases Grid */}
           {activeTab === 'cases' && (
             <motion.div key="cases" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {isLoading ? (
+              {!isOwner ? (
+                <div className="flex flex-col items-center justify-center py-24 gap-5">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Lock className="w-8 h-8 text-gray-500" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-lg font-bold text-white mb-1">Coming Soon</h3>
+                    <p className="text-sm text-gray-500 max-w-xs">Case opening is currently in beta and not yet publicly available.</p>
+                  </div>
+                </div>
+              ) : isLoading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="h-72 rounded-2xl animate-pulse bg-white/5" />
