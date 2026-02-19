@@ -29,8 +29,8 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
   const [error, setError] = useState(false);
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-  const width = isMobile ? 260 : 460;
-  const height = isMobile ? 400 : 680;
+  const width = isMobile ? 220 : 380;
+  const height = isMobile ? 320 : 560;
 
   useEffect(() => {
     if (!canvasRef.current || !robloxUsername) return;
@@ -135,13 +135,13 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
         threeCamera.position.set(0, 0, camDist);
         threeCamera.lookAt(0, 0, 0);
 
-        // Lighting
-        scene.add(new THREE.AmbientLight(0xffffff, 1.8));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
-        dirLight.position.set(5, 10, 7);
+        // Lighting - natural, no bloom/glow
+        scene.add(new THREE.AmbientLight(0xffffff, 2.5));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(3, 8, 5);
         scene.add(dirLight);
-        const backLight = new THREE.DirectionalLight(0xffffff, 0.6);
-        backLight.position.set(-5, -3, -5);
+        const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        backLight.position.set(-3, -2, -4);
         scene.add(backLight);
 
         if (!cancelled) setLoading(false);
@@ -191,10 +191,6 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
             <Loader2 className="w-6 h-6 animate-spin" style={{ color: accentColor }} />
           </div>
         )}
-        <div
-          className="absolute inset-0 rounded-3xl blur-3xl opacity-20 pointer-events-none"
-          style={{ background: `radial-gradient(ellipse at center, ${accentColor}, transparent 70%)` }}
-        />
         <canvas
           ref={canvasRef}
           style={{
