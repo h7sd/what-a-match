@@ -139,7 +139,7 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
         object.position.sub(center);
-        object.position.y += size.y * 0.12;
+        object.position.y += size.y * 0.22;
         scene.add(object);
 
         // Frame camera to show full model
