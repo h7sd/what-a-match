@@ -166,7 +166,16 @@ export default function Dashboard() {
       toast({ title: 'Spotify connected!', description: 'Your currently playing track will now show on your profile.' });
       navigate('/dashboard#customization', { replace: true });
     } else if (spotifyStatus === 'error') {
-      toast({ title: 'Spotify connection failed', description: 'Something went wrong. Please try again.', variant: 'destructive' });
+      const reason = params.get('reason');
+      const descriptions: Record<string, string> = {
+        not_configured: 'Spotify is not configured on the server.',
+        state_parse: 'Session state invalid. Please try again.',
+        token_400: 'Invalid redirect URI - check Spotify app settings.',
+        token_401: 'Invalid Spotify credentials.',
+        token_503: 'Spotify service unavailable.',
+      };
+      const desc = (reason && descriptions[reason]) || `Something went wrong${reason ? ` (${reason})` : ''}.`;
+      toast({ title: 'Spotify connection failed', description: desc, variant: 'destructive' });
       navigate('/dashboard#customization', { replace: true });
     }
   }, []);
