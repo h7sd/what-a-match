@@ -34,7 +34,9 @@ Deno.serve(async (req: Request) => {
       .eq('id', caseId)
       .eq('active', true)
       .single();
-    if (caseError || !caseData) throw new Error('Case not found: ' + (caseError?.message || 'inactive'));
+    if (caseError || !caseData) throw new Error('Case not found');
+
+    const casePrice = BigInt(caseData.price);
 
     // Load balance
     const { data: balanceRow, error: balanceReadError } = await supabase
@@ -44,9 +46,7 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
     if (balanceReadError) throw new Error('Failed to read balance: ' + balanceReadError.message);
 
-    const currentBalance = Number(balanceRow?.balance ?? 0);
-    const casePrice = Number(caseData.price);
-
+    const currentBalance = BigInt(balanceRow?.balance ?? 0);
     if (currentBalance < casePrice) throw new Error('Insufficient coins');
 
     // Load case items with global badge data
@@ -89,19 +89,20 @@ Deno.serve(async (req: Request) => {
     }
     if (!wonItem) wonItem = items[items.length - 1];
 
-    // Calculate new balance
+    // Calculate new balance using BigInt
     let newBalance = currentBalance - casePrice;
     if (wonItem.item_type === 'coins' && wonItem.coin_amount) {
-      newBalance = newBalance + Number(wonItem.coin_amount);
+      newBalance = newBalance + BigInt(wonItem.coin_amount);
     }
 
-    // Update or create balance row
+    // Update or create balance row — store as string to preserve bigint precision
     if (balanceRow) {
+      const newSpent = BigInt(balanceRow.lifetime_spent ?? 0) + casePrice;
       const { error: updateError } = await supabase
         .from('user_balances')
         .update({
-          balance: newBalance,
-          lifetime_spent: Number(balanceRow.lifetime_spent ?? 0) + casePrice,
+          balance: newBalance.toString(),
+          lifetime_spent: newSpent.toString(),
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id);
@@ -111,14 +112,16 @@ Deno.serve(async (req: Request) => {
         .from('user_balances')
         .insert({
           user_id: user.id,
-          balance: newBalance,
-          lifetime_earned: 0,
-          lifetime_spent: casePrice,
+          balance: newBalance.toString(),
+          lifetime_earned: '0',
+          lifetime_spent: casePrice.toString(),
         });
       if (insertError) throw new Error('Failed to create balance: ' + insertError.message);
     }
 
-    const globalBadge = Array.isArray(wonItem.global_badge) ? wonItem.global_badge[0] : wonItem.global_badge;
+    const globalBadge = Array.isArray(wonItem.global_badge)
+      ? wonItem.global_badge[0]
+      : wonItem.global_badge;
 
     const itemWonData = {
       id: wonItem.id,
@@ -131,7 +134,7 @@ Deno.serve(async (req: Request) => {
       badge: globalBadge || null,
     };
 
-    // Insert to user_inventory — columns: id, user_id, item_type, item_id, item_data, quantity, acquired_at
+    // Insert to user_inventory
     const { error: inventoryError } = await supabase
       .from('user_inventory')
       .insert({
@@ -145,7 +148,7 @@ Deno.serve(async (req: Request) => {
       console.error('Inventory insert error (non-fatal):', inventoryError.message);
     }
 
-    // Get profile for live feed display name
+    // Get profile display name for live feed
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('username, display_name')
@@ -165,7 +168,7 @@ Deno.serve(async (req: Request) => {
       itemName = 'Mystery Item';
     }
 
-    // case_transactions: columns: user_id, case_id, battle_id, transaction_type, items_won, total_value
+    // Record transaction
     await supabase.from('case_transactions').insert({
       user_id: user.id,
       case_id: caseId,
@@ -174,15 +177,15 @@ Deno.serve(async (req: Request) => {
       total_value: Number(wonItem.display_value),
     });
 
-    // case_opening_history: columns: user_id, case_id, item_won_id, coins_spent, opened_at
+    // Record opening history
     await supabase.from('case_opening_history').insert({
       user_id: user.id,
       case_id: caseId,
       item_won_id: wonItem.id,
-      coins_spent: casePrice,
+      coins_spent: Number(casePrice),
     });
 
-    // live_feed: columns: user_id, username, case_name, item_name, item_rarity, item_value
+    // Record in live feed
     await supabase.from('live_feed').insert({
       user_id: user.id,
       username: displayUsername,
@@ -193,7 +196,7 @@ Deno.serve(async (req: Request) => {
     });
 
     return new Response(
-      JSON.stringify({ success: true, item: itemWonData, newBalance }),
+      JSON.stringify({ success: true, item: itemWonData, newBalance: newBalance.toString() }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
