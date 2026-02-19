@@ -563,7 +563,8 @@ Deno.serve(async (req) => {
           glow_badges, enable_profile_gradient, icon_only_links,
           icon_links_opacity, transparent_badges, ascii_size, ascii_waves, is_premium,
           display_name_animation, show_likes, show_comments, likes_count, dislikes_count,
-          mc_username, use_global_badge_color, global_badge_color, og_embed_color
+          mc_username, use_global_badge_color, global_badge_color, og_embed_color,
+          show_spotify_widget, id
         `);
 
         if (alias) {
