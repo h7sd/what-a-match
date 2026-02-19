@@ -9,6 +9,7 @@ const corsHeaders = {
 const FETCH_HEADERS = {
   "Accept": "*/*",
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Accept-Language": "en-US,en;q=0.9",
 };
 
 async function getRobloxUserId(username: string): Promise<number | null> {
@@ -46,8 +47,11 @@ async function get2dThumbnailUrl(userId: number): Promise<string | null> {
   return null;
 }
 
-async function get3dModelUrl(userId: number): Promise<{ objUrl: string; mtlUrl?: string } | null> {
+const CDN_BASE = "https://t3.rbxcdn.com";
+
+async function get3dManifest(userId: number): Promise<any | null> {
   try {
+    // Get the manifest URL from Roblox API
     const res = await fetch(
       `https://thumbnails.roblox.com/v1/users/avatar-3d?userId=${userId}`,
       { headers: FETCH_HEADERS, signal: AbortSignal.timeout(10000) }
@@ -55,7 +59,15 @@ async function get3dModelUrl(userId: number): Promise<{ objUrl: string; mtlUrl?:
     if (!res.ok) return null;
     const data = await res.json();
     if (data?.state !== "Completed" || !data?.imageUrl) return null;
-    return { objUrl: data.imageUrl };
+
+    // Fetch the manifest JSON (the -Obj url returns JSON, not an actual OBJ file)
+    const manifestRes = await fetch(data.imageUrl, {
+      headers: FETCH_HEADERS,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!manifestRes.ok) return null;
+    const manifest = await manifestRes.json();
+    return manifest;
   } catch {
     return null;
   }
@@ -69,46 +81,7 @@ Deno.serve(async (req: Request) => {
   try {
     const url = new URL(req.url);
     const username = url.searchParams.get("username");
-    const mode = url.searchParams.get("mode") || "2d"; // "2d" | "3d-info" | "3d-model"
-    const proxyUrl = url.searchParams.get("url"); // for proxying CDN assets
-
-    // Proxy mode: proxy any roblox CDN asset (OBJ, MTL, textures)
-    if (mode === "proxy" && proxyUrl) {
-      const allowedHosts = ["t2.rbxcdn.com", "t3.rbxcdn.com", "t4.rbxcdn.com", "t5.rbxcdn.com", "tr.rbxcdn.com", "rbxcdn.com"];
-      let parsedUrl: URL;
-      try {
-        parsedUrl = new URL(proxyUrl);
-      } catch {
-        return new Response(JSON.stringify({ error: "Invalid URL" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const isAllowed = allowedHosts.some(h => parsedUrl.hostname === h || parsedUrl.hostname.endsWith(`.${h}`));
-      if (!isAllowed) {
-        return new Response(JSON.stringify({ error: "URL not allowed" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const assetRes = await fetch(proxyUrl, { headers: FETCH_HEADERS, signal: AbortSignal.timeout(15000) });
-      if (!assetRes.ok) {
-        return new Response(JSON.stringify({ error: "Asset fetch failed", status: assetRes.status }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const contentType = assetRes.headers.get("content-type") || "application/octet-stream";
-      const data = await assetRes.arrayBuffer();
-      return new Response(data, {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": contentType,
-          "Cache-Control": "public, max-age=86400",
-        },
-      });
-    }
+    const mode = url.searchParams.get("mode") || "2d";
 
     if (!username || username.length > 50 || !/^[a-zA-Z0-9_]+$/.test(username)) {
       return new Response(JSON.stringify({ error: "Invalid username" }), {
@@ -125,22 +98,34 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 3D info mode: return the OBJ/MTL URLs for the frontend to load
-    if (mode === "3d-info") {
-      const model = await get3dModelUrl(userId);
-      if (!model) {
+    // 3D manifest mode: fetch manifest server-side and return full CDN URLs to browser
+    if (mode === "3d") {
+      const manifest = await get3dManifest(userId);
+      if (!manifest) {
         return new Response(JSON.stringify({ error: "3D model unavailable", userId }), {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ objUrl: model.objUrl, userId }), {
+
+      // Return full CDN URLs so the browser can load them directly
+      const result = {
+        objUrl: `${CDN_BASE}/${manifest.obj}`,
+        mtlUrl: `${CDN_BASE}/${manifest.mtl}`,
+        textureUrls: (manifest.textures || []).map((t: string) => `${CDN_BASE}/${t}`),
+        textureIds: manifest.textures || [],
+        camera: manifest.camera,
+        aabb: manifest.aabb,
+        userId,
+      };
+
+      return new Response(JSON.stringify(result), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" },
       });
     }
 
-    // Default 2D mode: proxy the avatar image
+    // Default 2D mode: proxy the avatar image through our server
     const thumbnailUrl = await get2dThumbnailUrl(userId);
     if (!thumbnailUrl) {
       return new Response(JSON.stringify({ error: "Thumbnail unavailable", userId }), {
@@ -159,7 +144,7 @@ Deno.serve(async (req: Request) => {
 
     const contentType = imgRes.headers.get("content-type") || "image/png";
     if (!contentType.startsWith("image/")) {
-      return new Response(JSON.stringify({ error: "Not an image", contentType }), {
+      return new Response(JSON.stringify({ error: "Not an image" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

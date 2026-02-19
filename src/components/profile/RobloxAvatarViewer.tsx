@@ -12,26 +12,16 @@ interface RobloxAvatarViewerProps {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 const PROXY_BASE = `${SUPABASE_URL}/functions/v1/roblox-avatar-proxy`;
-const CDN_BASE = 'https://t3.rbxcdn.com';
-
-function proxyUrl(cdnPath: string): string {
-  const full = cdnPath.startsWith('http') ? cdnPath : `${CDN_BASE}/${cdnPath}`;
-  return `${PROXY_BASE}?mode=proxy&url=${encodeURIComponent(full)}`;
-}
 
 async function fetchText(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: { apikey: SUPABASE_ANON_KEY },
-  });
-  if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${res.status}`);
   return res.text();
 }
 
 async function fetchBlob(url: string): Promise<Blob> {
-  const res = await fetch(url, {
-    headers: { apikey: SUPABASE_ANON_KEY },
-  });
-  if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${res.status}`);
   return res.blob();
 }
 
@@ -50,13 +40,12 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
     if (!canvasRef.current || !robloxUsername) return;
 
     let cancelled = false;
-
+    const blobUrls: string[] = [];
     const canvas = canvasRef.current;
 
     setLoading(true);
     setError(false);
 
-    // Cleanup previous renderer
     if (rendererRef.current) {
       if (animFrameRef.current != null) cancelAnimationFrame(animFrameRef.current);
       rendererRef.current.dispose();
@@ -65,57 +54,57 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
 
     const run = async () => {
       try {
-        // Step 1: get 3D model manifest
-        const infoUrl = `${PROXY_BASE}?username=${encodeURIComponent(robloxUsername)}&mode=3d-info`;
-        const infoRes = await fetch(infoUrl, { headers: { apikey: SUPABASE_ANON_KEY } });
-        if (!infoRes.ok || cancelled) throw new Error('3d-info failed');
-        const info = await infoRes.json();
-        if (info.error || !info.objUrl) throw new Error(info.error || 'no objUrl');
-
-        // The objUrl returns a JSON manifest
-        const manifestRes = await fetch(proxyUrl(info.objUrl), { headers: { apikey: SUPABASE_ANON_KEY } });
-        if (!manifestRes.ok || cancelled) throw new Error('manifest fetch failed');
+        // Step 1: Get manifest from our edge function (resolves username -> CDN URLs)
+        const manifestRes = await fetch(
+          `${PROXY_BASE}?username=${encodeURIComponent(robloxUsername)}&mode=3d`,
+          { headers: { apikey: SUPABASE_ANON_KEY } }
+        );
+        if (!manifestRes.ok || cancelled) throw new Error('manifest failed');
         const manifest = await manifestRes.json();
+        if (manifest.error) throw new Error(manifest.error);
 
-        const { obj: objId, mtl: mtlId, textures: textureIds, camera, aabb } = manifest;
+        const { objUrl, mtlUrl, textureUrls, textureIds, camera } = manifest;
 
-        // Step 2: fetch MTL text
-        const mtlText = await fetchText(proxyUrl(mtlId));
+        // Step 2: Fetch OBJ and MTL text directly from CDN (browser request)
+        const [mtlText, objText] = await Promise.all([
+          fetchText(mtlUrl),
+          fetchText(objUrl),
+        ]);
         if (cancelled) return;
 
-        // Step 3: fetch OBJ text
-        const objText = await fetchText(proxyUrl(objId));
-        if (cancelled) return;
-
-        // Step 4: load all textures as blob URLs
+        // Step 3: Fetch textures as blob URLs (browser request)
         const textureMap: Record<string, string> = {};
-        await Promise.all((textureIds || []).map(async (texId: string) => {
-          try {
-            const blob = await fetchBlob(proxyUrl(texId));
-            textureMap[texId] = URL.createObjectURL(blob);
-          } catch { /* skip failed textures */ }
-        }));
+        await Promise.all(
+          (textureUrls || []).map(async (texUrl: string, i: number) => {
+            try {
+              const blob = await fetchBlob(texUrl);
+              const blobUrl = URL.createObjectURL(blob);
+              blobUrls.push(blobUrl);
+              textureMap[textureIds[i]] = blobUrl;
+            } catch { /* skip failed textures */ }
+          })
+        );
         if (cancelled) return;
 
-        // Step 5: patch MTL to use blob URLs
+        // Step 4: Patch MTL to point at blob URLs
         const patchedMtl = mtlText.replace(/map_\w+\s+(\S+)/g, (match, texName) => {
           const blobUrl = textureMap[texName];
           return blobUrl ? match.replace(texName, blobUrl) : match;
         });
 
-        // Step 6: parse MTL
+        // Step 5: Parse materials
         const mtlLoader = new MTLLoader();
         mtlLoader.setResourcePath('');
         const materials = mtlLoader.parse(patchedMtl, '');
         materials.preload();
 
-        // Step 7: parse OBJ with materials
+        // Step 6: Parse OBJ with materials
         const objLoader = new OBJLoader();
         objLoader.setMaterials(materials);
         const object = objLoader.parse(objText);
         if (cancelled) return;
 
-        // Step 8: setup Three.js scene
+        // Step 7: Setup Three.js scene
         const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(width, height);
@@ -124,40 +113,35 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
         rendererRef.current = renderer;
 
         const scene = new THREE.Scene();
-        const aspect = width / height;
+        const camFov = camera?.fov ?? 30;
+        const threeCamera = new THREE.PerspectiveCamera(camFov, width / height, 0.1, 10000);
 
-        // Use camera data from manifest if available
-        let camFov = camera?.fov ?? 30;
-        const threeCamera = new THREE.PerspectiveCamera(camFov, aspect, 0.1, 10000);
-
-        // Center model using AABB
+        // Center model using bounding box
         const box = new THREE.Box3().setFromObject(object);
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
         object.position.sub(center);
-
         scene.add(object);
 
-        // Position camera to frame the model
+        // Position camera to frame the full model
         const maxDim = Math.max(size.x, size.y, size.z);
         const fovRad = (camFov * Math.PI) / 180;
-        const camDist = (maxDim / 2) / Math.tan(fovRad / 2) * 1.5;
+        const camDist = (maxDim / 2) / Math.tan(fovRad / 2) * 1.6;
         threeCamera.position.set(0, 0, camDist);
         threeCamera.lookAt(0, 0, 0);
 
         // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
-        scene.add(ambientLight);
-        const dirLight1 = new THREE.DirectionalLight(0xffffff, 2);
-        dirLight1.position.set(5, 10, 7);
-        scene.add(dirLight1);
-        const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight2.position.set(-5, -5, -5);
-        scene.add(dirLight2);
+        scene.add(new THREE.AmbientLight(0xffffff, 1.8));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+        const backLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        backLight.position.set(-5, -3, -5);
+        scene.add(backLight);
 
         if (!cancelled) setLoading(false);
 
-        // Auto-rotate animation
+        // Auto-rotate animation loop
         let angle = 0;
         const animate = () => {
           if (cancelled) return;
@@ -168,10 +152,6 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
         };
         animate();
 
-        // Cleanup blob URLs on unmount
-        return () => {
-          Object.values(textureMap).forEach(URL.revokeObjectURL);
-        };
       } catch {
         if (!cancelled) {
           setError(true);
@@ -189,6 +169,7 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
         rendererRef.current.dispose();
         rendererRef.current = null;
       }
+      blobUrls.forEach(URL.revokeObjectURL);
     };
   }, [robloxUsername, width, height]);
 
@@ -197,7 +178,7 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
   return (
     <div className="flex flex-col items-center gap-2">
       <div
-        className="relative rounded-2xl overflow-hidden"
+        className="relative rounded-2xl"
         style={{ width, height, background: 'transparent' }}
       >
         {loading && (
