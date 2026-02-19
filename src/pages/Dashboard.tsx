@@ -159,6 +159,18 @@ export default function Dashboard() {
     }
   }, [location.hash, location.pathname, isAdmin, navigate]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const spotifyStatus = params.get('spotify');
+    if (spotifyStatus === 'connected') {
+      toast({ title: 'Spotify connected!', description: 'Your currently playing track will now show on your profile.' });
+      navigate('/dashboard#customization', { replace: true });
+    } else if (spotifyStatus === 'error') {
+      toast({ title: 'Spotify connection failed', description: 'Something went wrong. Please try again.', variant: 'destructive' });
+      navigate('/dashboard#customization', { replace: true });
+    }
+  }, []);
+
   // Profile state
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');

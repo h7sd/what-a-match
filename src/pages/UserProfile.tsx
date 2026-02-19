@@ -483,9 +483,9 @@ export default function UserProfile() {
           )}
 
           {/* Spotify Now Playing Widget */}
-          {profile.discord_user_id && (profile as any).show_spotify_widget !== false && (
+          {(profile as any).show_spotify_widget !== false && (
             <SpotifyNowPlaying
-              discordUserId={profile.discord_user_id}
+              userId={profile.id}
               accentColor={accentColor}
             />
           )}
