@@ -144,30 +144,24 @@ export default {
       spotifyParams.delete("spotify_callback");
       const targetUrl = `${SUPABASE_URL}/functions/v1/spotify-auth?${spotifyParams.toString()}`;
       try {
-        // Use follow so the edge function's 302 is resolved automatically,
-        // then we re-redirect the browser to the final destination
+        // Use "manual" so we intercept the 302 from the edge function directly
+        // instead of following it (which would fetch the HTML dashboard page)
         const res = await fetch(targetUrl, {
           method: "GET",
-          redirect: "follow",
+          redirect: "manual",
         });
-        // After following redirects, the final URL will be something like
-        // https://uservault.net/dashboard?spotify=connected
-        // We forward it as a browser redirect
-        if (res.redirected && res.url) {
+        // Edge function returns 302 with a Location header pointing to the dashboard
+        if (res.status === 301 || res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
+          const location = res.headers.get("Location") || "https://uservault.net/dashboard?spotify=error";
           return new Response(null, {
             status: 302,
-            headers: { Location: res.url },
+            headers: { Location: location },
           });
         }
-        // If no redirect occurred (edge function returned JSON error etc.)
-        const newHeaders = new Headers(res.headers);
-        Object.entries(corsHeaders).forEach(([key, value]) => {
-          newHeaders.set(key, value);
-        });
-        return new Response(res.body, {
-          status: res.status,
-          statusText: res.statusText,
-          headers: newHeaders,
+        // Non-redirect response (e.g. 503 not configured, 500 error) - redirect to error page
+        return new Response(null, {
+          status: 302,
+          headers: { Location: "https://uservault.net/dashboard?spotify=error" },
         });
       } catch {
         return new Response(null, {
