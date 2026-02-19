@@ -53,9 +53,9 @@ export function FriendBadgesManager() {
         .select('*')
         .eq('creator_id', user.id);
       if (error) throw error;
-      
+
       // Get recipient usernames
-      const recipientIds = data.map(b => b.recipient_id);
+      const recipientIds = [...new Set(data.map(b => b.recipient_id))];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, username')
@@ -68,6 +68,15 @@ export function FriendBadgesManager() {
     },
     enabled: !!user?.id,
   });
+
+  // Derive the locked recipient from existing created badges
+  const lockedRecipient = createdBadges.length > 0 ? {
+    id: createdBadges[0].recipient_id,
+    username: createdBadges[0].recipient_username || 'Unknown',
+  } : null;
+
+  // Existing badge names to prevent duplicates
+  const existingBadgeNames = createdBadges.map(b => b.name.trim().toLowerCase());
 
   // Fetch received badges
   const { data: receivedBadges = [], isLoading: receivingLoading } = useQuery({
@@ -200,38 +209,47 @@ export function FriendBadgesManager() {
     return urlData.publicUrl;
   };
 
-  // Create badge mutation - creates badge for both recipient AND creator
+  // Create badge mutation
   const createBadge = useMutation({
     mutationFn: async () => {
-      if (!selectedRecipient || !newBadge.name.trim()) {
+      const effectiveRecipient = lockedRecipient || selectedRecipient;
+      if (!effectiveRecipient || !newBadge.name.trim()) {
         throw new Error('Please select a recipient and enter a badge name');
       }
-      
+
+      // Client-side duplicate name check
+      const trimmedName = newBadge.name.trim().toLowerCase();
+      if (existingBadgeNames.includes(trimmedName)) {
+        throw new Error(`A badge named "${newBadge.name.trim()}" already exists. Please use a different name.`);
+      }
+
       setIsUploading(true);
-      
-      // Upload icon if selected
+
       let iconUrl: string | null = null;
       if (iconFile) {
         iconUrl = await uploadIcon();
       }
-      
-      const badgeData = {
-        name: newBadge.name.trim(),
-        description: newBadge.description.trim() || null,
-        color: newBadge.color,
-        icon_url: iconUrl,
-      };
-      
-      // Insert badge for recipient
+
       const { error: recipientError } = await supabase
         .from('friend_badges')
         .insert({
           creator_id: user!.id,
-          recipient_id: selectedRecipient.id,
-          ...badgeData,
+          recipient_id: effectiveRecipient.id,
+          name: newBadge.name.trim(),
+          description: newBadge.description.trim() || null,
+          color: newBadge.color,
+          icon_url: iconUrl,
         });
-      
-      if (recipientError) throw recipientError;
+
+      if (recipientError) {
+        if (recipientError.message?.includes('friend_badges_creator_name_unique') || recipientError.code === '23505') {
+          throw new Error(`A badge named "${newBadge.name.trim()}" already exists.`);
+        }
+        if (recipientError.message?.includes('one person')) {
+          throw new Error('You can only create friend badges for one person.');
+        }
+        throw recipientError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friendBadges'] });
@@ -295,7 +313,20 @@ export function FriendBadgesManager() {
           </p>
         </div>
 
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <Dialog open={isCreateOpen} onOpenChange={(open) => {
+          setIsCreateOpen(open);
+          if (open && lockedRecipient) {
+            setSelectedRecipient({ id: lockedRecipient.id, username: lockedRecipient.username });
+          }
+          if (!open) {
+            setSelectedRecipient(null);
+            setSearchUsername('');
+            setSearchResults([]);
+            setNewBadge({ name: '', description: '', color: '#8B5CF6' });
+            setIconFile(null);
+            setIconPreview(null);
+          }
+        }}>
           <DialogTrigger asChild>
             <Button disabled={remainingBadges === 0}>
               <Plus className="w-4 h-4 mr-2" />
@@ -306,13 +337,19 @@ export function FriendBadgesManager() {
             <DialogHeader>
               <DialogTitle>Create Friend Badge</DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-4">
               {/* User Search */}
               <div className="space-y-2">
-                <Label>Recipient (Username, Alias, or UID)</Label>
-                
-                {selectedRecipient ? (
+                <Label>Recipient</Label>
+
+                {lockedRecipient ? (
+                  <div className="flex items-center gap-2 p-2 rounded bg-primary/10 border border-primary/30">
+                    <User className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">@{lockedRecipient.username}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">Locked – delete all badges to change</span>
+                  </div>
+                ) : selectedRecipient ? (
                   <div className="flex items-center gap-2 p-2 rounded bg-primary/10 border border-primary/30">
                     {selectedRecipient.avatar_url ? (
                       <img src={selectedRecipient.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover" />
@@ -320,9 +357,9 @@ export function FriendBadgesManager() {
                       <User className="w-4 h-4 text-primary" />
                     )}
                     <span className="text-sm font-medium">@{selectedRecipient.username}</span>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-6 w-6 ml-auto"
                       onClick={() => setSelectedRecipient(null)}
                     >
@@ -338,8 +375,8 @@ export function FriendBadgesManager() {
                         placeholder="Username, Alias oder UID..."
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                       />
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={handleSearch}
                         disabled={isSearching || !searchUsername.trim()}
                       >
@@ -350,7 +387,7 @@ export function FriendBadgesManager() {
                         )}
                       </Button>
                     </div>
-                    
+
                     {/* Search Results */}
                     {searchResults.length > 0 && (
                       <div className="border border-border rounded-lg overflow-hidden max-h-48 overflow-y-auto">
@@ -386,6 +423,9 @@ export function FriendBadgesManager() {
                   placeholder="My Custom Badge"
                   maxLength={32}
                 />
+                {newBadge.name.trim() && existingBadgeNames.includes(newBadge.name.trim().toLowerCase()) && (
+                  <p className="text-xs text-destructive">A badge with this name already exists.</p>
+                )}
               </div>
 
               {/* Description */}
@@ -464,10 +504,16 @@ export function FriendBadgesManager() {
                 <p className="text-xs text-muted-foreground">Max 100MB, PNG/JPG/GIF</p>
               </div>
 
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 onClick={() => createBadge.mutate()}
-                disabled={!selectedRecipient || !newBadge.name.trim() || createBadge.isPending || isUploading}
+                disabled={
+                  (!lockedRecipient && !selectedRecipient) ||
+                  !newBadge.name.trim() ||
+                  existingBadgeNames.includes(newBadge.name.trim().toLowerCase()) ||
+                  createBadge.isPending ||
+                  isUploading
+                }
               >
                 {(createBadge.isPending || isUploading) ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Send Badge
