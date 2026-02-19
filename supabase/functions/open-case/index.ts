@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
         rarity,
         drop_rate,
         display_value,
-        global_badge:global_badge_id (
+        global_badges!case_items_global_badge_id_fkey (
           id,
           name,
           icon_url,
@@ -119,9 +119,10 @@ Deno.serve(async (req: Request) => {
       if (insertError) throw new Error('Failed to create balance: ' + insertError.message);
     }
 
-    const globalBadge = Array.isArray(wonItem.global_badge)
-      ? wonItem.global_badge[0]
-      : wonItem.global_badge;
+    const globalBadgeRaw = wonItem['global_badges!case_items_global_badge_id_fkey'];
+    const globalBadge = Array.isArray(globalBadgeRaw)
+      ? globalBadgeRaw[0]
+      : globalBadgeRaw;
 
     const itemWonData = {
       id: wonItem.id,
