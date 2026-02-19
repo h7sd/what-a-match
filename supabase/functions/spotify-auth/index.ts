@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const REDIRECT_URI = `https://api.uservault.cc/api-proxy?spotify_callback=1`;
+    const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/spotify-auth?action=callback`;
 
     // --- Action: get OAuth URL ---
     if (action === "authorize") {
