@@ -143,13 +143,20 @@ export default {
       spotifyParams.set("action", "callback");
       spotifyParams.delete("spotify_callback");
       const targetUrl = `${SUPABASE_URL}/functions/v1/spotify-auth?${spotifyParams.toString()}`;
-      return fetch(targetUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        redirect: "manual",
-      }).then(async (res) => {
+      try {
+        const res = await fetch(targetUrl, {
+          method: "GET",
+          redirect: "manual",
+        });
+        // Edge function returns 302 - forward the Location header as a browser redirect
+        const location = res.headers.get("Location");
+        if ((res.status === 301 || res.status === 302 || res.status === 303) && location) {
+          return new Response(null, {
+            status: 302,
+            headers: { Location: location },
+          });
+        }
+        // Fallback: forward response as-is
         const newHeaders = new Headers(res.headers);
         Object.entries(corsHeaders).forEach(([key, value]) => {
           newHeaders.set(key, value);
@@ -159,12 +166,12 @@ export default {
           statusText: res.statusText,
           headers: newHeaders,
         });
-      }).catch(() => {
+      } catch {
         return new Response(JSON.stringify({ error: "Spotify callback failed" }), {
           status: 502,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
-      });
+      }
     }
 
     // Not an API request - return 404 or pass through
