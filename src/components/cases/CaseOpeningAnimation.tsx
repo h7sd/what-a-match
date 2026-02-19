@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Coins, Key, ShieldCheck, CheckCircle2, X } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -16,17 +16,36 @@ interface CaseOpeningAnimationProps {
 
 const rarityColors = {
   common:    { bg: '#b0c3d9', border: '#b0c3d9', glow: 'rgba(176,195,217,0.5)' },
+  uncommon:  { bg: '#4ade80', border: '#4ade80', glow: 'rgba(74,222,128,0.5)' },
   rare:      { bg: '#5e98d9', border: '#5e98d9', glow: 'rgba(94,152,217,0.5)' },
   epic:      { bg: '#a855f7', border: '#a855f7', glow: 'rgba(168,85,247,0.5)' },
   legendary: { bg: '#eb4b4b', border: '#eb4b4b', glow: 'rgba(235,75,75,0.5)' },
   premium:   { bg: '#ffd700', border: '#ffd700', glow: 'rgba(255,215,0,0.9)' },
 };
 
+function isSvgString(str: string | null): boolean {
+  return !!str && str.trim().startsWith('<svg');
+}
+
+function BadgeImage({ iconUrl, name, className, style }: { iconUrl: string | null; name: string; className?: string; style?: React.CSSProperties }) {
+  if (!iconUrl) return null;
+  if (isSvgString(iconUrl)) {
+    return (
+      <div
+        className={className}
+        style={style}
+        dangerouslySetInnerHTML={{ __html: iconUrl }}
+      />
+    );
+  }
+  return <img src={iconUrl} alt={name} className={className} style={style} />;
+}
+
 function getItemDisplay(item: CaseItem) {
   const badge = item.badge || item.global_badge;
-  if (item.item_type === 'premium_key') return { name: 'Premium Key', icon: null, isPremiumKey: true };
-  if (item.item_type === 'coins') return { name: `${item.coin_amount} Coins`, icon: null, isCoins: true };
-  return { name: badge?.name || 'Badge', icon: badge?.icon_url || null, isBadge: true };
+  if (item.item_type === 'premium_key') return { name: 'Premium Key', icon: null, isPremiumKey: true, isCoins: false, isBadge: false };
+  if (item.item_type === 'coins') return { name: `${item.coin_amount} Coins`, icon: null, isPremiumKey: false, isCoins: true, isBadge: false };
+  return { name: badge?.name || 'Badge', icon: badge?.icon_url || null, isPremiumKey: false, isCoins: false, isBadge: true };
 }
 
 function generateStrip(allItems: CaseItem[], wonItem: CaseItem): CaseItem[] {
@@ -45,6 +64,61 @@ function generateStrip(allItems: CaseItem[], wonItem: CaseItem): CaseItem[] {
   return strip;
 }
 
+function useCaseSounds() {
+  const ctxRef = useRef<AudioContext | null>(null);
+
+  const getCtx = useCallback(() => {
+    if (!ctxRef.current) {
+      ctxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return ctxRef.current;
+  }, []);
+
+  const playTick = useCallback(() => {
+    try {
+      const ctx = getCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.04);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.05);
+    } catch {}
+  }, [getCtx]);
+
+  const playReveal = useCallback((rarity: string) => {
+    try {
+      const ctx = getCtx();
+      const freqs = rarity === 'premium' ? [523, 659, 784, 1047] :
+                    rarity === 'legendary' ? [440, 554, 659, 880] :
+                    rarity === 'epic' ? [370, 466, 587, 740] :
+                    rarity === 'rare' ? [330, 415, 494, 622] :
+                    [262, 330, 392, 523];
+
+      freqs.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.1);
+        gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.1);
+        gain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + i * 0.1 + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.5);
+        osc.start(ctx.currentTime + i * 0.1);
+        osc.stop(ctx.currentTime + i * 0.1 + 0.6);
+      });
+    } catch {}
+  }, [getCtx]);
+
+  return { playTick, playReveal };
+}
+
 function StripItem({ item }: { item: CaseItem }) {
   const display = getItemDisplay(item);
   const colors = rarityColors[item.rarity as keyof typeof rarityColors] || rarityColors.common;
@@ -59,7 +133,7 @@ function StripItem({ item }: { item: CaseItem }) {
         ) : display.isCoins ? (
           <Coins className="w-10 h-10 text-amber-400" />
         ) : display.icon ? (
-          <img src={display.icon} alt="" className="w-12 h-12 object-contain" />
+          <BadgeImage iconUrl={display.icon} name={display.name} className="w-12 h-12 object-contain" />
         ) : (
           <ShieldCheck className="w-10 h-10" style={{ color: colors.bg }} />
         )}
@@ -75,19 +149,46 @@ function StripItem({ item }: { item: CaseItem }) {
 export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseOpeningAnimationProps) {
   const [state, setState] = useState<'spinning' | 'revealing' | 'complete'>('spinning');
   const [itemStrip, setItemStrip] = useState<CaseItem[]>([]);
+  const { playTick, playReveal } = useCaseSounds();
+  const tickIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (open) {
       setState('spinning');
       setItemStrip(generateStrip(allItems, wonItem));
-      const t1 = setTimeout(() => setState('revealing'), 5500);
+
+      let tickDelay = 60;
+      let tickCount = 0;
+      const totalTicks = 55;
+
+      const scheduleTick = () => {
+        if (tickCount >= totalTicks) return;
+        tickIntervalRef.current = setTimeout(() => {
+          playTick();
+          tickCount++;
+          const progress = tickCount / totalTicks;
+          tickDelay = 60 + progress * progress * 400;
+          scheduleTick();
+        }, tickDelay);
+      };
+      scheduleTick();
+
+      const t1 = setTimeout(() => {
+        setState('revealing');
+        playReveal(wonItem.rarity);
+      }, 5500);
       const t2 = setTimeout(() => setState('complete'), 6500);
-      return () => { clearTimeout(t1); clearTimeout(t2); };
+
+      return () => {
+        if (tickIntervalRef.current) clearTimeout(tickIntervalRef.current);
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
     }
-  }, [open, allItems, wonItem]);
+  }, [open, allItems, wonItem, playTick, playReveal]);
 
   const rarity = wonItem?.rarity || 'common';
-  const colors = rarityColors[rarity as keyof typeof rarityColors];
+  const colors = rarityColors[rarity as keyof typeof rarityColors] || rarityColors.common;
   const display = getItemDisplay(wonItem);
 
   const itemWidth = 147;
@@ -104,13 +205,10 @@ export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseO
 
           <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
 
-            {/* Spinning state */}
             {state === 'spinning' && (
               <div className="w-full flex flex-col items-center">
-                {/* Center indicator line */}
                 <div className="relative w-full overflow-hidden" style={{ height: 180 }}>
                   <div className="absolute left-1/2 top-0 bottom-0 w-0.5 z-20 -translate-x-1/2" style={{ background: colors.bg, boxShadow: `0 0 12px ${colors.glow}` }} />
-                  {/* Top/bottom fades */}
                   <div className="absolute left-0 right-0 top-0 h-8 z-10" style={{ background: 'linear-gradient(to bottom, #0a0a10, transparent)' }} />
                   <div className="absolute left-0 right-0 bottom-0 h-8 z-10" style={{ background: 'linear-gradient(to top, #0a0a10, transparent)' }} />
 
@@ -136,7 +234,6 @@ export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseO
               </div>
             )}
 
-            {/* Reveal / complete */}
             {(state === 'revealing' || state === 'complete') && wonItem && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.7 }}
@@ -144,7 +241,6 @@ export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseO
                 transition={{ type: 'spring', stiffness: 180, damping: 14 }}
                 className="flex flex-col items-center justify-center px-8 py-12 relative"
               >
-                {/* Background glow */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 0.35, scale: 2.5 }}
@@ -153,7 +249,6 @@ export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseO
                   style={{ backgroundColor: colors.glow }}
                 />
 
-                {/* Particles for legendary/premium */}
                 {(rarity === 'legendary' || rarity === 'premium') && (
                   <div className="absolute inset-0 pointer-events-none overflow-hidden">
                     {Array.from({ length: rarity === 'premium' ? 60 : 35 }).map((_, i) => (
@@ -180,7 +275,6 @@ export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseO
                   </div>
                 )}
 
-                {/* Item box */}
                 <motion.div
                   className="relative z-10 rounded-3xl border-2 p-10 flex items-center justify-center"
                   style={{
@@ -191,7 +285,6 @@ export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseO
                   animate={state === 'complete' ? { boxShadow: [`0 0 40px ${colors.glow}`, `0 0 80px ${colors.glow}`, `0 0 40px ${colors.glow}`] } : {}}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  {/* Rarity label */}
                   <div
                     className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest"
                     style={{ backgroundColor: colors.bg, color: rarity === 'premium' ? '#000' : '#fff' }}
@@ -206,13 +299,17 @@ export function CaseOpeningAnimation({ allItems, wonItem, open, onClose }: CaseO
                   ) : display.isCoins ? (
                     <Coins className="w-32 h-32 text-amber-400" style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.6))' }} />
                   ) : display.icon ? (
-                    <img src={display.icon} alt={display.name} className="w-32 h-32 object-contain" style={{ filter: `drop-shadow(0 0 16px ${colors.glow})` }} />
+                    <BadgeImage
+                      iconUrl={display.icon}
+                      name={display.name}
+                      className="w-32 h-32 object-contain"
+                      style={{ filter: `drop-shadow(0 0 16px ${colors.glow})` }}
+                    />
                   ) : (
                     <ShieldCheck className="w-32 h-32" style={{ color: colors.bg, filter: `drop-shadow(0 0 16px ${colors.glow})` }} />
                   )}
                 </motion.div>
 
-                {/* Item name & value */}
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
