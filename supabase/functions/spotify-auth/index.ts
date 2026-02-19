@@ -26,6 +26,13 @@ Deno.serve(async (req: Request) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 
     if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
+      const appUrl = Deno.env.get("APP_URL") || "https://uservault.net";
+      if (action === "callback") {
+        return new Response(null, {
+          status: 302,
+          headers: { Location: `${appUrl}/dashboard?spotify=error&reason=not_configured` },
+        });
+      }
       return new Response(
         JSON.stringify({ error: "Spotify not configured" }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
