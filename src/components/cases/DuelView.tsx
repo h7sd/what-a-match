@@ -349,7 +349,6 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [searching, setSearching] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
-  const [runProgress, setRunProgress] = useState({ current: 0, total: 0 });
   const [queuedAnimations, setQueuedAnimations] = useState<Array<{
     allItems: CaseItem[];
     playerItem: any;
@@ -361,6 +360,7 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
   const [currentAnimIdx, setCurrentAnimIdx] = useState(0);
   const [showAnimation, setShowAnimation] = useState(false);
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const animationsRef = useRef<typeof queuedAnimations>([]);
 
   const maxAffordable = selectedCase
     ? Math.min(50, Math.floor(Number(userBalance) / Number(selectedCase.price)))
@@ -403,22 +403,27 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
     if (!selectedCase) return;
     if (!canAffordCount) { toast.error('Nicht genug Coins'); return; }
 
-    setIsRunning(true);
-
     if (opponentMode === 'user') {
-      await createDuel.mutateAsync({
-        caseId: selectedCase.id,
-        isBotOpponent: false,
-        opponentId: selectedUser?.user_id,
-      });
-      toast.success('Challenge gesendet!');
-      setIsRunning(false);
-      handleClose();
+      setIsRunning(true);
+      try {
+        await createDuel.mutateAsync({
+          caseId: selectedCase.id,
+          isBotOpponent: false,
+          opponentId: selectedUser?.user_id,
+        });
+        toast.success('Challenge gesendet!');
+        handleClose();
+      } finally {
+        setIsRunning(false);
+      }
       return;
     }
 
-    const animations: typeof queuedAnimations = [];
-    setRunProgress({ current: 0, total: caseCount });
+    setIsRunning(true);
+    animationsRef.current = [];
+    setQueuedAnimations([]);
+    setCurrentAnimIdx(0);
+    setShowAnimation(true);
 
     const { data: caseItemsData } = await supabase
       .from('case_items')
@@ -439,39 +444,57 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
         const playerWon = updatedDuel?.winner_id != null && updatedDuel.winner_id !== null;
         const isTie = updatedDuel?.status === 'completed' && !updatedDuel?.winner_id && !updatedDuel?.bot_won;
 
-        animations.push({
+        const entry = {
           allItems: (caseItemsData || []) as CaseItem[],
           playerItem,
           botItem,
           playerWon,
           tie: isTie,
           duelIsBot: true,
-        });
+        };
+        animationsRef.current = [...animationsRef.current, entry];
+        setQueuedAnimations([...animationsRef.current]);
       } catch (err: any) {
         toast.error(err.message || 'Fehler beim Öffnen');
         break;
       }
-      setRunProgress({ current: i + 1, total: caseCount });
     }
 
     setIsRunning(false);
-    if (animations.length > 0) {
-      setQueuedAnimations(animations);
-      setCurrentAnimIdx(0);
-      setShowAnimation(true);
-    }
   };
+
+  const pendingNextRef = useRef(false);
 
   const handleAnimDone = () => {
     const next = currentAnimIdx + 1;
-    if (next < queuedAnimations.length) {
+    if (next < animationsRef.current.length) {
       setCurrentAnimIdx(next);
+      pendingNextRef.current = false;
+    } else if (isRunning) {
+      pendingNextRef.current = true;
     } else {
       setShowAnimation(false);
       setQueuedAnimations([]);
+      animationsRef.current = [];
       onClose();
     }
   };
+
+  useEffect(() => {
+    if (pendingNextRef.current) {
+      const next = currentAnimIdx + 1;
+      if (next < animationsRef.current.length) {
+        pendingNextRef.current = false;
+        setCurrentAnimIdx(next);
+      } else if (!isRunning) {
+        pendingNextRef.current = false;
+        setShowAnimation(false);
+        setQueuedAnimations([]);
+        animationsRef.current = [];
+        onClose();
+      }
+    }
+  }, [queuedAnimations, isRunning]);
 
   const currentAnim = queuedAnimations[currentAnimIdx];
 
@@ -479,6 +502,17 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
     <>
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-lg bg-[#0a0a0f] border-white/10 max-h-[90vh] overflow-y-auto">
+          {showAnimation && !currentAnim && (
+            <div className="flex flex-col items-center justify-center py-16 gap-4">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              >
+                <Swords className="w-8 h-8 text-blue-400" />
+              </motion.div>
+              <p className="text-sm font-semibold text-white">Duell wird gestartet...</p>
+            </div>
+          )}
           {showAnimation && currentAnim ? (
             <div className="py-4">
               <DuelOpeningAnimation
@@ -490,7 +524,7 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
                 onDone={handleAnimDone}
                 isBot={currentAnim.duelIsBot}
                 currentIndex={currentAnimIdx + 1}
-                totalCount={queuedAnimations.length}
+                totalCount={caseCount}
               />
             </div>
           ) : (
@@ -638,20 +672,6 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
               </div>
             )}
 
-            {isRunning && (
-              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                <div className="flex items-center justify-between text-xs text-blue-300 mb-2">
-                  <span className="font-semibold">Öffne Kisten...</span>
-                  <span>{runProgress.current} / {runProgress.total}</span>
-                </div>
-                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 rounded-full transition-all"
-                    style={{ width: `${runProgress.total > 0 ? (runProgress.current / runProgress.total) * 100 : 0}%` }}
-                  />
-                </div>
-              </div>
-            )}
 
             <Button
               onClick={handleStart}
