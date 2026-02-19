@@ -67,17 +67,18 @@ Deno.serve(async (req: Request) => {
       throw new Error('Case not found or inactive');
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('uc_balance')
-      .eq('id', user.id)
-      .single();
+    // Use user_balances table (keyed by user_id = auth user id)
+    const { data: balanceRow, error: balanceReadError } = await supabase
+      .from('user_balances')
+      .select('id, balance')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    if (profileError || !profile) {
-      throw new Error('Profile not found');
+    if (balanceReadError) {
+      throw new Error('Failed to read balance');
     }
 
-    const currentBalance = BigInt(profile.uc_balance);
+    const currentBalance = balanceRow ? BigInt(balanceRow.balance) : BigInt(0);
     const casePrice = BigInt(caseData.price);
 
     if (currentBalance < casePrice) {
@@ -130,23 +131,38 @@ Deno.serve(async (req: Request) => {
       wonItem = items[items.length - 1] as CaseItem;
     }
 
-    const newBalance = currentBalance - casePrice;
-
-    const { error: balanceError } = await supabase
-      .from('profiles')
-      .update({ uc_balance: newBalance.toString() })
-      .eq('id', user.id);
-
-    if (balanceError) {
-      throw new Error('Failed to deduct coins');
-    }
+    let newBalance = currentBalance - casePrice;
 
     if (wonItem.item_type === 'coins' && wonItem.coin_amount) {
-      const finalBalance = newBalance + BigInt(wonItem.coin_amount);
-      await supabase
-        .from('profiles')
-        .update({ uc_balance: finalBalance.toString() })
-        .eq('id', user.id);
+      newBalance = newBalance + BigInt(wonItem.coin_amount);
+    }
+
+    // Upsert balance in user_balances
+    if (balanceRow) {
+      const { error: updateError } = await supabase
+        .from('user_balances')
+        .update({
+          balance: newBalance.toString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        throw new Error('Failed to update balance');
+      }
+    } else {
+      const { error: insertError } = await supabase
+        .from('user_balances')
+        .insert({
+          user_id: user.id,
+          balance: newBalance.toString(),
+          lifetime_earned: wonItem.item_type === 'coins' ? (wonItem.coin_amount || 0).toString() : '0',
+          lifetime_spent: caseData.price,
+        });
+
+      if (insertError) {
+        throw new Error('Failed to create balance');
+      }
     }
 
     const resolvedBadge = wonItem.badge || wonItem.global_badge || null;
@@ -177,8 +193,8 @@ Deno.serve(async (req: Request) => {
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('username, display_name')
-      .eq('id', user.id)
-      .single();
+      .eq('user_id', user.id)
+      .maybeSingle();
 
     const displayUsername = userProfile?.display_name || userProfile?.username || 'Anonymous';
 
@@ -226,9 +242,7 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         success: true,
         item: itemWonData,
-        newBalance: wonItem.item_type === 'coins'
-          ? (newBalance + BigInt(wonItem.coin_amount || 0)).toString()
-          : newBalance.toString(),
+        newBalance: newBalance.toString(),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
