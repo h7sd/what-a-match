@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Coins, Key, ShieldCheck, Swords, Crown, X } from 'lucide-react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Coins, Key, ShieldCheck, Swords, Crown } from 'lucide-react';
 import { formatUC } from '@/lib/uc';
 import { CaseItem } from '@/hooks/useCases';
 import { cn } from '@/lib/utils';
@@ -13,8 +11,7 @@ interface DuelOpeningAnimationProps {
   botItem: CaseItem;
   playerWon: boolean;
   tie: boolean;
-  open: boolean;
-  onClose: () => void;
+  onDone: () => void;
   isBot?: boolean;
   currentIndex?: number;
   totalCount?: number;
@@ -43,9 +40,9 @@ function BadgeImage({ iconUrl, name, className, style }: { iconUrl: string | nul
 
 function getItemDisplay(item: CaseItem) {
   const badge = item.badge || item.global_badge;
-  if (item.item_type === 'premium_key') return { name: 'Premium Key', icon: null, isPremiumKey: true, isCoins: false, isBadge: false };
-  if (item.item_type === 'coins') return { name: `${item.coin_amount} Coins`, icon: null, isPremiumKey: false, isCoins: true, isBadge: false };
-  return { name: badge?.name || 'Badge', icon: badge?.icon_url || null, isPremiumKey: false, isCoins: false, isBadge: true };
+  if (item.item_type === 'premium_key') return { name: 'Premium Key', icon: null, isPremiumKey: true, isCoins: false };
+  if (item.item_type === 'coins') return { name: `${item.coin_amount} Coins`, icon: null, isPremiumKey: false, isCoins: true };
+  return { name: badge?.name || 'Badge', icon: badge?.icon_url || null, isPremiumKey: false, isCoins: false };
 }
 
 function weightedPick(pool: CaseItem[]): CaseItem {
@@ -79,10 +76,9 @@ function buildDisplayPool(allItems: CaseItem[], wonItem: CaseItem): CaseItem[] {
 
 function generateVerticalStrip(allItems: CaseItem[], wonItem: CaseItem): CaseItem[] {
   const strip: CaseItem[] = [];
-  const winIndex = 45;
   const pool = buildDisplayPool(allItems, wonItem);
   for (let i = 0; i < 80; i++) {
-    if (i === winIndex) {
+    if (i === WIN_INDEX) {
       strip.push(wonItem);
     } else {
       const r = weightedPick(pool);
@@ -97,6 +93,7 @@ const ITEM_GAP = 6;
 const ITEM_TOTAL = ITEM_HEIGHT + ITEM_GAP;
 const WIN_INDEX = 45;
 const SPIN_DURATION_MS = 5000;
+const REVEAL_HOLD_MS = 1800;
 
 function VerticalStripItem({ item, isCenter }: { item: CaseItem; isCenter?: boolean }) {
   const display = getItemDisplay(item);
@@ -211,12 +208,10 @@ function SpinColumn({
   allItems,
   wonItem,
   label,
-  spinning,
 }: {
   allItems: CaseItem[];
   wonItem: CaseItem;
   label: string;
-  spinning: boolean;
 }) {
   const [strip] = useState(() => generateVerticalStrip(allItems, wonItem));
   const visibleHeight = 380;
@@ -247,12 +242,11 @@ function SpinColumn({
             borderRadius: 12,
           }}
         />
-
         <motion.div
           className="absolute w-full px-2 pt-1"
           style={{ top: ITEM_TOTAL }}
           initial={{ y: 0 }}
-          animate={{ y: spinning ? targetY : targetY }}
+          animate={{ y: targetY }}
           transition={{ duration: SPIN_DURATION_MS / 1000, ease: [0.12, 0.8, 0.32, 1] }}
         >
           {strip.map((item, idx) => (
@@ -266,14 +260,58 @@ function SpinColumn({
   );
 }
 
+function ResultItemCard({ item, label, isWinner, isLoser }: {
+  item: CaseItem;
+  label: string;
+  isWinner?: boolean;
+  isLoser?: boolean;
+}) {
+  const display = getItemDisplay(item);
+  const colors = rarityColors[item?.rarity as keyof typeof rarityColors] || rarityColors.common;
+  return (
+    <div className={cn(
+      'flex-1 flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all',
+      isWinner ? 'border-green-500/60 bg-green-500/8' : isLoser ? 'border-red-500/40 bg-red-500/5 opacity-70' : 'border-white/10 bg-white/5'
+    )}>
+      {isWinner && (
+        <div className="flex items-center gap-1 text-xs font-bold text-green-400">
+          <Crown className="w-3.5 h-3.5" /> WINNER
+        </div>
+      )}
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</p>
+      <div
+        className="w-16 h-16 rounded-2xl flex items-center justify-center"
+        style={{ backgroundColor: `${colors.bg}15`, border: `1.5px solid ${colors.border}50` }}
+      >
+        {display.isPremiumKey ? (
+          <Key className="w-9 h-9 text-yellow-400" />
+        ) : display.isCoins ? (
+          <Coins className="w-9 h-9 text-amber-400" />
+        ) : display.icon ? (
+          <BadgeImage iconUrl={display.icon} name={display.name} className="w-10 h-10 object-contain" />
+        ) : (
+          <ShieldCheck className="w-9 h-9" style={{ color: colors.bg }} />
+        )}
+      </div>
+      <div className="text-center">
+        <p className="text-sm font-bold text-white truncate max-w-[100px]">{display.name}</p>
+        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full"
+          style={{ backgroundColor: `${colors.bg}25`, color: colors.bg }}>
+          {item?.rarity}
+        </span>
+        <p className="text-xs text-gray-500 mt-1">{formatUC(item?.display_value || 0)} UC</p>
+      </div>
+    </div>
+  );
+}
+
 export function DuelOpeningAnimation({
   allItems,
   playerItem,
   botItem,
   playerWon,
   tie,
-  open,
-  onClose,
+  onDone,
   isBot = true,
   currentIndex,
   totalCount,
@@ -281,8 +319,10 @@ export function DuelOpeningAnimation({
   const [phase, setPhase] = useState<'spinning' | 'revealing' | 'done'>('spinning');
   const { scheduleTicksForAnimation, playReveal } = useDuelSounds();
 
+  const resultLabel = playerWon ? 'You Won!' : tie ? "It's a Tie!" : `${isBot ? 'Bot' : 'Opponent'} Won`;
+  const resultColor = playerWon ? '#22c55e' : tie ? '#f59e0b' : '#ef4444';
+
   useEffect(() => {
-    if (!open) return;
     setPhase('spinning');
     scheduleTicksForAnimation(SPIN_DURATION_MS);
 
@@ -293,172 +333,110 @@ export function DuelOpeningAnimation({
 
     const t2 = setTimeout(() => setPhase('done'), SPIN_DURATION_MS + 900);
 
+    const t3 = setTimeout(() => {
+      onDone();
+    }, SPIN_DURATION_MS + 900 + REVEAL_HOLD_MS);
+
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(t3);
     };
-  }, [open, playerWon, tie, scheduleTicksForAnimation, playReveal]);
-
-  const playerColors = rarityColors[playerItem?.rarity as keyof typeof rarityColors] || rarityColors.common;
-  const botColors = rarityColors[botItem?.rarity as keyof typeof rarityColors] || rarityColors.common;
-
-  const resultLabel = playerWon ? 'You Won!' : tie ? "It's a Tie!" : `${isBot ? 'Bot' : 'Opponent'} Won`;
-  const resultColor = playerWon ? '#22c55e' : tie ? '#f59e0b' : '#ef4444';
+  }, []);
 
   return (
-    <Dialog open={open} onOpenChange={() => { if (phase === 'done') onClose(); }}>
-      <DialogContent
-        className="max-w-xl bg-[#0a0a10] border-white/10 p-0 overflow-hidden"
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-      >
-        <div className="relative min-h-[520px] flex flex-col">
-          {phase === 'done' && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-3 right-3 z-50 text-gray-400 hover:text-white"
-              onClick={onClose}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          )}
+    <div className="flex flex-col gap-4 w-full">
+      <div className="flex items-center gap-2 justify-center">
+        <Swords className="w-4 h-4 text-blue-400" />
+        <span className="text-sm font-bold text-white">1v1 Duel Opening</span>
+        {totalCount && totalCount > 1 && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">
+            {currentIndex} / {totalCount}
+          </span>
+        )}
+      </div>
 
-          <div className="p-4 pb-0 border-b border-white/5">
-            <div className="flex items-center gap-2 justify-center mb-3">
-              <Swords className="w-5 h-5 text-blue-400" />
-              <span className="text-sm font-bold text-white">1v1 Duel Opening</span>
-              {totalCount && totalCount > 1 && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">
-                  {currentIndex} / {totalCount}
-                </span>
-              )}
+      <AnimatePresence mode="wait">
+        {phase === 'spinning' && (
+          <motion.div
+            key="spinning"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col gap-4"
+          >
+            <div className="flex gap-3">
+              <SpinColumn allItems={allItems} wonItem={playerItem} label="You" />
+              <div className="flex items-center self-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                  <Swords className="w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+              <SpinColumn allItems={allItems} wonItem={botItem} label={isBot ? 'Bot' : 'Opponent'} />
             </div>
-          </div>
+            <motion.p
+              animate={{ opacity: [0.4, 1, 0.4] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
+              className="text-center text-sm font-bold text-gray-400"
+            >
+              Opening Cases...
+            </motion.p>
+          </motion.div>
+        )}
 
-          <div className="flex-1 flex flex-col p-4 gap-4">
-            {phase === 'spinning' && (
-              <>
-                <div className="flex gap-3">
-                  <SpinColumn allItems={allItems} wonItem={playerItem} label="You" spinning />
-                  <div className="flex items-center self-center">
-                    <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-                      <Swords className="w-4 h-4 text-gray-400" />
-                    </div>
-                  </div>
-                  <SpinColumn allItems={allItems} wonItem={botItem} label={isBot ? 'Bot' : 'Opponent'} spinning />
+        {(phase === 'revealing' || phase === 'done') && (
+          <motion.div
+            key="result"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 18 }}
+            className="flex flex-col gap-4"
+          >
+            <div
+              className="text-center py-3 rounded-2xl border"
+              style={{
+                backgroundColor: `${resultColor}15`,
+                borderColor: `${resultColor}40`,
+                boxShadow: `0 0 30px ${resultColor}25`,
+              }}
+            >
+              {playerWon && <Crown className="w-6 h-6 mx-auto mb-1" style={{ color: resultColor }} />}
+              <p className="text-xl font-bold" style={{ color: resultColor }}>{resultLabel}</p>
+            </div>
+
+            <div className="flex gap-3">
+              <ResultItemCard
+                item={playerItem}
+                label="You"
+                isWinner={playerWon}
+                isLoser={!playerWon && !tie}
+              />
+              <div className="flex items-center self-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                  <Swords className="w-4 h-4 text-gray-400" />
                 </div>
-                <motion.p
-                  animate={{ opacity: [0.4, 1, 0.4] }}
-                  transition={{ duration: 1.2, repeat: Infinity }}
-                  className="text-center text-sm font-bold text-white"
-                >
-                  Opening Cases...
-                </motion.p>
-              </>
-            )}
+              </div>
+              <ResultItemCard
+                item={botItem}
+                label={isBot ? 'Bot' : 'Opp.'}
+                isWinner={!playerWon && !tie}
+                isLoser={playerWon}
+              />
+            </div>
 
-            {(phase === 'revealing' || phase === 'done') && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 18 }}
-                className="flex flex-col gap-5"
+            {totalCount && totalCount > 1 && phase === 'done' && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1.4, repeat: Infinity }}
+                className="text-center text-xs text-gray-500"
               >
-                <div
-                  className="text-center py-3 rounded-2xl border"
-                  style={{
-                    backgroundColor: `${resultColor}15`,
-                    borderColor: `${resultColor}40`,
-                    boxShadow: phase === 'done' ? `0 0 30px ${resultColor}30` : 'none',
-                  }}
-                >
-                  {playerWon && <Crown className="w-6 h-6 mx-auto mb-1" style={{ color: resultColor }} />}
-                  <p className="text-xl font-bold" style={{ color: resultColor }}>{resultLabel}</p>
-                </div>
-
-                <div className="flex gap-3">
-                  <div className={cn('flex-1 flex flex-col gap-2 p-3 rounded-2xl border-2', playerWon ? 'border-green-500/50 bg-green-500/5' : 'border-white/10 bg-white/5')}>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider text-center">You</p>
-                    {playerWon && <p className="text-[10px] text-center font-bold text-green-400 uppercase">Winner</p>}
-                    <div
-                      className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto"
-                      style={{ backgroundColor: `${playerColors.bg}15`, border: `1.5px solid ${playerColors.border}60` }}
-                    >
-                      {playerItem?.item_type === 'coins' ? (
-                        <Coins className="w-9 h-9 text-amber-400" />
-                      ) : playerItem?.item_type === 'premium_key' ? (
-                        <Key className="w-9 h-9 text-yellow-400" />
-                      ) : (playerItem?.badge || playerItem?.global_badge)?.icon_url ? (
-                        <BadgeImage
-                          iconUrl={(playerItem?.badge || playerItem?.global_badge)?.icon_url || null}
-                          name={(playerItem?.badge || playerItem?.global_badge)?.name || ''}
-                          className="w-10 h-10 object-contain"
-                        />
-                      ) : (
-                        <ShieldCheck className="w-9 h-9" style={{ color: playerColors.bg }} />
-                      )}
-                    </div>
-                    <p className="text-xs font-bold text-white text-center truncate">
-                      {playerItem?.item_type === 'coins' ? `${playerItem.coin_amount} Coins`
-                        : playerItem?.item_type === 'premium_key' ? 'Premium Key'
-                        : (playerItem?.badge || playerItem?.global_badge)?.name || 'Badge'}
-                    </p>
-                    <p className="text-[10px] text-gray-500 text-center">{formatUC(playerItem?.display_value || 0)} UC</p>
-                  </div>
-
-                  <div className="flex items-center self-center">
-                    <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-                      <Swords className="w-4 h-4 text-gray-400" />
-                    </div>
-                  </div>
-
-                  <div className={cn('flex-1 flex flex-col gap-2 p-3 rounded-2xl border-2', !playerWon && !tie ? 'border-red-500/50 bg-red-500/5' : 'border-white/10 bg-white/5')}>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider text-center">{isBot ? 'Bot' : 'Opp.'}</p>
-                    {!playerWon && !tie && <p className="text-[10px] text-center font-bold text-red-400 uppercase">Winner</p>}
-                    <div
-                      className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto"
-                      style={{ backgroundColor: `${botColors.bg}15`, border: `1.5px solid ${botColors.border}60` }}
-                    >
-                      {botItem?.item_type === 'coins' ? (
-                        <Coins className="w-9 h-9 text-amber-400" />
-                      ) : botItem?.item_type === 'premium_key' ? (
-                        <Key className="w-9 h-9 text-yellow-400" />
-                      ) : (botItem?.badge || botItem?.global_badge)?.icon_url ? (
-                        <BadgeImage
-                          iconUrl={(botItem?.badge || botItem?.global_badge)?.icon_url || null}
-                          name={(botItem?.badge || botItem?.global_badge)?.name || ''}
-                          className="w-10 h-10 object-contain"
-                        />
-                      ) : (
-                        <ShieldCheck className="w-9 h-9" style={{ color: botColors.bg }} />
-                      )}
-                    </div>
-                    <p className="text-xs font-bold text-white text-center truncate">
-                      {botItem?.item_type === 'coins' ? `${botItem.coin_amount} Coins`
-                        : botItem?.item_type === 'premium_key' ? 'Premium Key'
-                        : (botItem?.badge || botItem?.global_badge)?.name || 'Badge'}
-                    </p>
-                    <p className="text-[10px] text-gray-500 text-center">{formatUC(botItem?.display_value || 0)} UC</p>
-                  </div>
-                </div>
-
-                {phase === 'done' && (
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                    <Button
-                      onClick={onClose}
-                      className="w-full font-bold"
-                      style={{ background: `linear-gradient(135deg, ${resultColor}cc, ${resultColor})`, color: '#000', border: 'none' }}
-                    >
-                      {playerWon ? 'Collect Winnings' : tie ? 'Close' : 'Better Luck Next Time'}
-                    </Button>
-                  </motion.div>
-                )}
-              </motion.div>
+                Weiter...
+              </motion.p>
             )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

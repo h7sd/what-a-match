@@ -83,7 +83,6 @@ function DuelCard({ duel, currentUserId, cases }: {
   const declineDuel = useDeclineDuel();
   const openDuel = useOpenDuel();
   const [opening, setOpening] = useState(false);
-  const [showAnimation, setShowAnimation] = useState(false);
   const [animationData, setAnimationData] = useState<{
     allItems: CaseItem[];
     playerItem: any;
@@ -127,25 +126,24 @@ function DuelCard({ duel, currentUserId, cases }: {
         playerWon: pWon,
         tie: isTie,
       });
-      setShowAnimation(true);
     } catch {
     } finally {
       setOpening(false);
     }
   };
 
-  const handleAnimationClose = () => {
-    setShowAnimation(false);
+  const handleAnimationDone = () => {
     if (animationData) {
       const { playerWon, tie } = animationData;
       if (playerWon) {
-        toast.success('You won the duel!', { duration: 5000 });
+        toast.success('You won the duel!', { duration: 4000 });
       } else if (tie) {
         toast.info("It's a tie!");
       } else {
         toast.error(duel.is_bot_opponent ? 'The bot won this round!' : 'Your opponent won this round!');
       }
     }
+    setAnimationData(null);
   };
 
   const statusConfig = {
@@ -162,122 +160,121 @@ function DuelCard({ duel, currentUserId, cases }: {
   const sc = statusConfig[duel.status] || statusConfig.pending;
 
   return (
-    <>
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden"
-      >
-        <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Swords className="w-4 h-4 text-gray-400" />
-            <span className="text-sm font-semibold text-white">{caseName}</span>
-            {duel.is_bot_opponent && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">vs Bot</span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <sc.Icon className="w-3.5 h-3.5" style={{ color: sc.color }} />
-            <span className="text-xs font-semibold" style={{ color: sc.color }}>{sc.label}</span>
-          </div>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden"
+    >
+      <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Swords className="w-4 h-4 text-gray-400" />
+          <span className="text-sm font-semibold text-white">{caseName}</span>
+          {duel.is_bot_opponent && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">vs Bot</span>
+          )}
         </div>
+        <div className="flex items-center gap-1.5">
+          <sc.Icon className="w-3.5 h-3.5" style={{ color: sc.color }} />
+          <span className="text-xs font-semibold" style={{ color: sc.color }}>{sc.label}</span>
+        </div>
+      </div>
 
-        <div className="p-4 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 flex items-center justify-center gap-2 p-2 rounded-xl bg-white/5">
-              {myItem ? (
-                <ItemDisplay
-                  item={myItem}
-                  label="You"
-                  isWinner={completed && duel.winner_id === currentUserId}
-                  isLoser={completed && duel.winner_id !== null && duel.winner_id !== currentUserId}
-                />
-              ) : (
-                <WaitingPlaceholder label="You" />
+      <div className="p-4 space-y-4">
+        {animationData ? (
+          <DuelOpeningAnimation
+            allItems={animationData.allItems}
+            playerItem={animationData.playerItem}
+            botItem={animationData.botItem}
+            playerWon={animationData.playerWon}
+            tie={animationData.tie}
+            onDone={handleAnimationDone}
+            isBot={duel.is_bot_opponent}
+          />
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 flex items-center justify-center gap-2 p-2 rounded-xl bg-white/5">
+                {myItem ? (
+                  <ItemDisplay
+                    item={myItem}
+                    label="You"
+                    isWinner={completed && duel.winner_id === currentUserId}
+                    isLoser={completed && duel.winner_id !== null && duel.winner_id !== currentUserId}
+                  />
+                ) : (
+                  <WaitingPlaceholder label="You" />
+                )}
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                  <Swords className="w-4 h-4 text-gray-400" />
+                </div>
+                <div className="flex items-center gap-1">
+                  <Coins className="w-3 h-3 text-amber-400" />
+                  <span className="text-xs text-amber-400 font-bold">{formatUC(duel.coins_wagered)}</span>
+                </div>
+              </div>
+
+              <div className="flex-1 flex items-center justify-center gap-2 p-2 rounded-xl bg-white/5">
+                {theirItem ? (
+                  <ItemDisplay
+                    item={theirItem}
+                    label={duel.is_bot_opponent ? 'Bot' : 'Opponent'}
+                    isWinner={completed && (duel.bot_won || (duel.winner_id && duel.winner_id !== currentUserId))}
+                    isLoser={completed && duel.winner_id === currentUserId}
+                  />
+                ) : (
+                  <WaitingPlaceholder label={duel.is_bot_opponent ? 'Bot' : 'Opponent'} />
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              {isPending && (
+                <>
+                  <Button
+                    onClick={() => acceptDuel.mutate(duel.id)}
+                    disabled={acceptDuel.isPending}
+                    size="sm"
+                    className="flex-1 bg-green-600 hover:bg-green-500 text-white text-xs"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5 mr-1" /> Accept
+                  </Button>
+                  <Button
+                    onClick={() => declineDuel.mutate(duel.id)}
+                    disabled={declineDuel.isPending}
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs"
+                  >
+                    <X className="w-3.5 h-3.5 mr-1" /> Decline
+                  </Button>
+                </>
+              )}
+
+              {canOpen && (
+                <Button
+                  onClick={handleOpen}
+                  disabled={opening || openDuel.isPending}
+                  size="sm"
+                  className="w-full text-xs font-bold"
+                  style={{ background: 'linear-gradient(135deg, #3b82f6, #60a5fa)', color: '#000' }}
+                >
+                  <Swords className="w-3.5 h-3.5 mr-1.5" />
+                  {opening ? 'Opening...' : 'Open Case'}
+                </Button>
+              )}
+
+              {duel.status === 'pending' && isChallenger && (
+                <p className="text-xs text-gray-500 w-full text-center py-1">Waiting for opponent to accept...</p>
               )}
             </div>
-
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-                <Swords className="w-4 h-4 text-gray-400" />
-              </div>
-              <div className="flex items-center gap-1">
-                <Coins className="w-3 h-3 text-amber-400" />
-                <span className="text-xs text-amber-400 font-bold">{formatUC(duel.coins_wagered)}</span>
-              </div>
-            </div>
-
-            <div className="flex-1 flex items-center justify-center gap-2 p-2 rounded-xl bg-white/5">
-              {theirItem ? (
-                <ItemDisplay
-                  item={theirItem}
-                  label={duel.is_bot_opponent ? 'Bot' : 'Opponent'}
-                  isWinner={completed && (duel.bot_won || (duel.winner_id && duel.winner_id !== currentUserId))}
-                  isLoser={completed && duel.winner_id === currentUserId}
-                />
-              ) : (
-                <WaitingPlaceholder label={duel.is_bot_opponent ? 'Bot' : 'Opponent'} />
-              )}
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            {isPending && (
-              <>
-                <Button
-                  onClick={() => acceptDuel.mutate(duel.id)}
-                  disabled={acceptDuel.isPending}
-                  size="sm"
-                  className="flex-1 bg-green-600 hover:bg-green-500 text-white text-xs"
-                >
-                  <CheckCircle className="w-3.5 h-3.5 mr-1" /> Accept
-                </Button>
-                <Button
-                  onClick={() => declineDuel.mutate(duel.id)}
-                  disabled={declineDuel.isPending}
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs"
-                >
-                  <X className="w-3.5 h-3.5 mr-1" /> Decline
-                </Button>
-              </>
-            )}
-
-            {canOpen && (
-              <Button
-                onClick={handleOpen}
-                disabled={opening || openDuel.isPending}
-                size="sm"
-                className="w-full text-xs font-bold"
-                style={{ background: 'linear-gradient(135deg, #3b82f6, #60a5fa)', color: '#000' }}
-              >
-                <Swords className="w-3.5 h-3.5 mr-1.5" />
-                {opening ? 'Opening...' : 'Open Case'}
-              </Button>
-            )}
-
-            {duel.status === 'pending' && isChallenger && (
-              <p className="text-xs text-gray-500 w-full text-center py-1">Waiting for opponent to accept...</p>
-            )}
-          </div>
-        </div>
-      </motion.div>
-
-      {animationData && (
-        <DuelOpeningAnimation
-          allItems={animationData.allItems}
-          playerItem={animationData.playerItem}
-          botItem={animationData.botItem}
-          playerWon={animationData.playerWon}
-          tie={animationData.tie}
-          open={showAnimation}
-          onClose={handleAnimationClose}
-          isBot={duel.is_bot_opponent}
-        />
-      )}
-    </>
+          </>
+        )}
+      </div>
+    </motion.div>
   );
 }
 
@@ -462,17 +459,17 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
       setQueuedAnimations(animations);
       setCurrentAnimIdx(0);
       setShowAnimation(true);
-      onClose();
     }
   };
 
-  const handleAnimClose = () => {
+  const handleAnimDone = () => {
     const next = currentAnimIdx + 1;
     if (next < queuedAnimations.length) {
       setCurrentAnimIdx(next);
     } else {
       setShowAnimation(false);
       setQueuedAnimations([]);
+      onClose();
     }
   };
 
@@ -482,6 +479,22 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
     <>
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-lg bg-[#0a0a0f] border-white/10 max-h-[90vh] overflow-y-auto">
+          {showAnimation && currentAnim ? (
+            <div className="py-4">
+              <DuelOpeningAnimation
+                allItems={currentAnim.allItems}
+                playerItem={currentAnim.playerItem}
+                botItem={currentAnim.botItem}
+                playerWon={currentAnim.playerWon}
+                tie={currentAnim.tie}
+                onDone={handleAnimDone}
+                isBot={currentAnim.duelIsBot}
+                currentIndex={currentAnimIdx + 1}
+                totalCount={queuedAnimations.length}
+              />
+            </div>
+          ) : (
+          <>
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <Swords className="w-5 h-5 text-blue-400" /> 1v1 Duel erstellen
@@ -668,23 +681,10 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
               )}
             </Button>
           </div>
+          </>
+          )}
         </DialogContent>
       </Dialog>
-
-      {showAnimation && currentAnim && (
-        <DuelOpeningAnimation
-          allItems={currentAnim.allItems}
-          playerItem={currentAnim.playerItem}
-          botItem={currentAnim.botItem}
-          playerWon={currentAnim.playerWon}
-          tie={currentAnim.tie}
-          open={showAnimation}
-          onClose={handleAnimClose}
-          isBot={currentAnim.duelIsBot}
-          currentIndex={currentAnimIdx + 1}
-          totalCount={queuedAnimations.length}
-        />
-      )}
     </>
   );
 }
