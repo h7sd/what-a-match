@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Lock } from 'lucide-react';
-import { Coins, Key, Package, Zap } from 'lucide-react';
+import { Lock, Coins, Key, Package, Zap, Swords } from 'lucide-react';
 import { ModernHeader } from '@/components/landing/ModernHeader';
 import { ModernFooter } from '@/components/landing/ModernFooter';
 import { CaseCard } from '@/components/cases/CaseCard';
 import { CaseOpeningAnimation } from '@/components/cases/CaseOpeningAnimation';
 import { LiveFeed } from '@/components/cases/LiveFeed';
 import { InventoryView } from '@/components/cases/InventoryView';
+import { DuelView } from '@/components/cases/DuelView';
 import { useCases, useOpenCase, useUserBalance } from '@/hooks/useCases';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -15,7 +15,7 @@ import { formatUC } from '@/lib/uc';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
-type ActiveTab = 'cases' | 'inventory' | 'live';
+type ActiveTab = 'cases' | 'inventory' | 'duel' | 'live';
 
 function BalanceBadge({ balance }: { balance: bigint }) {
   return (
@@ -101,6 +101,7 @@ export default function Cases() {
   const tabs = [
     { id: 'cases' as ActiveTab, label: 'Cases', icon: Package },
     { id: 'inventory' as ActiveTab, label: 'Inventory', icon: Coins },
+    { id: 'duel' as ActiveTab, label: '1v1 Duel', icon: Swords },
     { id: 'live' as ActiveTab, label: 'Live Feed', icon: Zap },
   ];
 
@@ -215,6 +216,25 @@ export default function Cases() {
                   <p className="text-gray-500 mb-4">Sign in to view your inventory</p>
                   <Button asChild size="sm"><Link to="/auth">Sign in</Link></Button>
                 </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Duel */}
+          {activeTab === 'duel' && (
+            <motion.div key="duel" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              {!isOwner ? (
+                <div className="flex flex-col items-center justify-center py-24 gap-5">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Lock className="w-8 h-8 text-gray-500" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-lg font-bold text-white mb-1">Coming Soon</h3>
+                    <p className="text-sm text-gray-500 max-w-xs">Duels are currently in beta and not yet publicly available.</p>
+                  </div>
+                </div>
+              ) : (
+                <DuelView cases={cases || []} userBalance={userBalance} />
               )}
             </motion.div>
           )}
