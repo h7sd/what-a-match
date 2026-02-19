@@ -8,9 +8,27 @@ const corsHeaders = {
 
 const FETCH_HEADERS = {
   "Accept": "*/*",
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
   "Accept-Language": "en-US,en;q=0.9",
 };
+
+const CDN_HOSTS = ["t1", "t2", "t3", "t4", "t5", "t6", "t7"];
+
+async function fetchFromAnyCDN(assetId: string): Promise<{ text?: string; bytes?: Uint8Array; contentType: string } | null> {
+  for (const cdn of CDN_HOSTS) {
+    const url = `https://${cdn}.rbxcdn.com/${assetId}`;
+    try {
+      const res = await fetch(url, { headers: FETCH_HEADERS, signal: AbortSignal.timeout(8000) });
+      if (!res.ok) continue;
+      const contentType = res.headers.get("content-type") || "application/octet-stream";
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      return { bytes, contentType };
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
 
 async function getRobloxUserId(username: string): Promise<number | null> {
   try {
@@ -47,11 +65,8 @@ async function get2dThumbnailUrl(userId: number): Promise<string | null> {
   return null;
 }
 
-const CDN_BASE = "https://t3.rbxcdn.com";
-
 async function get3dManifest(userId: number): Promise<any | null> {
   try {
-    // Get the manifest URL from Roblox API
     const res = await fetch(
       `https://thumbnails.roblox.com/v1/users/avatar-3d?userId=${userId}`,
       { headers: FETCH_HEADERS, signal: AbortSignal.timeout(10000) }
@@ -60,7 +75,6 @@ async function get3dManifest(userId: number): Promise<any | null> {
     const data = await res.json();
     if (data?.state !== "Completed" || !data?.imageUrl) return null;
 
-    // Fetch the manifest JSON (the -Obj url returns JSON, not an actual OBJ file)
     const manifestRes = await fetch(data.imageUrl, {
       headers: FETCH_HEADERS,
       signal: AbortSignal.timeout(10000),
@@ -73,6 +87,34 @@ async function get3dManifest(userId: number): Promise<any | null> {
   }
 }
 
+function decompressText(bytes: Uint8Array): string {
+  try {
+    const ds = new DecompressionStream("gzip");
+    const writer = ds.writable.getWriter();
+    const reader = ds.readable.getReader();
+    writer.write(bytes);
+    writer.close();
+    const chunks: Uint8Array[] = [];
+    return new Promise<string>((resolve) => {
+      const pump = () => reader.read().then(({ done, value }) => {
+        if (done) {
+          const total = chunks.reduce((sum, c) => sum + c.length, 0);
+          const merged = new Uint8Array(total);
+          let offset = 0;
+          for (const c of chunks) { merged.set(c, offset); offset += c.length; }
+          resolve(new TextDecoder().decode(merged));
+        } else {
+          chunks.push(value);
+          pump();
+        }
+      });
+      pump();
+    }) as any;
+  } catch {
+    return new TextDecoder().decode(bytes);
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -82,6 +124,32 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const username = url.searchParams.get("username");
     const mode = url.searchParams.get("mode") || "2d";
+    const assetId = url.searchParams.get("asset");
+
+    // Asset proxy mode: fetch a specific Roblox CDN asset (used by the frontend for textures etc.)
+    if (mode === "asset" && assetId) {
+      if (!/^30DAY-[a-f0-9]{32}$/.test(assetId)) {
+        return new Response(JSON.stringify({ error: "Invalid asset ID" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const result = await fetchFromAnyCDN(assetId);
+      if (!result) {
+        return new Response(JSON.stringify({ error: "Asset not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(result.bytes!, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": result.contentType,
+          "Cache-Control": "public, max-age=86400",
+        },
+      });
+    }
 
     if (!username || username.length > 50 || !/^[a-zA-Z0-9_]+$/.test(username)) {
       return new Response(JSON.stringify({ error: "Invalid username" }), {
@@ -98,7 +166,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 3D manifest mode: fetch manifest server-side and return full CDN URLs to browser
+    // 3D mode: return manifest with asset IDs (frontend calls ?mode=asset&asset=ID for each)
     if (mode === "3d") {
       const manifest = await get3dManifest(userId);
       if (!manifest) {
@@ -108,24 +176,20 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      // Return full CDN URLs so the browser can load them directly
-      const result = {
-        objUrl: `${CDN_BASE}/${manifest.obj}`,
-        mtlUrl: `${CDN_BASE}/${manifest.mtl}`,
-        textureUrls: (manifest.textures || []).map((t: string) => `${CDN_BASE}/${t}`),
+      return new Response(JSON.stringify({
+        objId: manifest.obj,
+        mtlId: manifest.mtl,
         textureIds: manifest.textures || [],
         camera: manifest.camera,
         aabb: manifest.aabb,
         userId,
-      };
-
-      return new Response(JSON.stringify(result), {
+      }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" },
       });
     }
 
-    // Default 2D mode: proxy the avatar image through our server
+    // Default 2D mode: proxy avatar thumbnail image
     const thumbnailUrl = await get2dThumbnailUrl(userId);
     if (!thumbnailUrl) {
       return new Response(JSON.stringify({ error: "Thumbnail unavailable", userId }), {

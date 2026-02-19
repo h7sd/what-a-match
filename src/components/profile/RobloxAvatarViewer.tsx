@@ -13,16 +13,12 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 const PROXY_BASE = `${SUPABASE_URL}/functions/v1/roblox-avatar-proxy`;
 
-async function fetchText(url: string): Promise<string> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.text();
+function assetUrl(assetId: string): string {
+  return `${PROXY_BASE}?mode=asset&asset=${encodeURIComponent(assetId)}`;
 }
 
-async function fetchBlob(url: string): Promise<Blob> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.blob();
+async function fetchViaProxy(assetId: string): Promise<Response> {
+  return fetch(assetUrl(assetId), { headers: { apikey: SUPABASE_ANON_KEY } });
 }
 
 export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: RobloxAvatarViewerProps) {
@@ -54,7 +50,7 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
 
     const run = async () => {
       try {
-        // Step 1: Get manifest from our edge function (resolves username -> CDN URLs)
+        // Step 1: Get manifest (resolves username -> asset IDs)
         const manifestRes = await fetch(
           `${PROXY_BASE}?username=${encodeURIComponent(robloxUsername)}&mode=3d`,
           { headers: { apikey: SUPABASE_ANON_KEY } }
@@ -63,30 +59,36 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
         const manifest = await manifestRes.json();
         if (manifest.error) throw new Error(manifest.error);
 
-        const { objUrl, mtlUrl, textureUrls, textureIds, camera } = manifest;
+        const { objId, mtlId, textureIds, camera } = manifest;
 
-        // Step 2: Fetch OBJ and MTL text directly from CDN (browser request)
-        const [mtlText, objText] = await Promise.all([
-          fetchText(mtlUrl),
-          fetchText(objUrl),
+        // Step 2: Fetch OBJ and MTL text via proxy (proxy tries all CDN subdomains)
+        const [mtlRes, objRes] = await Promise.all([
+          fetchViaProxy(mtlId),
+          fetchViaProxy(objId),
         ]);
         if (cancelled) return;
+        if (!mtlRes.ok || !objRes.ok) throw new Error('OBJ/MTL fetch failed');
 
-        // Step 3: Fetch textures as blob URLs (browser request)
+        const [mtlText, objText] = await Promise.all([mtlRes.text(), objRes.text()]);
+        if (cancelled) return;
+
+        // Step 3: Fetch textures via proxy and create blob URLs
         const textureMap: Record<string, string> = {};
         await Promise.all(
-          (textureUrls || []).map(async (texUrl: string, i: number) => {
+          (textureIds || []).map(async (texId: string) => {
             try {
-              const blob = await fetchBlob(texUrl);
+              const res = await fetchViaProxy(texId);
+              if (!res.ok) return;
+              const blob = await res.blob();
               const blobUrl = URL.createObjectURL(blob);
               blobUrls.push(blobUrl);
-              textureMap[textureIds[i]] = blobUrl;
+              textureMap[texId] = blobUrl;
             } catch { /* skip failed textures */ }
           })
         );
         if (cancelled) return;
 
-        // Step 4: Patch MTL to point at blob URLs
+        // Step 4: Patch MTL to use blob URLs for textures
         const patchedMtl = mtlText.replace(/map_\w+\s+(\S+)/g, (match, texName) => {
           const blobUrl = textureMap[texName];
           return blobUrl ? match.replace(texName, blobUrl) : match;
@@ -123,7 +125,7 @@ export function RobloxAvatarViewer({ robloxUsername, accentColor = '#00b2ff' }: 
         object.position.sub(center);
         scene.add(object);
 
-        // Position camera to frame the full model
+        // Frame camera to show full model
         const maxDim = Math.max(size.x, size.y, size.z);
         const fovRad = (camFov * Math.PI) / 180;
         const camDist = (maxDim / 2) / Math.tan(fovRad / 2) * 1.6;
