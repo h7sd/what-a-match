@@ -154,6 +154,10 @@ export default {
         const res = await fetch(targetUrl, {
           method: "GET",
           redirect: "manual",
+          headers: {
+            "apikey": env.SUPABASE_ANON_KEY || "",
+            "Authorization": `Bearer ${env.SUPABASE_ANON_KEY || ""}`,
+          },
         });
 
         let location = "https://uservault.cc/dashboard?spotify=error";
