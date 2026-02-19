@@ -289,6 +289,24 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const url = new URL(req.url);
+
+  // Handle Spotify OAuth callback (GET request from Spotify redirect)
+  if (req.method === 'GET' && url.pathname.endsWith('/api-proxy') && url.searchParams.get('spotify_callback') === '1') {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const code = url.searchParams.get('code');
+    const state = url.searchParams.get('state');
+    const error = url.searchParams.get('error');
+
+    const callbackUrl = new URL(`${supabaseUrl}/functions/v1/spotify-auth`);
+    callbackUrl.searchParams.set('action', 'callback');
+    if (code) callbackUrl.searchParams.set('code', code);
+    if (state) callbackUrl.searchParams.set('state', state);
+    if (error) callbackUrl.searchParams.set('error', error);
+
+    return Response.redirect(callbackUrl.toString(), 302);
+  }
+
   // Get client IP for rate limiting
   const forwardedFor = req.headers.get('x-forwarded-for');
   const realIp = req.headers.get('x-real-ip');
