@@ -12,7 +12,7 @@ async function getRobloxUserId(username: string): Promise<number | null> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ usernames: [username], excludeBannedUsers: false }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -23,17 +23,41 @@ async function getRobloxUserId(username: string): Promise<number | null> {
 }
 
 async function getRobloxThumbnail(userId: number): Promise<string | null> {
+  const sizes = ["720x720", "420x420", "352x352"];
+
+  for (const size of sizes) {
+    try {
+      const res = await fetch(
+        `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=${size}&format=Png&isCircular=false`,
+        { signal: AbortSignal.timeout(8000) }
+      );
+      if (!res.ok) continue;
+      const data = await res.json();
+      const item = data?.data?.[0];
+      if (item?.state === "Completed" && item?.imageUrl) {
+        return item.imageUrl;
+      }
+    } catch {
+      continue;
+    }
+  }
+
   try {
     const res = await fetch(
-      `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=420x420&format=Png&isCircular=false`,
-      { signal: AbortSignal.timeout(5000) }
+      `https://thumbnails.roblox.com/v1/users/avatar-bust?userIds=${userId}&size=420x420&format=Png&isCircular=false`,
+      { signal: AbortSignal.timeout(8000) }
     );
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.data?.[0]?.imageUrl ?? null;
+    if (res.ok) {
+      const data = await res.json();
+      const item = data?.data?.[0];
+      if (item?.state === "Completed" && item?.imageUrl) {
+        return item.imageUrl;
+      }
+    }
   } catch {
-    return null;
   }
+
+  return null;
 }
 
 Deno.serve(async (req: Request) => {
@@ -54,7 +78,7 @@ Deno.serve(async (req: Request) => {
 
     const userId = await getRobloxUserId(username);
     if (!userId) {
-      return new Response(JSON.stringify({ error: "User not found" }), {
+      return new Response(JSON.stringify({ error: "User not found", username }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -62,15 +86,15 @@ Deno.serve(async (req: Request) => {
 
     const thumbnailUrl = await getRobloxThumbnail(userId);
     if (!thumbnailUrl) {
-      return new Response(JSON.stringify({ error: "Thumbnail not available" }), {
+      return new Response(JSON.stringify({ error: "Thumbnail not available", userId }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const imgRes = await fetch(thumbnailUrl, { signal: AbortSignal.timeout(8000) });
+    const imgRes = await fetch(thumbnailUrl, { signal: AbortSignal.timeout(10000) });
     if (!imgRes.ok) {
-      return new Response(JSON.stringify({ error: "Failed to fetch image" }), {
+      return new Response(JSON.stringify({ error: "Failed to fetch image", thumbnailUrl }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -87,8 +111,8 @@ Deno.serve(async (req: Request) => {
         "Cache-Control": "public, max-age=3600",
       },
     });
-  } catch {
-    return new Response(JSON.stringify({ error: "Internal error" }), {
+  } catch (err) {
+    return new Response(JSON.stringify({ error: "Internal error", detail: String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
