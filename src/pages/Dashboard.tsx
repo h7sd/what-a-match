@@ -218,6 +218,7 @@ export default function Dashboard() {
   const [discordCardOpacity, setDiscordCardOpacity] = useState(100);
   const [discordShowBadge, setDiscordShowBadge] = useState(true);
   const [discordBadgeColor, setDiscordBadgeColor] = useState('#ec4899');
+  const [showSpotifyWidget, setShowSpotifyWidget] = useState(true);
 
   // Start Screen settings
   const [startScreenEnabled, setStartScreenEnabled] = useState(true);
@@ -432,6 +433,7 @@ export default function Dashboard() {
       setDiscordCardOpacity((profile as any).discord_card_opacity ?? 100);
       setDiscordShowBadge((profile as any).discord_show_badge ?? true);
       setDiscordBadgeColor((profile as any).discord_badge_color || '#ec4899');
+      setShowSpotifyWidget((profile as any).show_spotify_widget ?? true);
       setBackgroundEffect((profile as any).background_effect || 'particles');
       setAudioVolume((profile as any).audio_volume ?? 0.5);
       setStartScreenEnabled((profile as any).start_screen_enabled ?? true);
@@ -628,6 +630,7 @@ export default function Dashboard() {
         discord_card_opacity: discordCardOpacity,
         discord_show_badge: discordShowBadge,
         discord_badge_color: discordBadgeColor,
+        show_spotify_widget: showSpotifyWidget,
         background_effect: backgroundEffect,
         audio_volume: audioVolume,
         start_screen_enabled: startScreenEnabled,
@@ -1218,6 +1221,8 @@ export default function Dashboard() {
                     setDiscordShowBadge={setDiscordShowBadge}
                     discordBadgeColor={discordBadgeColor}
                     setDiscordBadgeColor={setDiscordBadgeColor}
+                    showSpotifyWidget={showSpotifyWidget}
+                    setShowSpotifyWidget={setShowSpotifyWidget}
                     backgroundEffect={backgroundEffect}
                     setBackgroundEffect={setBackgroundEffect}
                     audioVolume={audioVolume}

@@ -10,6 +10,7 @@ import { MinecraftSkinViewer } from '@/components/profile/MinecraftSkinViewer';
 import { BackgroundEffects } from '@/components/profile/BackgroundEffects';
 import { CustomCursor } from '@/components/profile/CustomCursor';
 import { DiscordPresence } from '@/components/profile/DiscordPresence';
+import { SpotifyNowPlaying } from '@/components/profile/SpotifyNowPlaying';
 import { StartScreen } from '@/components/profile/StartScreen';
 import ElasticSlider from '@/components/profile/ElasticSlider';
 import { ProfileLikeButtons } from '@/components/profile/ProfileLikeButtons';
@@ -479,6 +480,14 @@ export default function UserProfile() {
                 badgeColor={profile.discord_badge_color || '#ec4899'}
               />
             </div>
+          )}
+
+          {/* Spotify Now Playing Widget */}
+          {profile.discord_user_id && (profile as any).show_spotify_widget !== false && (
+            <SpotifyNowPlaying
+              discordUserId={profile.discord_user_id}
+              accentColor={accentColor}
+            />
           )}
 
           {/* Social Links - respect visibility setting */}

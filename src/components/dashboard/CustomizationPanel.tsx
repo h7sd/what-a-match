@@ -204,7 +204,9 @@ interface CustomizationPanelProps {
   setDiscordShowBadge?: (show: boolean) => void;
   discordBadgeColor?: string;
   setDiscordBadgeColor?: (color: string) => void;
-  
+  showSpotifyWidget?: boolean;
+  setShowSpotifyWidget?: (show: boolean) => void;
+
   backgroundEffect?: string;
   setBackgroundEffect?: (effect: string) => void;
   audioVolume?: number;
@@ -586,6 +588,11 @@ export function CustomizationPanel(props: CustomizationPanelProps) {
                 label="Avatar Decoration"
                 checked={props.discordAvatarDecoration}
                 onChange={props.setDiscordAvatarDecoration}
+              />
+              <ToggleItem
+                label="Spotify Widget"
+                checked={props.showSpotifyWidget ?? true}
+                onChange={(v) => props.setShowSpotifyWidget?.(v)}
               />
             </div>
           )}
