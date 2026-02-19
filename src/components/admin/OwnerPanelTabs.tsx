@@ -9,7 +9,8 @@ import {
   FileText,
   ShoppingBag,
   Puzzle,
-  Shield
+  Shield,
+  Package
 } from 'lucide-react';
 import { AdminUserManager } from './AdminUserManager';
 import { AdminAccountLookup } from './AdminAccountLookup';
@@ -32,6 +33,7 @@ import { AdminChangelogManager } from './AdminChangelogManager';
 import { AdminPromoCodeManager } from './AdminPromoCodeManager';
 import { AdminPurchaseHistory } from './AdminPurchaseHistory';
 import { AdminBotNotificationTester } from './AdminBotNotificationTester';
+import { AdminCaseWhitelist } from './AdminCaseWhitelist';
 
 export function OwnerPanelTabs() {
   const [activeSubTab, setActiveSubTab] = useState('users');
@@ -75,6 +77,10 @@ export function OwnerPanelTabs() {
           <TabsTrigger value="dev" className="flex items-center gap-2">
             <Puzzle className="w-4 h-4" />
             <span>Developer</span>
+          </TabsTrigger>
+          <TabsTrigger value="cases" className="flex items-center gap-2">
+            <Package className="w-4 h-4" />
+            <span>Cases</span>
           </TabsTrigger>
         </TabsList>
 
@@ -227,6 +233,17 @@ export function OwnerPanelTabs() {
               Bot Notification Tester
             </h3>
             <AdminBotNotificationTester />
+          </div>
+        </TabsContent>
+
+        {/* Cases Whitelist Tab */}
+        <TabsContent value="cases" className="mt-6">
+          <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-6">
+            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+              <Package className="w-5 h-5 text-primary" />
+              Case Opening Whitelist
+            </h3>
+            <AdminCaseWhitelist />
           </div>
         </TabsContent>
       </Tabs>
