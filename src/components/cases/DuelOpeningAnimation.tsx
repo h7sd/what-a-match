@@ -16,6 +16,8 @@ interface DuelOpeningAnimationProps {
   open: boolean;
   onClose: () => void;
   isBot?: boolean;
+  currentIndex?: number;
+  totalCount?: number;
 }
 
 const rarityColors = {
@@ -274,6 +276,8 @@ export function DuelOpeningAnimation({
   open,
   onClose,
   isBot = true,
+  currentIndex,
+  totalCount,
 }: DuelOpeningAnimationProps) {
   const [phase, setPhase] = useState<'spinning' | 'revealing' | 'done'>('spinning');
   const { scheduleTicksForAnimation, playReveal } = useDuelSounds();
@@ -303,8 +307,12 @@ export function DuelOpeningAnimation({
   const resultColor = playerWon ? '#22c55e' : tie ? '#f59e0b' : '#ef4444';
 
   return (
-    <Dialog open={open} onOpenChange={phase === 'done' ? onClose : undefined}>
-      <DialogContent className="max-w-md bg-[#0a0a10] border-white/10 p-0 overflow-hidden">
+    <Dialog open={open} onOpenChange={() => { if (phase === 'done') onClose(); }}>
+      <DialogContent
+        className="max-w-md bg-[#0a0a10] border-white/10 p-0 overflow-hidden"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <div className="relative min-h-[560px] flex flex-col">
           {phase === 'done' && (
             <Button
@@ -321,6 +329,11 @@ export function DuelOpeningAnimation({
             <div className="flex items-center gap-2 justify-center mb-3">
               <Swords className="w-5 h-5 text-blue-400" />
               <span className="text-sm font-bold text-white">1v1 Duel Opening</span>
+              {totalCount && totalCount > 1 && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">
+                  {currentIndex} / {totalCount}
+                </span>
+              )}
             </div>
           </div>
 

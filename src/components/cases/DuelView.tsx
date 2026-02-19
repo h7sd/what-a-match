@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Swords, Bot, User, Search, Trophy, X, Clock, CheckCircle, XCircle,
-  Coins, ShieldCheck, Key, Crown,
+  Coins, ShieldCheck, Key, Crown, ChevronLeft, ChevronRight, Minus, Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -288,21 +288,95 @@ interface CreateDuelDialogProps {
   userBalance: bigint;
 }
 
+function CaseCountSelector({ count, setCount, max }: { count: number; setCount: (n: number) => void; max: number }) {
+  const presets = [1, 5, 10, 25, 50].filter(p => p <= max);
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-gray-400">How many cases? <span className="text-white font-semibold">{count}</span></p>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setCount(Math.max(1, count - 1))}
+          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center transition-all"
+        >
+          <Minus className="w-4 h-4 text-white" />
+        </button>
+        <div className="flex-1 flex items-center gap-2">
+          <input
+            type="range"
+            min={1}
+            max={max}
+            value={count}
+            onChange={(e) => setCount(Number(e.target.value))}
+            className="w-full h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer"
+            style={{
+              accentColor: '#3b82f6',
+            }}
+          />
+        </div>
+        <button
+          onClick={() => setCount(Math.min(max, count + 1))}
+          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center transition-all"
+        >
+          <Plus className="w-4 h-4 text-white" />
+        </button>
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        {presets.map(p => (
+          <button
+            key={p}
+            onClick={() => setCount(p)}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-bold border transition-all',
+              count === p
+                ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
+                : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-white'
+            )}
+          >
+            {p}x
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialogProps) {
   const createDuel = useCreateDuel();
-  const [step, setStep] = useState<'case' | 'opponent'>('case');
+  const openDuel = useOpenDuel();
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [opponentMode, setOpponentMode] = useState<'bot' | 'user'>('bot');
+  const [caseCount, setCaseCount] = useState(1);
   const [userSearch, setUserSearch] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [searching, setSearching] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [runProgress, setRunProgress] = useState({ current: 0, total: 0 });
+  const [queuedAnimations, setQueuedAnimations] = useState<Array<{
+    allItems: CaseItem[];
+    playerItem: any;
+    botItem: any;
+    playerWon: boolean;
+    tie: boolean;
+    duelIsBot: boolean;
+  }>>([]);
+  const [currentAnimIdx, setCurrentAnimIdx] = useState(0);
+  const [showAnimation, setShowAnimation] = useState(false);
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
 
+  const maxAffordable = selectedCase
+    ? Math.min(50, Math.floor(Number(userBalance) / Number(selectedCase.price)))
+    : 50;
+
+  const totalCost = selectedCase ? BigInt(selectedCase.price) * BigInt(caseCount) : BigInt(0);
+  const canAffordCount = userBalance >= totalCost;
+
   const handleClose = () => {
-    setStep('case');
+    if (isRunning) return;
     setSelectedCase(null);
     setOpponentMode('bot');
+    setCaseCount(1);
     setUserSearch('');
     setSearchResults([]);
     setSelectedUser(null);
@@ -312,12 +386,7 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
   const handleSearchUsers = async (q: string) => {
     setUserSearch(q);
     clearTimeout(searchTimeout.current);
-
-    if (q.trim().length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
+    if (q.trim().length < 2) { setSearchResults([]); return; }
     searchTimeout.current = setTimeout(async () => {
       setSearching(true);
       try {
@@ -333,64 +402,103 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
     }, 300);
   };
 
-  const handleCreate = async () => {
+  const handleStart = async () => {
     if (!selectedCase) return;
-    if (BigInt(selectedCase.price) > userBalance) {
-      toast.error('Insufficient coins');
+    if (!canAffordCount) { toast.error('Nicht genug Coins'); return; }
+
+    setIsRunning(true);
+
+    if (opponentMode === 'user') {
+      await createDuel.mutateAsync({
+        caseId: selectedCase.id,
+        isBotOpponent: false,
+        opponentId: selectedUser?.user_id,
+      });
+      toast.success('Challenge gesendet!');
+      setIsRunning(false);
+      handleClose();
       return;
     }
 
-    await createDuel.mutateAsync({
-      caseId: selectedCase.id,
-      isBotOpponent: opponentMode === 'bot',
-      opponentId: opponentMode === 'user' ? selectedUser?.user_id : undefined,
-    });
-    handleClose();
-    toast.success(opponentMode === 'bot' ? 'Bot duel started! Go open the case.' : 'Challenge sent!');
+    const animations: typeof queuedAnimations = [];
+    setRunProgress({ current: 0, total: caseCount });
+
+    const { data: caseItemsData } = await supabase
+      .from('case_items')
+      .select('id, item_type, badge_id, global_badge_id, coin_amount, rarity, drop_rate, display_value, global_badge:global_badges(name, icon_url, color)')
+      .eq('case_id', selectedCase.id);
+
+    for (let i = 0; i < caseCount; i++) {
+      try {
+        const duel = await createDuel.mutateAsync({
+          caseId: selectedCase.id,
+          isBotOpponent: true,
+        });
+
+        const res = await openDuel.mutateAsync(duel.id);
+        const playerItem = res.item;
+        const botItem = res.duel?.opponent_item_data;
+        const updatedDuel = res.duel;
+        const playerWon = updatedDuel?.winner_id != null && updatedDuel.winner_id !== null;
+        const isTie = updatedDuel?.status === 'completed' && !updatedDuel?.winner_id && !updatedDuel?.bot_won;
+
+        animations.push({
+          allItems: (caseItemsData || []) as CaseItem[],
+          playerItem,
+          botItem,
+          playerWon,
+          tie: isTie,
+          duelIsBot: true,
+        });
+      } catch (err: any) {
+        toast.error(err.message || 'Fehler beim Öffnen');
+        break;
+      }
+      setRunProgress({ current: i + 1, total: caseCount });
+    }
+
+    setIsRunning(false);
+    if (animations.length > 0) {
+      setQueuedAnimations(animations);
+      setCurrentAnimIdx(0);
+      setShowAnimation(true);
+      onClose();
+    }
   };
 
+  const handleAnimClose = () => {
+    const next = currentAnimIdx + 1;
+    if (next < queuedAnimations.length) {
+      setCurrentAnimIdx(next);
+    } else {
+      setShowAnimation(false);
+      setQueuedAnimations([]);
+    }
+  };
+
+  const currentAnim = queuedAnimations[currentAnimIdx];
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg bg-[#0a0a0f] border-white/10 max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
-            <Swords className="w-5 h-5 text-blue-400" /> Create 1v1 Duel
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-lg bg-[#0a0a0f] border-white/10 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Swords className="w-5 h-5 text-blue-400" /> 1v1 Duel erstellen
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-5 py-2">
-          <div className="flex items-center gap-2">
-            {['Select Case', 'Choose Opponent'].map((s, i) => (
-              <div key={s} className="flex items-center gap-2">
-                <div className={cn(
-                  'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all',
-                  (step === 'case' && i === 0) || (step === 'opponent' && i === 1)
-                    ? 'bg-blue-500 text-white'
-                    : step === 'opponent' && i === 0
-                    ? 'bg-green-500 text-white'
-                    : 'bg-white/10 text-gray-500'
-                )}>
-                  {step === 'opponent' && i === 0 ? <CheckCircle className="w-3.5 h-3.5" /> : i + 1}
-                </div>
-                <span className={cn('text-xs font-medium', (step === 'case' && i === 0) || (step === 'opponent' && i === 1) ? 'text-white' : 'text-gray-500')}>
-                  {s}
-                </span>
-                {i === 0 && <div className="w-8 h-px bg-white/10" />}
-              </div>
-            ))}
-          </div>
-
-          {step === 'case' && (
+          <div className="space-y-5 py-2">
             <div className="space-y-3">
-              <p className="text-sm text-gray-400">Pick a case to open in the duel. Both players open the same case.</p>
-              <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1">
+              <p className="text-sm text-gray-400">Wähle eine Kiste</p>
+              <div className="grid grid-cols-2 gap-3 max-h-52 overflow-y-auto pr-1">
                 {cases.map((c) => {
                   const canAfford = userBalance >= BigInt(c.price);
                   const accentColor = c.accent_color || '#60a5fa';
                   return (
                     <button
                       key={c.id}
-                      onClick={() => setSelectedCase(c)}
+                      onClick={() => { setSelectedCase(c); setCaseCount(1); }}
                       disabled={!canAfford}
                       className={cn(
                         'relative p-3 rounded-xl border text-left transition-all',
@@ -411,134 +519,173 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
                         <Coins className="w-3 h-3" style={{ color: accentColor }} />
                         <span className="text-xs font-semibold" style={{ color: accentColor }}>{formatUC(c.price)}</span>
                       </div>
-                      {!canAfford && <p className="text-[10px] text-red-400 mt-0.5">Not enough coins</p>}
+                      {!canAfford && <p className="text-[10px] text-red-400 mt-0.5">Nicht genug Coins</p>}
                     </button>
                   );
                 })}
               </div>
-              <Button
-                onClick={() => setStep('opponent')}
-                disabled={!selectedCase}
-                className="w-full"
-                style={selectedCase ? { background: 'linear-gradient(135deg, #3b82f6, #60a5fa)', color: '#000' } : {}}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setOpponentMode('bot')}
+                className={cn(
+                  'flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border transition-all',
+                  opponentMode === 'bot' ? 'border-blue-500/60 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:border-white/20'
+                )}
               >
-                Next: Choose Opponent
-              </Button>
+                <Bot className={cn('w-7 h-7', opponentMode === 'bot' ? 'text-blue-400' : 'text-gray-500')} />
+                <span className={cn('text-sm font-semibold', opponentMode === 'bot' ? 'text-white' : 'text-gray-400')}>vs Bot</span>
+                <span className="text-[10px] text-gray-500 text-center">Sofort, kein Warten</span>
+              </button>
+              <button
+                onClick={() => { setOpponentMode('user'); setCaseCount(1); }}
+                className={cn(
+                  'flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border transition-all',
+                  opponentMode === 'user' ? 'border-blue-500/60 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:border-white/20'
+                )}
+              >
+                <User className={cn('w-7 h-7', opponentMode === 'user' ? 'text-blue-400' : 'text-gray-500')} />
+                <span className={cn('text-sm font-semibold', opponentMode === 'user' ? 'text-white' : 'text-gray-400')}>vs Spieler</span>
+                <span className="text-[10px] text-gray-500 text-center">Spieler herausfordern</span>
+              </button>
             </div>
-          )}
 
-          {step === 'opponent' && (
-            <div className="space-y-4">
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-500">Selected Case</p>
-                  <p className="text-sm font-bold text-white">{selectedCase?.name}</p>
-                </div>
-                <button onClick={() => setStep('case')} className="text-xs text-blue-400 hover:text-blue-300">Change</button>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setOpponentMode('bot')}
-                  className={cn(
-                    'flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border transition-all',
-                    opponentMode === 'bot' ? 'border-blue-500/60 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:border-white/20'
-                  )}
-                >
-                  <Bot className={cn('w-7 h-7', opponentMode === 'bot' ? 'text-blue-400' : 'text-gray-500')} />
-                  <span className={cn('text-sm font-semibold', opponentMode === 'bot' ? 'text-white' : 'text-gray-400')}>vs Bot</span>
-                  <span className="text-[10px] text-gray-500 text-center">Instant, no waiting</span>
-                </button>
-                <button
-                  onClick={() => setOpponentMode('user')}
-                  className={cn(
-                    'flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border transition-all',
-                    opponentMode === 'user' ? 'border-blue-500/60 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:border-white/20'
-                  )}
-                >
-                  <User className={cn('w-7 h-7', opponentMode === 'user' ? 'text-blue-400' : 'text-gray-500')} />
-                  <span className={cn('text-sm font-semibold', opponentMode === 'user' ? 'text-white' : 'text-gray-400')}>vs Player</span>
-                  <span className="text-[10px] text-gray-500 text-center">Challenge a user</span>
-                </button>
-              </div>
-
-              {opponentMode === 'user' && (
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                    <Input
-                      placeholder="Search by username or display name..."
-                      value={userSearch}
-                      onChange={(e) => handleSearchUsers(e.target.value)}
-                      className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                    />
+            {opponentMode === 'bot' && selectedCase && maxAffordable > 0 && (
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
+                <CaseCountSelector
+                  count={caseCount}
+                  setCount={(n) => setCaseCount(Math.min(n, maxAffordable))}
+                  max={maxAffordable}
+                />
+                {caseCount > 1 && (
+                  <div className="flex items-center justify-between text-xs text-gray-400 pt-1 border-t border-white/5">
+                    <span>Gesamtkosten</span>
+                    <div className="flex items-center gap-1">
+                      <Coins className="w-3 h-3 text-amber-400" />
+                      <span className={cn('font-bold', canAffordCount ? 'text-amber-400' : 'text-red-400')}>
+                        {formatUC(Number(totalCost))}
+                      </span>
+                    </div>
                   </div>
-                  {searching && <p className="text-xs text-gray-500 px-1">Searching...</p>}
-                  {!searching && userSearch.trim().length >= 2 && searchResults.length === 0 && (
-                    <p className="text-xs text-gray-600 px-1">No users found</p>
-                  )}
-                  {searchResults.length > 0 && (
-                    <div className="space-y-1 max-h-40 overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-1">
-                      {searchResults.map((u) => (
-                        <button
-                          key={u.user_id}
-                          onClick={() => { setSelectedUser(u); setUserSearch(u.username || u.display_name); setSearchResults([]); }}
-                          className={cn(
-                            'w-full flex items-center gap-3 p-2 rounded-lg border transition-all text-left',
-                            selectedUser?.user_id === u.user_id ? 'border-blue-500/50 bg-blue-500/10' : 'border-transparent hover:bg-white/5'
-                          )}
-                        >
-                          {u.avatar_url ? (
-                            <img src={u.avatar_url} className="w-8 h-8 rounded-full object-cover flex-shrink-0" alt="" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                              <User className="w-4 h-4 text-gray-500" />
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">{u.display_name || u.username}</p>
-                            {u.display_name && u.username && <p className="text-xs text-gray-500 truncate">@{u.username}</p>}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {selectedUser && (
-                    <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                      <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                      <span className="text-xs text-blue-300 truncate">Challenging: {selectedUser.display_name || selectedUser.username}</span>
-                      <button onClick={() => { setSelectedUser(null); setUserSearch(''); }} className="ml-auto text-gray-500 hover:text-white flex-shrink-0">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
+                )}
+              </div>
+            )}
+
+            {opponentMode === 'user' && (
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Input
+                    placeholder="Nach Benutzername suchen..."
+                    value={userSearch}
+                    onChange={(e) => handleSearchUsers(e.target.value)}
+                    className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+                  />
                 </div>
+                {searching && <p className="text-xs text-gray-500 px-1">Suche...</p>}
+                {!searching && userSearch.trim().length >= 2 && searchResults.length === 0 && (
+                  <p className="text-xs text-gray-600 px-1">Keine Benutzer gefunden</p>
+                )}
+                {searchResults.length > 0 && (
+                  <div className="space-y-1 max-h-40 overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-1">
+                    {searchResults.map((u) => (
+                      <button
+                        key={u.user_id}
+                        onClick={() => { setSelectedUser(u); setUserSearch(u.username || u.display_name); setSearchResults([]); }}
+                        className={cn(
+                          'w-full flex items-center gap-3 p-2 rounded-lg border transition-all text-left',
+                          selectedUser?.user_id === u.user_id ? 'border-blue-500/50 bg-blue-500/10' : 'border-transparent hover:bg-white/5'
+                        )}
+                      >
+                        {u.avatar_url ? (
+                          <img src={u.avatar_url} className="w-8 h-8 rounded-full object-cover flex-shrink-0" alt="" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4 text-gray-500" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-white truncate">{u.display_name || u.username}</p>
+                          {u.display_name && u.username && <p className="text-xs text-gray-500 truncate">@{u.username}</p>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {selectedUser && (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                    <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                    <span className="text-xs text-blue-300 truncate">Fordere heraus: {selectedUser.display_name || selectedUser.username}</span>
+                    <button onClick={() => { setSelectedUser(null); setUserSearch(''); }} className="ml-auto text-gray-500 hover:text-white flex-shrink-0">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isRunning && (
+              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                <div className="flex items-center justify-between text-xs text-blue-300 mb-2">
+                  <span className="font-semibold">Öffne Kisten...</span>
+                  <span>{runProgress.current} / {runProgress.total}</span>
+                </div>
+                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full transition-all"
+                    style={{ width: `${runProgress.total > 0 ? (runProgress.current / runProgress.total) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <Button
+              onClick={handleStart}
+              disabled={
+                isRunning ||
+                !selectedCase ||
+                !canAffordCount ||
+                (opponentMode === 'user' && !selectedUser)
+              }
+              className="w-full font-bold"
+              style={selectedCase && canAffordCount ? { background: 'linear-gradient(135deg, #3b82f6, #60a5fa)', color: '#000' } : {}}
+            >
+              {isRunning ? (
+                <span className="flex items-center gap-2">
+                  <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
+                    <Swords className="w-4 h-4" />
+                  </motion.span>
+                  Verarbeite...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Swords className="w-4 h-4" />
+                  {opponentMode === 'bot'
+                    ? caseCount > 1 ? `${caseCount}x Duell starten` : 'Duell starten'
+                    : 'Challenge senden'}
+                </span>
               )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/80 space-y-1">
-                <p className="font-semibold text-amber-300">How it works</p>
-                <p>Both players open the same case. The player who wins the higher-value item wins the duel and earns the opponent's item value as bonus coins.</p>
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="ghost" onClick={() => setStep('case')} className="flex-1 border-white/10 text-gray-400">
-                  Back
-                </Button>
-                <Button
-                  onClick={handleCreate}
-                  disabled={createDuel.isPending || (opponentMode === 'user' && !selectedUser)}
-                  className="flex-1"
-                  style={{ background: 'linear-gradient(135deg, #3b82f6, #60a5fa)', color: '#000' }}
-                >
-                  <Swords className="w-4 h-4 mr-1.5" />
-                  {createDuel.isPending ? 'Creating...' : opponentMode === 'bot' ? 'Start Bot Duel' : 'Send Challenge'}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+      {showAnimation && currentAnim && (
+        <DuelOpeningAnimation
+          allItems={currentAnim.allItems}
+          playerItem={currentAnim.playerItem}
+          botItem={currentAnim.botItem}
+          playerWon={currentAnim.playerWon}
+          tie={currentAnim.tie}
+          open={showAnimation}
+          onClose={handleAnimClose}
+          isBot={currentAnim.duelIsBot}
+          currentIndex={currentAnimIdx + 1}
+          totalCount={queuedAnimations.length}
+        />
+      )}
+    </>
   );
 }
 
@@ -556,7 +703,7 @@ export function DuelView({ cases, userBalance }: DuelViewProps) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
         <Swords className="w-12 h-12 text-gray-600" />
-        <p className="text-gray-500">Sign in to use the 1v1 duel system</p>
+        <p className="text-gray-500">Melde dich an, um das 1v1 Duel-System zu nutzen</p>
       </div>
     );
   }
@@ -570,21 +717,21 @@ export function DuelView({ cases, userBalance }: DuelViewProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">1v1 Duels</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Challenge a user or the bot. Higher drop wins.</p>
+          <p className="text-sm text-gray-500 mt-0.5">Fordere einen Nutzer oder den Bot heraus. Höchster Drop gewinnt.</p>
         </div>
         <Button
           onClick={() => setShowCreate(true)}
           style={{ background: 'linear-gradient(135deg, #3b82f6, #60a5fa)', color: '#000' }}
           className="gap-2 font-bold"
         >
-          <Swords className="w-4 h-4" /> New Duel
+          <Swords className="w-4 h-4" /> Neues Duel
         </Button>
       </div>
 
       {pendingDuels.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">Incoming Challenges</span>
+            <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">Eingehende Herausforderungen</span>
             <span className="w-5 h-5 rounded-full bg-amber-500 text-black text-[10px] font-bold flex items-center justify-center">
               {pendingDuels.length}
             </span>
@@ -597,7 +744,7 @@ export function DuelView({ cases, userBalance }: DuelViewProps) {
 
       {activeDuels.length > 0 && (
         <div className="space-y-3">
-          <p className="text-sm font-semibold text-blue-400 uppercase tracking-wider">Active Duels</p>
+          <p className="text-sm font-semibold text-blue-400 uppercase tracking-wider">Aktive Duels</p>
           {activeDuels.map(d => (
             <DuelCard key={d.id} duel={d} currentUserId={user.id} cases={cases} />
           ))}
@@ -606,7 +753,7 @@ export function DuelView({ cases, userBalance }: DuelViewProps) {
 
       {completedDuels.length > 0 && (
         <div className="space-y-3">
-          <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Past Duels</p>
+          <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Vergangene Duels</p>
           {completedDuels.slice(0, 5).map(d => (
             <DuelCard key={d.id} duel={d} currentUserId={user.id} cases={cases} />
           ))}
@@ -623,14 +770,14 @@ export function DuelView({ cases, userBalance }: DuelViewProps) {
             <Swords className="w-8 h-8 text-gray-600" />
           </div>
           <div>
-            <p className="text-white font-semibold mb-1">No duels yet</p>
-            <p className="text-sm text-gray-500">Start your first 1v1 duel against a bot or another player!</p>
+            <p className="text-white font-semibold mb-1">Noch keine Duels</p>
+            <p className="text-sm text-gray-500">Starte dein erstes 1v1 Duel gegen den Bot oder einen Spieler!</p>
           </div>
           <Button
             onClick={() => setShowCreate(true)}
             style={{ background: 'linear-gradient(135deg, #3b82f6, #60a5fa)', color: '#000' }}
           >
-            <Swords className="w-4 h-4 mr-2" /> Start a Duel
+            <Swords className="w-4 h-4 mr-2" /> Duel starten
           </Button>
         </div>
       )}
