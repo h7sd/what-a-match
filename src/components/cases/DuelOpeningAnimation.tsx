@@ -92,8 +92,8 @@ function generateVerticalStrip(allItems: CaseItem[], wonItem: CaseItem): CaseIte
   return strip;
 }
 
-const ITEM_HEIGHT = 110;
-const ITEM_GAP = 8;
+const ITEM_HEIGHT = 140;
+const ITEM_GAP = 6;
 const ITEM_TOTAL = ITEM_HEIGHT + ITEM_GAP;
 const WIN_INDEX = 45;
 const SPIN_DURATION_MS = 5000;
@@ -104,7 +104,7 @@ function VerticalStripItem({ item, isCenter }: { item: CaseItem; isCenter?: bool
   return (
     <div
       className={cn(
-        'flex-shrink-0 w-full rounded-xl flex items-center gap-3 px-3 border-2 transition-all',
+        'flex-shrink-0 w-full rounded-xl flex flex-col items-center justify-center gap-2 py-3 border-2 transition-all',
         isCenter && 'border-opacity-100'
       )}
       style={{
@@ -125,15 +125,14 @@ function VerticalStripItem({ item, isCenter }: { item: CaseItem; isCenter?: bool
           <ShieldCheck className="w-9 h-9" style={{ color: colors.bg }} />
         )}
       </div>
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-white truncate">{display.name}</p>
+      <div className="text-center px-2 min-w-0 w-full">
+        <p className="text-xs font-semibold text-white truncate">{display.name}</p>
         <span
           className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full"
           style={{ backgroundColor: `${colors.bg}25`, color: colors.bg }}
         >
           {item.rarity}
         </span>
-        <p className="text-[10px] text-gray-500 mt-0.5">{formatUC(item.display_value)} UC</p>
       </div>
     </div>
   );
@@ -220,7 +219,7 @@ function SpinColumn({
   spinning: boolean;
 }) {
   const [strip] = useState(() => generateVerticalStrip(allItems, wonItem));
-  const visibleHeight = 330;
+  const visibleHeight = 380;
   const centerOffset = Math.floor(visibleHeight / 2) - Math.floor(ITEM_HEIGHT / 2);
   const targetY = -(WIN_INDEX * ITEM_TOTAL) + centerOffset;
 
@@ -232,11 +231,11 @@ function SpinColumn({
         style={{ height: visibleHeight }}
       >
         <div
-          className="absolute left-0 right-0 top-0 h-16 z-10 pointer-events-none"
+          className="absolute left-0 right-0 top-0 h-20 z-10 pointer-events-none"
           style={{ background: 'linear-gradient(to bottom, #0a0a10, transparent)' }}
         />
         <div
-          className="absolute left-0 right-0 bottom-0 h-16 z-10 pointer-events-none"
+          className="absolute left-0 right-0 bottom-0 h-20 z-10 pointer-events-none"
           style={{ background: 'linear-gradient(to top, #0a0a10, transparent)' }}
         />
         <div
@@ -244,7 +243,7 @@ function SpinColumn({
           style={{
             top: centerOffset,
             height: ITEM_HEIGHT,
-            border: '2px solid rgba(255,255,255,0.15)',
+            border: '2px solid rgba(255,255,255,0.2)',
             borderRadius: 12,
           }}
         />
@@ -309,11 +308,11 @@ export function DuelOpeningAnimation({
   return (
     <Dialog open={open} onOpenChange={() => { if (phase === 'done') onClose(); }}>
       <DialogContent
-        className="max-w-md bg-[#0a0a10] border-white/10 p-0 overflow-hidden"
+        className="max-w-xl bg-[#0a0a10] border-white/10 p-0 overflow-hidden"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <div className="relative min-h-[560px] flex flex-col">
+        <div className="relative min-h-[520px] flex flex-col">
           {phase === 'done' && (
             <Button
               variant="ghost"
