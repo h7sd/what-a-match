@@ -32,11 +32,13 @@ function getItemDisplay(item: CaseItem) {
 function generateStrip(allItems: CaseItem[], wonItem: CaseItem): CaseItem[] {
   const strip: CaseItem[] = [];
   const winIndex = 50;
+  const fallbackItem: CaseItem = { ...wonItem, id: `${wonItem.id}-fallback` };
+  const pool = allItems.length > 0 ? allItems : [fallbackItem];
   for (let i = 0; i < 100; i++) {
     if (i === winIndex) {
       strip.push(wonItem);
     } else {
-      const r = allItems[Math.floor(Math.random() * allItems.length)];
+      const r = pool[Math.floor(Math.random() * pool.length)];
       strip.push({ ...r, id: `${r.id}-${i}` });
     }
   }

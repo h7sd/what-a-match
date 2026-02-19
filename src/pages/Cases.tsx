@@ -76,8 +76,11 @@ export default function Cases() {
     openCaseMutation.mutate(caseId, {
       onSuccess: (data) => {
         setWonItem(data.item);
-        setAllCaseItems(openingCaseItems || []);
+        setAllCaseItems(openingCaseItems && openingCaseItems.length > 0 ? openingCaseItems : [data.item]);
         setAnimationOpen(true);
+      },
+      onError: () => {
+        setOpeningCaseId(null);
       },
     });
   };
