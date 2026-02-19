@@ -154,37 +154,16 @@ export default {
         const res = await fetch(targetUrl, {
           method: "GET",
           redirect: "manual",
-          headers: {
-            "apikey": env.SUPABASE_ANON_KEY || "",
-          },
         });
 
-        // Cloudflare Workers: opaqueredirect type means redirect happened, get Location header
-        let location = null;
+        let location = "https://uservault.cc/dashboard?spotify=error";
 
-        if (res.type === "opaqueredirect") {
-          // Can't read Location from opaque redirect - fallback: follow the redirect ourselves
-          const res2 = await fetch(targetUrl, {
-            method: "GET",
-            redirect: "follow",
-            headers: {
-              "apikey": env.SUPABASE_ANON_KEY || "",
-            },
-          });
-          // After following, we'll be at the dashboard URL
-          location = res2.url;
-          if (!location || location === targetUrl) {
-            location = "https://uservault.cc/dashboard?spotify=error";
+        if (res.status >= 300 && res.status < 400) {
+          const loc = res.headers.get("Location");
+          if (loc) {
+            location = loc.replace("https://uservault.net/", "https://uservault.cc/");
           }
-        } else if (res.status >= 300 && res.status < 400) {
-          location = res.headers.get("Location") || "https://uservault.cc/dashboard?spotify=error";
-        } else if (res.status === 200) {
-          location = "https://uservault.cc/dashboard?spotify=connected";
-        } else {
-          location = "https://uservault.cc/dashboard?spotify=error";
         }
-
-        location = location.replace("https://uservault.net/", "https://uservault.cc/");
 
         return new Response(null, {
           status: 302,
