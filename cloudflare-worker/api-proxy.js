@@ -144,19 +144,22 @@ export default {
       spotifyParams.delete("spotify_callback");
       const targetUrl = `${SUPABASE_URL}/functions/v1/spotify-auth?${spotifyParams.toString()}`;
       try {
+        // Use follow so the edge function's 302 is resolved automatically,
+        // then we re-redirect the browser to the final destination
         const res = await fetch(targetUrl, {
           method: "GET",
-          redirect: "manual",
+          redirect: "follow",
         });
-        // Edge function returns 302 - forward the Location header as a browser redirect
-        const location = res.headers.get("Location");
-        if ((res.status === 301 || res.status === 302 || res.status === 303) && location) {
+        // After following redirects, the final URL will be something like
+        // https://uservault.net/dashboard?spotify=connected
+        // We forward it as a browser redirect
+        if (res.redirected && res.url) {
           return new Response(null, {
             status: 302,
-            headers: { Location: location },
+            headers: { Location: res.url },
           });
         }
-        // Fallback: forward response as-is
+        // If no redirect occurred (edge function returned JSON error etc.)
         const newHeaders = new Headers(res.headers);
         Object.entries(corsHeaders).forEach(([key, value]) => {
           newHeaders.set(key, value);
@@ -167,9 +170,9 @@ export default {
           headers: newHeaders,
         });
       } catch {
-        return new Response(JSON.stringify({ error: "Spotify callback failed" }), {
-          status: 502,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+        return new Response(null, {
+          status: 302,
+          headers: { Location: "https://uservault.net/dashboard?spotify=error" },
         });
       }
     }
