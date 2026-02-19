@@ -502,30 +502,31 @@ function CreateDuelDialog({ open, onClose, cases, userBalance }: CreateDuelDialo
     <>
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-lg bg-[#0a0a0f] border-white/10 max-h-[90vh] overflow-y-auto">
-          {showAnimation && !currentAnim && (
-            <div className="flex flex-col items-center justify-center py-16 gap-4">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              >
-                <Swords className="w-8 h-8 text-blue-400" />
-              </motion.div>
-              <p className="text-sm font-semibold text-white">Duell wird gestartet...</p>
-            </div>
-          )}
-          {showAnimation && currentAnim ? (
+          {showAnimation ? (
             <div className="py-4">
-              <DuelOpeningAnimation
-                allItems={currentAnim.allItems}
-                playerItem={currentAnim.playerItem}
-                botItem={currentAnim.botItem}
-                playerWon={currentAnim.playerWon}
-                tie={currentAnim.tie}
-                onDone={handleAnimDone}
-                isBot={currentAnim.duelIsBot}
-                currentIndex={currentAnimIdx + 1}
-                totalCount={caseCount}
-              />
+              {currentAnim ? (
+                <DuelOpeningAnimation
+                  allItems={currentAnim.allItems}
+                  playerItem={currentAnim.playerItem}
+                  botItem={currentAnim.botItem}
+                  playerWon={currentAnim.playerWon}
+                  tie={currentAnim.tie}
+                  onDone={handleAnimDone}
+                  isBot={currentAnim.duelIsBot}
+                  currentIndex={currentAnimIdx + 1}
+                  totalCount={caseCount}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <Swords className="w-8 h-8 text-blue-400" />
+                  </motion.div>
+                  <p className="text-sm font-semibold text-white">Duell wird gestartet...</p>
+                </div>
+              )}
             </div>
           ) : (
           <>
