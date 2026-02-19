@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ExternalLink, Link2, Copy, Check } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   SiDiscord,
   SiSpotify,
@@ -133,6 +134,10 @@ interface SocialLinksProps {
 export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = true, iconOnly = false, iconOpacity = 100 }: SocialLinksProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  const recordClick = (linkId: string) => {
+    supabase.functions.invoke('record-link-click', { body: { linkId } }).catch(() => {});
+  };
+
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -178,7 +183,7 @@ export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = tru
             return (
               <motion.button
                 key={link.id}
-                onClick={() => handleDiscordClick(link.url, link.id)}
+                onClick={() => { handleDiscordClick(link.url, link.id); recordClick(link.id); }}
                 variants={item}
                 whileHover={{ scale: 1.15, y: -2 }}
                 whileTap={{ scale: 0.95 }}
@@ -210,6 +215,7 @@ export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = tru
               href={ensureProtocol(link.url)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => recordClick(link.id)}
               variants={item}
               whileHover={{ scale: 1.15, y: -2 }}
               whileTap={{ scale: 0.95 }}
@@ -254,7 +260,7 @@ export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = tru
           return (
             <motion.button
               key={link.id}
-              onClick={() => handleDiscordClick(link.url, link.id)}
+              onClick={() => { handleDiscordClick(link.url, link.id); recordClick(link.id); }}
               variants={item}
               whileHover={{ scale: 1.02, x: 4 }}
               whileTap={{ scale: 0.98 }}
@@ -301,6 +307,7 @@ export function SocialLinks({ links, accentColor = '#8b5cf6', glowingIcons = tru
             href={ensureProtocol(link.url)}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => recordClick(link.id)}
             variants={item}
             whileHover={{ scale: 1.02, x: 4 }}
             whileTap={{ scale: 0.98 }}
