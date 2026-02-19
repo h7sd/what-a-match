@@ -525,7 +525,7 @@ export default function UserProfile() {
           )}
 
         {/* Spotify Now Playing Widget - fixed top right */}
-        {!showStartScreen && (profile as any).show_spotify_widget !== false && (
+        {!showStartScreen && (profile as any).show_spotify_widget !== false && profile.id && (
           <div className="fixed top-4 right-4 z-50 w-72">
             <SpotifyNowPlaying
               userId={profile.id}

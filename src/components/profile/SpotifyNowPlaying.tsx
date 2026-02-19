@@ -49,6 +49,7 @@ export function SpotifyNowPlaying({ userId, accentColor = '#1DB954' }: SpotifyNo
     let mounted = true;
 
     const load = async () => {
+      if (!userId) return;
       const data = await fetchNowPlaying(userId);
       if (!mounted) return;
       setTrack(data);
