@@ -255,35 +255,40 @@ function MiniProfileCard({ profile }: { profile: ProfileWithBadges }) {
               {profile.username}
             </p>
 
-            {/* Badges - matching ProfileCard style */}
+            {/* Badges - exact same as ProfileBadgesDisplay / StealableBadge */}
             {profile.badges.length > 0 && (
-              <div className="inline-flex items-center justify-center gap-1 mb-4 px-2.5 py-1.5 rounded-full border border-white/10 bg-black/20 backdrop-blur-sm flex-wrap max-w-[200px]">
-                {profile.badges.slice(0, 5).map((badge) => {
-                  const badgeImage = isValidIconUrl(badge.icon_url) ? badge.icon_url : getBadgeImage(badge.name);
-                  const BadgeIcon = getBadgeIcon(badge.name);
-                  return (
-                    <div
-                      key={badge.id}
-                      className="w-7 h-7 rounded-full flex items-center justify-center border border-white/20"
-                      style={{
-                        backgroundColor: badge.color ? `${badge.color}25` : 'rgba(255,255,255,0.1)',
-                        boxShadow: badge.color ? `0 0 8px ${badge.color}50` : undefined
-                      }}
-                      title={badge.name}
-                    >
-                      {badgeImage ? (
-                        <img src={badgeImage} alt={badge.name} className="w-4 h-4 object-contain" />
-                      ) : (
-                        <BadgeIcon className="w-3.5 h-3.5" style={{ color: badge.color || '#fff' }} />
-                      )}
-                    </div>
-                  );
-                })}
-                {profile.badges.length > 5 && (
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center border border-white/20 bg-white/5 text-xs text-muted-foreground">
-                    +{profile.badges.length - 5}
-                  </div>
-                )}
+              <div className="w-full flex justify-center mb-4">
+                <div className="inline-flex flex-wrap items-center justify-center gap-1 px-3 py-1.5 rounded-full border border-white/10 bg-black/20 backdrop-blur-sm">
+                  {profile.badges.map((badge) => {
+                    const badgeImage = isValidIconUrl(badge.icon_url) ? badge.icon_url : getBadgeImage(badge.name);
+                    const BadgeIcon = getBadgeIcon(badge.name);
+                    const badgeColor = badge.color || accentColor;
+                    return (
+                      <div
+                        key={badge.id}
+                        className="w-8 h-8 flex items-center justify-center"
+                        title={badge.name}
+                      >
+                        {badgeImage ? (
+                          <img
+                            src={badgeImage}
+                            alt={badge.name}
+                            className="w-5 h-5 object-contain"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <BadgeIcon
+                            className="w-5 h-5"
+                            style={{
+                              color: badgeColor,
+                              filter: `drop-shadow(0 0 4px ${badgeColor}50)`,
+                            }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
