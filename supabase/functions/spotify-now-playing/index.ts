@@ -54,11 +54,20 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Resolve the auth user_id from the profile id
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const authUserId = profileRow?.user_id ?? userId;
+
     // Fetch integration row using service role (tokens are safe here)
     const { data: integration, error } = await supabase
       .from("spotify_integrations")
       .select("access_token, refresh_token, expires_at, show_on_profile")
-      .eq("user_id", userId)
+      .eq("user_id", authUserId)
       .maybeSingle();
 
     if (error || !integration || !integration.show_on_profile) {
