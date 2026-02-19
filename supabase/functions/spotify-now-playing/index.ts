@@ -65,24 +65,37 @@ Deno.serve(async (req: Request) => {
     // Refresh token if expired (with 60s buffer)
     if (Date.now() > expiresAt - 60_000) {
       const refreshed = await refreshAccessToken(integration.refresh_token);
-      if (!refreshed) {
-        return new Response(JSON.stringify({ playing: false }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (refreshed) {
+        accessToken = refreshed.access_token;
+        const newExpiry = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
+        await supabase
+          .from("spotify_integrations")
+          .update({ access_token: accessToken, expires_at: newExpiry, updated_at: new Date().toISOString() })
+          .eq("user_id", userId);
       }
-      accessToken = refreshed.access_token;
-      const newExpiry = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
-      await supabase
-        .from("spotify_integrations")
-        .update({ access_token: accessToken, expires_at: newExpiry, updated_at: new Date().toISOString() })
-        .eq("user_id", userId);
+      // If refresh failed but we still have a token, try it anyway
     }
 
     // Fetch currently playing from Spotify API
-    const spotifyRes = await fetch("https://api.spotify.com/v1/me/player/currently-playing?market=from_token", {
+    let spotifyRes = await fetch("https://api.spotify.com/v1/me/player/currently-playing?market=from_token", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
+
+    // If 401, try refreshing once more regardless of expiry time
+    if (spotifyRes.status === 401 && integration.refresh_token) {
+      const refreshed = await refreshAccessToken(integration.refresh_token);
+      if (refreshed) {
+        accessToken = refreshed.access_token;
+        const newExpiry = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
+        await supabase
+          .from("spotify_integrations")
+          .update({ access_token: accessToken, expires_at: newExpiry, updated_at: new Date().toISOString() })
+          .eq("user_id", userId);
+        spotifyRes = await fetch("https://api.spotify.com/v1/me/player/currently-playing?market=from_token", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+      }
+    }
 
     if (spotifyRes.status === 204 || spotifyRes.status === 404) {
       return new Response(JSON.stringify({ playing: false }), {

@@ -98,7 +98,7 @@ export function SpotifyNowPlaying({ userId, accentColor = '#1DB954' }: SpotifyNo
         className="w-full"
       >
         <div
-          className="relative overflow-hidden rounded-2xl border border-white/10 backdrop-blur-xl bg-black/50"
+          className="relative overflow-hidden rounded-2xl backdrop-blur-xl bg-black/50"
           style={{ boxShadow: `0 8px 32px ${accentColor}20, 0 0 0 1px ${accentColor}15` }}
         >
           {/* Album art blurred background */}
