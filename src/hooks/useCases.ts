@@ -72,6 +72,25 @@ export interface CaseTransaction {
   };
 }
 
+export function useUserBalance() {
+  return useQuery({
+    queryKey: ['user-balance'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return BigInt(0);
+
+      const { data, error } = await supabase
+        .from('user_balances')
+        .select('balance')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data ? BigInt(data.balance) : BigInt(0);
+    },
+  });
+}
+
 export function useCases() {
   return useQuery({
     queryKey: ['cases'],

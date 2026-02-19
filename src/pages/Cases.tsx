@@ -7,8 +7,7 @@ import { CaseCard } from '@/components/cases/CaseCard';
 import { CaseOpeningAnimation } from '@/components/cases/CaseOpeningAnimation';
 import { LiveFeed } from '@/components/cases/LiveFeed';
 import { InventoryView } from '@/components/cases/InventoryView';
-import { useCases, useOpenCase, useCaseItems } from '@/hooks/useCases';
-import { useCurrentUserProfile } from '@/hooks/useProfile';
+import { useCases, useOpenCase, useCaseItems, useUserBalance } from '@/hooks/useCases';
 import { useAuth } from '@/lib/auth';
 import { formatUC } from '@/lib/uc';
 import { Button } from '@/components/ui/button';
@@ -60,7 +59,7 @@ function PremiumKeyBanner() {
 export default function Cases() {
   const { user } = useAuth();
   const { data: cases, isLoading } = useCases();
-  const { data: profile } = useCurrentUserProfile();
+  const { data: userBalance = BigInt(0) } = useUserBalance();
   const [activeTab, setActiveTab] = useState<ActiveTab>('cases');
   const [openingCaseId, setOpeningCaseId] = useState<string | null>(null);
   const [animationOpen, setAnimationOpen] = useState(false);
@@ -69,8 +68,6 @@ export default function Cases() {
   const openCaseMutation = useOpenCase();
 
   const { data: openingCaseItems } = useCaseItems(openingCaseId);
-
-  const userBalance = profile?.uc_balance ? BigInt(profile.uc_balance) : BigInt(0);
 
   const handleOpenCase = async (caseId: string) => {
     if (!user) return;
@@ -110,7 +107,7 @@ export default function Cases() {
                   <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">Case Opening</h1>
                   <p className="text-sm text-gray-500 mt-1">Open cases to win badges, coins, and the ultra-rare Premium Key</p>
                 </div>
-                {user && profile && <BalanceBadge balance={userBalance} />}
+                {user && <BalanceBadge balance={userBalance} />}
                 {!user && (
                   <Button asChild size="sm" className="self-start sm:self-auto">
                     <Link to="/auth">Sign in to Play</Link>
