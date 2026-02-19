@@ -81,23 +81,33 @@ Deno.serve(async (req: Request) => {
     }
 
     // --- Action: OAuth callback from Spotify ---
-    if (action === "callback") {
+    if (action === "callback" || action === "callback_json") {
+      const isJson = action === "callback_json";
       const code = url.searchParams.get("code");
       const state = url.searchParams.get("state");
       const error = url.searchParams.get("error");
 
-      const appUrl = Deno.env.get("APP_URL") || "https://uservault.cc";
+      const appUrl = "https://uservault.cc";
 
-      if (error || !code || !state) {
+      const redirectOrJson = (path: string) => {
+        if (isJson) {
+          return new Response(JSON.stringify({ redirect: `${appUrl}${path}` }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         return new Response(null, {
           status: 302,
-          headers: { Location: `${appUrl}/dashboard?spotify=error` },
+          headers: { Location: `${appUrl}${path}` },
         });
+      };
+
+      if (error || !code || !state) {
+        return redirectOrJson("/dashboard?spotify=error");
       }
 
       let userId: string;
       try {
-        // state may arrive with spaces instead of + due to URL encoding - fix it
         const fixedState = state.replace(/ /g, "+");
         const parsed = JSON.parse(atob(fixedState));
         userId = parsed.userId;
@@ -105,13 +115,9 @@ Deno.serve(async (req: Request) => {
         if (!userId || age > 10 * 60 * 1000) throw new Error("State expired");
       } catch (stateErr) {
         console.error("State parse error:", stateErr, "raw state:", state);
-        return new Response(null, {
-          status: 302,
-          headers: { Location: `${appUrl}/dashboard?spotify=error&reason=state_parse` },
-        });
+        return redirectOrJson("/dashboard?spotify=error&reason=state_parse");
       }
 
-      // Exchange code for tokens
       const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
         method: "POST",
         headers: {
@@ -128,15 +134,11 @@ Deno.serve(async (req: Request) => {
       if (!tokenRes.ok) {
         const tokenErr = await tokenRes.text().catch(() => "unknown");
         console.error("Spotify token exchange failed:", tokenRes.status, tokenErr);
-        return new Response(null, {
-          status: 302,
-          headers: { Location: `${appUrl}/dashboard?spotify=error&reason=token_${tokenRes.status}` },
-        });
+        return redirectOrJson(`/dashboard?spotify=error&reason=token_${tokenRes.status}`);
       }
 
       const tokens = await tokenRes.json();
 
-      // Fetch Spotify profile
       const profileRes = await fetch("https://api.spotify.com/v1/me", {
         headers: { Authorization: `Bearer ${tokens.access_token}` },
       });
@@ -144,7 +146,6 @@ Deno.serve(async (req: Request) => {
 
       const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
 
-      // Upsert into spotify_integrations using service role (tokens never touch the client)
       const { error: upsertError } = await supabase
         .from("spotify_integrations")
         .upsert({
@@ -160,16 +161,11 @@ Deno.serve(async (req: Request) => {
         }, { onConflict: "user_id" });
 
       if (upsertError) {
-        return new Response(null, {
-          status: 302,
-          headers: { Location: `${appUrl}/dashboard?spotify=error` },
-        });
+        console.error("Upsert error:", upsertError);
+        return redirectOrJson("/dashboard?spotify=error&reason=db");
       }
 
-      return new Response(null, {
-        status: 302,
-        headers: { Location: `${appUrl}/dashboard?spotify=connected` },
-      });
+      return redirectOrJson("/dashboard?spotify=connected");
     }
 
     // --- Action: check connection status (authenticated) ---

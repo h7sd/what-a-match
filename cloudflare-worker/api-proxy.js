@@ -148,12 +148,17 @@ export default {
       if (state) newParams.set("state", state);
       if (spotifyError) newParams.set("error", spotifyError);
 
-      const targetUrl = `${SUPABASE_URL}/functions/v1/spotify-auth?${newParams.toString()}`;
+      // Use a special action that returns JSON instead of a redirect so we can read it
+      const jsonParams = new URLSearchParams({ action: "callback_json" });
+      if (code) jsonParams.set("code", code);
+      if (state) jsonParams.set("state", state);
+      if (spotifyError) jsonParams.set("error", spotifyError);
+
+      const targetUrl = `${SUPABASE_URL}/functions/v1/spotify-auth?${jsonParams.toString()}`;
 
       try {
         const res = await fetch(targetUrl, {
           method: "GET",
-          redirect: "manual",
           headers: {
             "apikey": env.SUPABASE_ANON_KEY || "",
             "Authorization": `Bearer ${env.SUPABASE_ANON_KEY || ""}`,
@@ -162,10 +167,11 @@ export default {
 
         let location = "https://uservault.cc/dashboard?spotify=error";
 
-        if (res.status >= 300 && res.status < 400) {
-          const loc = res.headers.get("Location");
-          if (loc) {
-            location = loc.replace("https://uservault.net/", "https://uservault.cc/");
+        if (res.ok) {
+          const data = await res.json().catch(() => null);
+          if (data && data.redirect) {
+            location = data.redirect
+              .replace(/https?:\/\/uservault\.net\//g, "https://uservault.cc/");
           }
         }
 
