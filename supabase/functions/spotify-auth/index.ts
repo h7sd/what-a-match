@@ -123,9 +123,11 @@ Deno.serve(async (req: Request) => {
       });
 
       if (!tokenRes.ok) {
+        const tokenErr = await tokenRes.text().catch(() => "unknown");
+        console.error("Spotify token exchange failed:", tokenRes.status, tokenErr);
         return new Response(null, {
           status: 302,
-          headers: { Location: `${appUrl}/dashboard?spotify=error` },
+          headers: { Location: `${appUrl}/dashboard?spotify=error&reason=token_${tokenRes.status}` },
         });
       }
 
