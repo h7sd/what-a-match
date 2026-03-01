@@ -161,7 +161,7 @@ export function ModernHeader() {
                 )
               )}
 
-              <div className="pt-4 mt-2 border-t border-border/50 flex flex-col gap-3">
+              <div className="pt-4 mt-2 flex flex-col gap-3">
                 {user ? (
                   <Link
                     to="/dashboard"

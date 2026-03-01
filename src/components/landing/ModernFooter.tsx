@@ -57,7 +57,7 @@ export function ModernFooter() {
   };
 
   return (
-    <footer ref={ref} className="border-t border-border/30 mt-20 relative overflow-hidden">
+    <footer ref={ref} className="mt-20 relative overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#991b1b]/5 to-transparent" />
       
@@ -138,7 +138,7 @@ export function ModernFooter() {
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="pt-8 border-t border-border/30 flex flex-col md:flex-row items-center justify-between gap-6"
+          className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6"
         >
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} UserVault. All rights reserved.

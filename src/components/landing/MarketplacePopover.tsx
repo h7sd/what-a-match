@@ -97,12 +97,12 @@ export function MarketplacePopover() {
       </div>
       
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 py-2 border-t border-b border-border/50">
+      <div className="grid grid-cols-3 gap-2 py-2">
         <div className="text-center">
           <div className="text-lg font-bold text-foreground">{items?.length || 0}</div>
           <div className="text-[10px] text-muted-foreground uppercase">Items</div>
         </div>
-        <div className="text-center border-x border-border/50">
+        <div className="text-center">
           <div className="text-lg font-bold text-primary">1,000</div>
           <div className="text-[10px] text-muted-foreground uppercase">Start UC</div>
         </div>
