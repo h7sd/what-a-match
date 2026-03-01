@@ -143,7 +143,7 @@ export function MarketplaceCard({
             {(isPurchased || item.status === 'pending' || item.status === 'denied' || isSoldOut) && (
               <div className="absolute top-3 right-3">
                 {isPurchased && (
-                  <Badge className="bg-emerald-500/90 text-white border-0 shadow-lg backdrop-blur-sm gap-1">
+                  <Badge className="bg-red-500/90 text-white border-0 shadow-lg backdrop-blur-sm gap-1">
                     <Check className="w-3 h-3" />
                     Owned
                   </Badge>
@@ -319,7 +319,7 @@ export function MarketplaceCard({
 
               {/* Inline Status Badges */}
               {isPurchased && (
-                <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-[10px] px-1.5 py-0 gap-1">
+                <Badge className="bg-red-500/20 text-red-400 border-0 text-[10px] px-1.5 py-0 gap-1">
                   <Check className="w-2.5 h-2.5" />
                   Owned
                 </Badge>

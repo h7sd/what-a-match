@@ -237,7 +237,7 @@ export function AdminSupportTickets() {
       case 'in_progress':
         return <Badge className="bg-amber-500/20 text-amber-500 text-[10px]">In Progress</Badge>;
       case 'closed':
-        return <Badge className="bg-green-500/20 text-green-500 text-[10px]">Closed</Badge>;
+        return <Badge className="bg-red-500/20 text-red-500 text-[10px]">Closed</Badge>;
       default:
         return <Badge variant="secondary" className="text-[10px]">{status}</Badge>;
     }
@@ -493,7 +493,7 @@ export function AdminSupportTickets() {
                   Send Reply
                 </Button>
                 <Button
-                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  className="flex-1 bg-red-600 hover:bg-red-700"
                   onClick={() => sendReply(true)}
                   disabled={isSending || !replyText.trim()}
                 >

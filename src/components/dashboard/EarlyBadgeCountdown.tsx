@@ -54,13 +54,13 @@ export function EarlyBadgeCountdown() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ y: -2 }}
-        className="group relative overflow-hidden rounded-2xl border border-[#00D9A5]/20 bg-black/40 backdrop-blur-xl p-6"
+        className="group relative overflow-hidden rounded-2xl border border-red-800/20 bg-black/40 backdrop-blur-xl p-6"
       >
         {/* Aurora background effect */}
         <Suspense fallback={null}>
           <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-500">
             <Aurora
-              colorStops={['#00B4D8', '#00D9A5', '#0077B6']}
+              colorStops={['#dc2626', '#991b1b', '#7f1d1d']}
               amplitude={0.7}
               blend={0.6}
               speed={0.5}
@@ -70,16 +70,16 @@ export function EarlyBadgeCountdown() {
         
         <div className="relative z-10 flex items-center gap-4">
           <motion.div 
-            className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#00D9A5]/30 to-[#00B4D8]/20 flex items-center justify-center border border-[#00D9A5]/30"
-            animate={{ 
-              boxShadow: ['0 0 20px rgba(0, 217, 165, 0.3)', '0 0 40px rgba(0, 217, 165, 0.5)', '0 0 20px rgba(0, 217, 165, 0.3)']
+            className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-800/30 to-red-600/20 flex items-center justify-center border border-red-800/30"
+            animate={{
+              boxShadow: ['0 0 20px rgba(153, 27, 27, 0.3)', '0 0 40px rgba(153, 27, 27, 0.5)', '0 0 20px rgba(153, 27, 27, 0.3)']
             }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            <Zap className="w-7 h-7 text-[#00D9A5]" />
+            <Zap className="w-7 h-7 text-red-800" />
           </motion.div>
           <div>
-            <h3 className="font-bold text-[#00D9A5] text-lg">EARLY Badge Claimed!</h3>
+            <h3 className="font-bold text-red-800 text-lg">EARLY Badge Claimed!</h3>
             <p className="text-sm text-white/50">You're an early supporter 🎉</p>
           </div>
         </div>
@@ -90,7 +90,7 @@ export function EarlyBadgeCountdown() {
           animate={{ rotate: 360 }}
           transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
         >
-          <Sparkles className="w-5 h-5 text-[#00D9A5]/40" />
+          <Sparkles className="w-5 h-5 text-red-800/40" />
         </motion.div>
       </motion.div>
     );
@@ -108,7 +108,7 @@ export function EarlyBadgeCountdown() {
         <Suspense fallback={null}>
           <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity duration-500">
             <Aurora
-              colorStops={['#00B4D8', '#00D9A5', '#0077B6']}
+              colorStops={['#dc2626', '#991b1b', '#7f1d1d']}
               amplitude={0.5}
               blend={0.6}
               speed={0.3}
@@ -135,13 +135,13 @@ export function EarlyBadgeCountdown() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -2 }}
-      className="group relative overflow-hidden rounded-2xl border border-[#00D9A5]/20 bg-black/40 backdrop-blur-xl p-6 space-y-5"
+      className="group relative overflow-hidden rounded-2xl border border-red-800/20 bg-black/40 backdrop-blur-xl p-6 space-y-5"
     >
       {/* Aurora background effect */}
       <Suspense fallback={null}>
         <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-500">
           <Aurora
-            colorStops={['#00B4D8', '#00D9A5', '#0077B6']}
+            colorStops={['#dc2626', '#991b1b', '#7f1d1d']}
             amplitude={0.7}
             blend={0.6}
             speed={0.5}
@@ -157,9 +157,9 @@ export function EarlyBadgeCountdown() {
           }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          <Zap className="w-5 h-5 text-[#00D9A5]" />
+          <Zap className="w-5 h-5 text-red-800" />
         </motion.div>
-        <h3 className="font-bold text-[#00D9A5]">Claim EARLY Badge</h3>
+        <h3 className="font-bold text-red-800">Claim EARLY Badge</h3>
       </div>
 
       <p className="relative z-10 text-sm text-white/50">
@@ -172,10 +172,10 @@ export function EarlyBadgeCountdown() {
           className="text-center"
           whileHover={{ scale: 1.02 }}
         >
-          <div className="bg-black/40 rounded-xl p-4 border border-[#00D9A5]/20 backdrop-blur">
+          <div className="bg-black/40 rounded-xl p-4 border border-red-800/20 backdrop-blur">
             <div className="flex items-center justify-center gap-2">
-              <Users className="w-5 h-5 text-[#00D9A5]" />
-              <span className="text-3xl font-bold text-[#00D9A5]">
+              <Users className="w-5 h-5 text-red-800" />
+              <span className="text-3xl font-bold text-red-800">
                 {claimedCount}
               </span>
             </div>
@@ -186,10 +186,10 @@ export function EarlyBadgeCountdown() {
           className="text-center"
           whileHover={{ scale: 1.02 }}
         >
-          <div className="bg-black/40 rounded-xl p-4 border border-[#00B4D8]/20 backdrop-blur">
+          <div className="bg-black/40 rounded-xl p-4 border border-red-600/20 backdrop-blur">
             <div className="flex items-center justify-center gap-2">
-              <Zap className="w-5 h-5 text-[#00B4D8]" />
-              <span className="text-3xl font-bold text-[#00B4D8]">
+              <Zap className="w-5 h-5 text-red-600" />
+              <span className="text-3xl font-bold text-red-600">
                 {remainingClaims}
               </span>
             </div>
@@ -199,9 +199,9 @@ export function EarlyBadgeCountdown() {
       </div>
 
       {/* Progress bar */}
-      <div className="relative z-10 w-full bg-black/40 rounded-full h-2 border border-[#00D9A5]/20 overflow-hidden">
-        <motion.div 
-          className="h-full rounded-full bg-gradient-to-r from-[#00B4D8] via-[#00D9A5] to-[#0077B6]"
+      <div className="relative z-10 w-full bg-black/40 rounded-full h-2 border border-red-800/20 overflow-hidden">
+        <motion.div
+          className="h-full rounded-full bg-gradient-to-r from-red-600 via-red-800 to-red-900"
           style={{ 
             width: `${(claimedCount / maxClaims) * 100}%`,
             backgroundSize: '200% 100%'
@@ -225,7 +225,7 @@ export function EarlyBadgeCountdown() {
         <Button
           onClick={handleClaim}
           disabled={isClaiming}
-          className="w-full h-12 rounded-xl bg-gradient-to-r from-[#00B4D8] via-[#00D9A5] to-[#0077B6] hover:opacity-90 font-semibold shadow-lg shadow-[#00D9A5]/20"
+          className="w-full h-12 rounded-xl bg-gradient-to-r from-red-600 via-red-800 to-red-900 hover:opacity-90 font-semibold shadow-lg shadow-red-800/20"
           style={{ backgroundSize: '200% 100%' }}
         >
           {isClaiming ? (

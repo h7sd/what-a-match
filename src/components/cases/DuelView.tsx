@@ -28,10 +28,10 @@ function ItemDisplay({ item, label, isWinner, isLoser }: {
   return (
     <div className={cn(
       'flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all',
-      isWinner ? 'border-green-500/50 bg-green-500/10' : isLoser ? 'border-red-500/30 bg-red-500/5 opacity-60' : 'border-white/10 bg-white/5'
+      isWinner ? 'border-red-500/50 bg-red-500/10' : isLoser ? 'border-red-500/30 bg-red-500/5 opacity-60' : 'border-white/10 bg-white/5'
     )}>
       {isWinner && (
-        <div className="flex items-center gap-1 text-xs font-bold text-green-400">
+        <div className="flex items-center gap-1 text-xs font-bold text-red-400">
           <Crown className="w-3.5 h-3.5" /> WINNER
         </div>
       )}
@@ -150,7 +150,7 @@ function DuelCard({ duel, currentUserId, cases }: {
     pending: { color: '#f59e0b', label: 'Pending', Icon: Clock },
     accepted: { color: '#3b82f6', label: 'Accepted', Icon: CheckCircle },
     completed: {
-      color: completed && userWon ? '#22c55e' : completed && !duel.winner_id ? '#94a3b8' : '#ef4444',
+      color: completed && userWon ? '#ef4444' : completed && !duel.winner_id ? '#94a3b8' : '#ef4444',
       label: completed ? (userWon ? 'Won' : botWon ? 'Lost to Bot' : duel.winner_id ? 'Lost' : 'Tie') : 'Completed',
       Icon: completed ? Trophy : CheckCircle,
     },
@@ -238,7 +238,7 @@ function DuelCard({ duel, currentUserId, cases }: {
                     onClick={() => acceptDuel.mutate(duel.id)}
                     disabled={acceptDuel.isPending}
                     size="sm"
-                    className="flex-1 bg-green-600 hover:bg-green-500 text-white text-xs"
+                    className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs"
                   >
                     <CheckCircle className="w-3.5 h-3.5 mr-1" /> Accept
                   </Button>

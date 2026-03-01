@@ -73,7 +73,7 @@ function HuntButton({ event }: { event: BadgeEvent }) {
       whileTap={{ scale: 0.98 }}
     >
       <motion.span
-        className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-teal-400/20"
+        className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-400/20"
         animate={{ x: ['-100%', '100%'] }}
         transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
       />
@@ -136,7 +136,7 @@ export function EventAnnouncementBanner() {
                   border border-white/15
                   ${event.event_type === 'steal' 
                     ? 'bg-gradient-to-r from-red-600/90 via-orange-500/90 to-red-600/90' 
-                    : 'bg-gradient-to-r from-emerald-600/90 via-teal-500/90 to-emerald-600/90'}
+                    : 'bg-gradient-to-r from-red-600/90 via-red-500/90 to-red-600/90'}
                 `}
               >
                 {/* Animated shine effect */}

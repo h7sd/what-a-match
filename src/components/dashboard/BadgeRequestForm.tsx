@@ -265,8 +265,8 @@ export function BadgeRequestForm() {
               </div>
             )}
             {currentRequest.status === 'approved' && (
-              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="w-6 h-6 text-green-500" />
+              <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-6 h-6 text-red-500" />
               </div>
             )}
             {currentRequest.status === 'denied' && (
@@ -320,7 +320,7 @@ export function BadgeRequestForm() {
               )}
 
               {currentRequest.status === 'approved' && (
-                <p className="text-sm text-green-400">
+                <p className="text-sm text-red-400">
                   Your badge has been added to your profile! Check the Badges section to enable/disable it.
                 </p>
               )}

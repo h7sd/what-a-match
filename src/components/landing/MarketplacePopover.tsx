@@ -115,14 +115,14 @@ export function MarketplacePopover() {
       {/* CTA */}
       {user ? (
         <Link to="/dashboard?tab=marketplace">
-          <Button className="w-full gap-2 bg-gradient-to-r from-primary to-[#00D9A5] hover:opacity-90">
+          <Button className="w-full gap-2 bg-gradient-to-r from-primary to-[#991b1b] hover:opacity-90">
             Open Marketplace
             <ArrowRight className="w-4 h-4" />
           </Button>
         </Link>
       ) : (
         <Link to="/auth">
-          <Button className="w-full gap-2 bg-gradient-to-r from-primary to-[#00D9A5] hover:opacity-90">
+          <Button className="w-full gap-2 bg-gradient-to-r from-primary to-[#991b1b] hover:opacity-90">
             Sign in to Trade
             <ArrowRight className="w-4 h-4" />
           </Button>

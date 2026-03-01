@@ -160,7 +160,7 @@ export function AdminChangelogManager() {
       case "bugfix":
         return "bg-red-500";
       case "improvement":
-        return "bg-green-500";
+        return "bg-red-500";
       case "security":
         return "bg-yellow-500";
       default:

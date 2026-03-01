@@ -820,7 +820,7 @@ export default function Auth() {
             }
           >
             <LiquidEther 
-              colors={['#00D9A5', '#00B4D8', '#0077B6']}
+              colors={['#991b1b', '#dc2626', '#7f1d1d']}
               autoDemo={true}
               autoSpeed={0.3}
               autoIntensity={1.5}
@@ -864,7 +864,7 @@ export default function Auth() {
           <motion.div
             className="absolute -inset-[1px] rounded-2xl opacity-60"
             style={{
-              background: 'linear-gradient(90deg, #00D9A5, #00B4D8, #0077B6, #00D9A5)',
+              background: 'linear-gradient(90deg, #991b1b, #dc2626, #7f1d1d, #991b1b)',
               backgroundSize: '300% 100%',
             }}
             animate={{
@@ -898,7 +898,7 @@ export default function Auth() {
                 >
                   <motion.div
                     animate={{
-                      boxShadow: ['0 0 20px rgba(0, 217, 165, 0.3)', '0 0 40px rgba(0, 217, 165, 0.5)', '0 0 20px rgba(0, 217, 165, 0.3)']
+                      boxShadow: ['0 0 20px rgba(220, 38, 38, 0.3)', '0 0 40px rgba(220, 38, 38, 0.5)', '0 0 20px rgba(220, 38, 38, 0.3)']
                     }}
                     transition={{ duration: 2, repeat: Infinity }}
                     className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center"
@@ -1159,7 +1159,7 @@ export default function Auth() {
                         placeholder="cooluser"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className={`h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300 ${usernameAvailability === 'available' ? 'border-green-500/50' : usernameAvailability === 'taken' ? 'border-red-500/50' : ''}`}
+                        className={`h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300 ${usernameAvailability === 'available' ? 'border-red-500/50' : usernameAvailability === 'taken' ? 'border-red-500/50' : ''}`}
                       />
                       {errors.username && (
                         <p className="text-sm text-red-400">{errors.username}</p>
@@ -1170,7 +1170,7 @@ export default function Auth() {
                         </p>
                       )}
                       {!errors.username && usernameAvailability === 'available' && (
-                        <p className="text-sm text-green-400 flex items-center gap-1">
+                        <p className="text-sm text-red-400 flex items-center gap-1">
                           <Check className="w-3 h-3" /> Username is available
                         </p>
                       )}
@@ -1251,7 +1251,7 @@ export default function Auth() {
                 >
                   <motion.div
                     animate={{
-                      boxShadow: ['0 0 20px rgba(0, 217, 165, 0.3)', '0 0 40px rgba(0, 217, 165, 0.5)', '0 0 20px rgba(0, 217, 165, 0.3)']
+                      boxShadow: ['0 0 20px rgba(220, 38, 38, 0.3)', '0 0 40px rgba(220, 38, 38, 0.5)', '0 0 20px rgba(220, 38, 38, 0.3)']
                     }}
                     transition={{ duration: 2, repeat: Infinity }}
                     className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center"

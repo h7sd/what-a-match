@@ -48,7 +48,7 @@ interface StatCardProps {
   label: string;
   index: number;
   isNumber?: boolean;
-  color?: 'primary' | 'blue' | 'amber' | 'emerald' | 'rose';
+  color?: 'primary' | 'blue' | 'amber' | 'red' | 'rose';
 }
 
 function StatCard({
@@ -61,16 +61,16 @@ function StatCard({
 }: StatCardProps) {
   const colorStyles = {
     primary: {
-      iconBg: 'from-[#00B4D8]/20 via-[#00D9A5]/15 to-[#0077B6]/20',
-      iconBorder: 'border-[#00D9A5]/30 group-hover:border-[#00D9A5]/50',
-      iconColor: 'text-[#00D9A5]',
-      glow: 'shadow-[#00D9A5]/20',
+      iconBg: 'from-red-600/20 via-red-800/15 to-red-900/20',
+      iconBorder: 'border-red-800/30 group-hover:border-red-800/50',
+      iconColor: 'text-red-800',
+      glow: 'shadow-red-800/20',
     },
     blue: {
-      iconBg: 'from-[#00B4D8]/20 to-[#0077B6]/20',
-      iconBorder: 'border-[#00B4D8]/30 group-hover:border-[#00B4D8]/50',
-      iconColor: 'text-[#00B4D8]',
-      glow: 'shadow-[#00B4D8]/20',
+      iconBg: 'from-red-600/20 to-red-900/20',
+      iconBorder: 'border-red-600/30 group-hover:border-red-600/50',
+      iconColor: 'text-red-600',
+      glow: 'shadow-red-600/20',
     },
     amber: {
       iconBg: 'from-amber-500/20 to-amber-500/5',
@@ -78,11 +78,11 @@ function StatCard({
       iconColor: 'text-amber-400',
       glow: 'shadow-amber-500/20',
     },
-    emerald: {
-      iconBg: 'from-[#00D9A5]/20 to-[#00D9A5]/5',
-      iconBorder: 'border-[#00D9A5]/30 group-hover:border-[#00D9A5]/50',
-      iconColor: 'text-[#00D9A5]',
-      glow: 'shadow-[#00D9A5]/20',
+    red: {
+      iconBg: 'from-red-500/20 to-red-500/5',
+      iconBorder: 'border-red-500/30 group-hover:border-red-500/50',
+      iconColor: 'text-red-400',
+      glow: 'shadow-red-500/20',
     },
     rose: {
       iconBg: 'from-rose-500/20 to-rose-500/5',
@@ -226,7 +226,7 @@ export function OverviewStats({ profileViews, uidNumber, username, profileId, ha
           value={likesCount}
           label="Likes"
           index={2}
-          color="emerald"
+          color="red"
         />
         <StatCard
           icon={ThumbsDown}

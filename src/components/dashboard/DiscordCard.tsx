@@ -28,7 +28,7 @@ export function DiscordCard({ isConnected = false, discordUrl = 'discord.gg/user
       <Suspense fallback={null}>
         <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-500">
           <Aurora
-            colorStops={['#5865F2', '#00D9A5', '#00B4D8']}
+            colorStops={['#5865F2', '#991b1b', '#dc2626']}
             amplitude={0.7}
             blend={0.6}
             speed={0.5}
@@ -54,7 +54,7 @@ export function DiscordCard({ isConnected = false, discordUrl = 'discord.gg/user
         <Button 
           className={`w-full rounded-xl h-11 font-medium transition-all ${
             isConnected 
-              ? 'bg-gradient-to-r from-[#00D9A5] to-[#00B4D8] hover:opacity-90 shadow-lg shadow-[#00D9A5]/20' 
+              ? 'bg-gradient-to-r from-red-800 to-red-600 hover:opacity-90 shadow-lg shadow-red-800/20'
               : 'bg-gradient-to-r from-[#5865F2] to-[#7289DA] hover:opacity-90 shadow-lg shadow-[#5865F2]/30'
           }`}
           asChild

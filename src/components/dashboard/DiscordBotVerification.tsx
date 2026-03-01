@@ -121,7 +121,7 @@ export function DiscordBotVerification({ userId, discordUserId }: DiscordBotVeri
         transition={{ delay: 0.2, duration: 0.5 }}
         className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-5"
       >
-        <div className="absolute inset-0 opacity-20 bg-gradient-to-br from-[#5865F2]/30 via-[#00D9A5]/20 to-[#5865F2]/30" />
+        <div className="absolute inset-0 opacity-20 bg-gradient-to-br from-[#5865F2]/30 via-red-800/20 to-[#5865F2]/30" />
         
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
@@ -130,7 +130,7 @@ export function DiscordBotVerification({ userId, discordUserId }: DiscordBotVeri
             </div>
             <div>
               <h3 className="font-semibold text-white">Discord Bot</h3>
-              <p className="text-xs text-[#00D9A5]">✓ Verified</p>
+              <p className="text-xs text-red-800">✓ Verified</p>
             </div>
           </div>
           <p className="text-sm text-white/50">
@@ -180,7 +180,7 @@ export function DiscordBotVerification({ userId, discordUserId }: DiscordBotVeri
                 className="h-12 w-12 border-white/10 hover:bg-white/10"
               >
                 {copied ? (
-                  <Check className="w-4 h-4 text-green-400" />
+                  <Check className="w-4 h-4 text-red-400" />
                 ) : (
                   <Copy className="w-4 h-4" />
                 )}

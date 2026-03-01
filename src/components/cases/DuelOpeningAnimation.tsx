@@ -271,10 +271,10 @@ function ResultItemCard({ item, label, isWinner, isLoser }: {
   return (
     <div className={cn(
       'flex-1 flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all',
-      isWinner ? 'border-green-500/60 bg-green-500/8' : isLoser ? 'border-red-500/40 bg-red-500/5 opacity-70' : 'border-white/10 bg-white/5'
+      isWinner ? 'border-red-500/60 bg-red-500/8' : isLoser ? 'border-red-500/40 bg-red-500/5 opacity-70' : 'border-white/10 bg-white/5'
     )}>
       {isWinner && (
-        <div className="flex items-center gap-1 text-xs font-bold text-green-400">
+        <div className="flex items-center gap-1 text-xs font-bold text-red-400">
           <Crown className="w-3.5 h-3.5" /> WINNER
         </div>
       )}
@@ -320,7 +320,7 @@ export function DuelOpeningAnimation({
   const { scheduleTicksForAnimation, playReveal } = useDuelSounds();
 
   const resultLabel = playerWon ? 'You Won!' : tie ? "It's a Tie!" : `${isBot ? 'Bot' : 'Opponent'} Won`;
-  const resultColor = playerWon ? '#22c55e' : tie ? '#f59e0b' : '#ef4444';
+  const resultColor = playerWon ? '#ef4444' : tie ? '#f59e0b' : '#ef4444';
 
   useEffect(() => {
     setPhase('spinning');

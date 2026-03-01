@@ -170,7 +170,7 @@ export function StealableBadge({
             {/* Hunt indicator when event is active */}
             {canSteal && (
               <motion.div
-                className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full flex items-center justify-center"
+                className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center"
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 1, repeat: Infinity }}
               >
@@ -199,7 +199,7 @@ export function StealableBadge({
           <Dialog open={showStealDialog} onOpenChange={setShowStealDialog}>
             <DialogContent className="max-w-sm bg-black/95 border border-red-500/30">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-emerald-400">
+                <DialogTitle className="flex items-center gap-2 text-red-400">
                   <Target className="w-5 h-5" />
                   Hunt Badge?
                 </DialogTitle>
@@ -209,7 +209,7 @@ export function StealableBadge({
               </DialogHeader>
 
               <div className="flex flex-col gap-4 mt-4">
-                <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
                       {badge.icon_url ? (
@@ -237,7 +237,7 @@ export function StealableBadge({
                     Cancel
                   </Button>
                   <Button
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                     onClick={handleSteal}
                     disabled={isStealing}
                   >

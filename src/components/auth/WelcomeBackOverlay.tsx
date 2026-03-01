@@ -26,7 +26,7 @@ const MemoizedLaserFlow = memo(() => (
     decay={1.0}
     falloffStart={1.0}
     fogFallSpeed={0.4}
-    color="#00D9A5"
+    color="#991b1b"
   />
 ));
 MemoizedLaserFlow.displayName = 'MemoizedLaserFlow';
@@ -108,11 +108,11 @@ export function WelcomeBackOverlay({ username, onComplete }: WelcomeBackOverlayP
         <h1
           className="text-4xl md:text-6xl lg:text-7xl font-bold"
           style={{
-            background: 'linear-gradient(135deg, #00B4D8 0%, #00D9A5 50%, #0077B6 100%)',
+            background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 50%, #7f1d1d 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
-            filter: 'drop-shadow(0 0 40px rgba(0, 180, 216, 0.3))',
+            filter: 'drop-shadow(0 0 40px rgba(220, 38, 38, 0.3))',
           }}
         >
           {username}

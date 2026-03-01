@@ -38,7 +38,7 @@ export function MarketplaceItemCard({ item, isOwner, isPurchased, userBalance }:
     (item.sale_type === 'limited' && item.stock_sold >= (item.stock_limit || 0));
 
   const statusBadge = () => {
-    if (isPurchased) return <Badge className="bg-green-500/20 text-green-500 border-green-500/30">Owned</Badge>;
+    if (isPurchased) return <Badge className="bg-red-500/20 text-red-500 border-red-500/30">Owned</Badge>;
     if (item.status === 'pending') return <Badge variant="secondary" className="gap-1"><Clock className="w-3 h-3" /> Pending</Badge>;
     if (item.status === 'denied') return <Badge variant="destructive" className="gap-1"><X className="w-3 h-3" /> Denied</Badge>;
     if (isSoldOut) return <Badge variant="secondary">Sold Out</Badge>;

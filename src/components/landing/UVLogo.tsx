@@ -26,15 +26,15 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
         ease: 'easeInOut',
       }}
     >
-      <stop offset="0%" stopColor="#00B4D8" />
-      <stop offset="50%" stopColor="#00D9A5" />
-      <stop offset="100%" stopColor="#0077B6" />
+      <stop offset="0%" stopColor="#dc2626" />
+      <stop offset="50%" stopColor="#991b1b" />
+      <stop offset="100%" stopColor="#7f1d1d" />
     </motion.linearGradient>
   ) : (
     <linearGradient id="uv-gradient-static" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#00B4D8" />
-      <stop offset="50%" stopColor="#00D9A5" />
-      <stop offset="100%" stopColor="#0077B6" />
+      <stop offset="0%" stopColor="#dc2626" />
+      <stop offset="50%" stopColor="#991b1b" />
+      <stop offset="100%" stopColor="#7f1d1d" />
     </linearGradient>
   );
 
@@ -68,7 +68,7 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
         rx="14"
         stroke="url(#uv-gradient)"
         strokeWidth="2.5"
-        fill="rgba(0, 180, 216, 0.05)"
+        fill="rgba(220, 38, 38, 0.05)"
         filter="url(#glow)"
       />
 
@@ -98,10 +98,10 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
 export function UVLogoText({ className = '' }: { className?: string }) {
   return (
     <span className={`font-bold ${className}`}>
-      <span className="bg-gradient-to-r from-[#00B4D8] via-[#00D9A5] to-[#0077B6] bg-clip-text text-transparent">
+      <span className="bg-gradient-to-r from-[#dc2626] via-[#991b1b] to-[#7f1d1d] bg-clip-text text-transparent">
         User
       </span>
-      <span className="bg-gradient-to-r from-[#00D9A5] to-[#0077B6] bg-clip-text text-transparent">
+      <span className="bg-gradient-to-r from-[#991b1b] to-[#7f1d1d] bg-clip-text text-transparent">
         Vault
       </span>
     </span>

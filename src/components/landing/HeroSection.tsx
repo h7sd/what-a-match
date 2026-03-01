@@ -90,7 +90,7 @@ export function HeroSection() {
             />
             <GradientText 
               className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight"
-              colors={['#00D9A5', '#00B4D8', '#0077B6', '#00D9A5']}
+              colors={['#991b1b', '#dc2626', '#7f1d1d', '#991b1b']}
               animationSpeed={4}
             >
               identity.
@@ -118,7 +118,7 @@ export function HeroSection() {
         >
           <Link
             to={user ? '/dashboard' : '/auth'}
-            className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-[#00B4D8] via-[#00D9A5] to-[#0077B6] text-white font-semibold text-lg transition-all hover:shadow-2xl hover:shadow-[#00D9A5]/30 overflow-hidden border border-white/20 hover:scale-[1.02] active:scale-[0.98]"
+            className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-[#dc2626] via-[#991b1b] to-[#7f1d1d] text-white font-semibold text-lg transition-all hover:shadow-2xl hover:shadow-[#991b1b]/30 overflow-hidden border border-white/20 hover:scale-[1.02] active:scale-[0.98]"
           >
             <span className="relative z-10">{user ? 'Open Dashboard' : 'Start for Free'}</span>
             <ArrowRight className="w-5 h-5 relative z-10 transition-transform group-hover:translate-x-1" />
@@ -129,9 +129,9 @@ export function HeroSection() {
           
           <Link
             to="/uservault"
-            className="group inline-flex items-center gap-3 px-8 py-4 rounded-xl border border-[#00D9A5]/30 hover:border-[#00D9A5]/60 text-foreground font-semibold text-lg transition-all hover:bg-[#00D9A5]/5 backdrop-blur-sm bg-white/[0.02] hover:scale-[1.02] active:scale-[0.98]"
+            className="group inline-flex items-center gap-3 px-8 py-4 rounded-xl border border-[#991b1b]/30 hover:border-[#991b1b]/60 text-foreground font-semibold text-lg transition-all hover:bg-[#991b1b]/5 backdrop-blur-sm bg-white/[0.02] hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Play className="w-5 h-5 text-[#00D9A5]" />
+            <Play className="w-5 h-5 text-[#991b1b]" />
             <span>View Demo</span>
           </Link>
         </motion.div>

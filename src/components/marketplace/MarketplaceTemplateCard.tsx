@@ -117,7 +117,7 @@ interface MarketplaceTemplateCardProps {
            {/* Status badges */}
            <div className="absolute top-2 right-2 flex flex-col gap-1">
              {isPurchased && (
-               <Badge className="bg-emerald-500/90 text-white border-0 text-[10px] px-1.5 py-0">
+               <Badge className="bg-red-500/90 text-white border-0 text-[10px] px-1.5 py-0">
                  <Check className="w-2.5 h-2.5 mr-0.5" />
                  Owned
                </Badge>

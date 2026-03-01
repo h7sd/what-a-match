@@ -728,7 +728,7 @@ export default function SecretDatabaseViewer() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 text-xs text-green-500 bg-green-500/10 px-2 py-1 rounded">
+              <div className="flex items-center gap-1 text-xs text-red-500 bg-red-500/10 px-2 py-1 rounded">
                 <Shield className="h-3 w-3" />
                 AAL2 Verified
               </div>

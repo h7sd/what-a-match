@@ -222,8 +222,8 @@ export function LimitedBadgeAssigner() {
 
             {/* Selected User Display */}
             {selectedUser && (
-              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                <p className="text-sm text-green-500">
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                <p className="text-sm text-red-500">
                   Selected: <strong>{selectedUser.display_name || selectedUser.username}</strong> (@{selectedUser.username})
                 </p>
               </div>

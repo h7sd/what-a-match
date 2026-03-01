@@ -117,7 +117,7 @@ export function ClaimSection() {
         {/* Headline */}
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 leading-tight">
           Over{' '}
-          <GradientText colors={['#00D9A5', '#00B4D8', '#0077B6', '#00D9A5']}>
+          <GradientText colors={['#991b1b', '#dc2626', '#7f1d1d', '#991b1b']}>
             {userCount.toLocaleString()}+
           </GradientText>
           {' '}people use UserVault

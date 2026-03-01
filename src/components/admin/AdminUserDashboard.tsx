@@ -528,7 +528,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
                 <div className="flex gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-destructive/80" />
                   <div className="w-3 h-3 rounded-full bg-warning/80" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
                 </div>
                 <div className="flex-1 flex justify-center">
                   <div className="bg-muted/50 rounded-md px-4 py-1 text-xs text-muted-foreground">
@@ -953,7 +953,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
                           ub.is_locked 
                             ? 'border-destructive/30 bg-destructive/5' 
                             : ub.is_enabled 
-                              ? 'border-green-500/30 bg-green-500/5'
+                              ? 'border-red-500/30 bg-red-500/5'
                               : 'border-border bg-secondary/10'
                         }`}
                       >
@@ -1018,7 +1018,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
                   {socialLinks.map((link) => (
                     <div
                       key={link.id}
-                      className={`p-4 rounded-lg border ${link.is_visible ? 'border-green-500/30 bg-green-500/5' : 'border-border'}`}
+                      className={`p-4 rounded-lg border ${link.is_visible ? 'border-red-500/30 bg-red-500/5' : 'border-border'}`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">

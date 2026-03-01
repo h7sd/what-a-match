@@ -184,7 +184,7 @@ function SortableBadgeItem({
 
         <div className="flex items-center gap-2">
           {isHuntTarget && isEnabled && (
-            <div className="flex items-center gap-1 text-emerald-400 text-xs">
+            <div className="flex items-center gap-1 text-red-400 text-xs">
               <Target className="w-3 h-3" />
               <span>Hunt</span>
             </div>
@@ -210,8 +210,8 @@ function SortableBadgeItem({
       {/* Status indicator */}
       <div className="absolute top-2 right-2">
         {isEnabled ? (
-          <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
-            <Check className="w-3 h-3 text-green-500" />
+          <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
+            <Check className="w-3 h-3 text-red-500" />
           </div>
         ) : (
           <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">

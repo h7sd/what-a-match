@@ -81,8 +81,8 @@ export function BadgesGrid({ globalBadges, userBadgeIds, userUid }: BadgesGridPr
                 {/* Owned/Locked indicator - Bottom Right */}
                 <div className="absolute bottom-3 right-3">
                   {isOwned ? (
-                    <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center border border-green-500/30">
-                      <Check className="w-3.5 h-3.5 text-green-500" />
+                    <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/30">
+                      <Check className="w-3.5 h-3.5 text-red-500" />
                     </div>
                   ) : (
                     <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
@@ -160,7 +160,7 @@ export function BadgesGrid({ globalBadges, userBadgeIds, userUid }: BadgesGridPr
 
               <div className="mt-4 flex items-center gap-2">
                 {userBadgeSet.has(selectedBadge.id) ? (
-                  <div className="flex items-center gap-2 text-green-400">
+                  <div className="flex items-center gap-2 text-red-400">
                     <Check className="w-4 h-4" />
                     <span className="text-sm font-medium">You own this badge</span>
                   </div>

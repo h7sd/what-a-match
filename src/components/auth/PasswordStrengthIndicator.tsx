@@ -43,16 +43,16 @@ export function PasswordStrengthIndicator({ password, className }: PasswordStren
     if (score <= 1) return 'bg-red-500';
     if (score === 2) return 'bg-orange-500';
     if (score === 3) return 'bg-yellow-500';
-    if (score === 4) return 'bg-green-500';
-    return 'bg-emerald-400';
+    if (score === 4) return 'bg-red-500';
+    return 'bg-red-400';
   };
 
   const getTextColor = () => {
     if (score <= 1) return 'text-red-400';
     if (score === 2) return 'text-orange-400';
     if (score === 3) return 'text-yellow-400';
-    if (score === 4) return 'text-green-400';
-    return 'text-emerald-400';
+    if (score === 4) return 'text-red-400';
+    return 'text-red-400';
   };
 
   if (password.length === 0) return null;
@@ -80,7 +80,7 @@ export function PasswordStrengthIndicator({ password, className }: PasswordStren
             key={req.label}
             className={cn(
               'flex items-center gap-2 text-xs transition-colors duration-200',
-              metRequirements[index] ? 'text-green-400' : 'text-white/40'
+              metRequirements[index] ? 'text-red-400' : 'text-white/40'
             )}
           >
             {metRequirements[index] ? (

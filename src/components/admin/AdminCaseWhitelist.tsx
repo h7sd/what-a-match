@@ -172,7 +172,7 @@ export function AdminCaseWhitelist() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 w-7 p-0 text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                    className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10"
                     onClick={() => approveRequestMutation.mutate(req)}
                     disabled={approveRequestMutation.isPending}
                   >
@@ -283,7 +283,7 @@ export function AdminCaseWhitelist() {
                 <Badge
                   variant="outline"
                   className={req.status === 'approved'
-                    ? 'border-green-500/30 text-green-400 text-xs'
+                    ? 'border-red-500/30 text-red-400 text-xs'
                     : 'border-red-500/30 text-red-400 text-xs'
                   }
                 >

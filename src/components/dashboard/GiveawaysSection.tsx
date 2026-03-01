@@ -66,7 +66,7 @@ export function GiveawaysSection({
         </div>
 
         <div className="bg-secondary/30 rounded-lg p-3 flex items-center gap-3">
-          <Percent className="w-5 h-5 text-green-500" />
+          <Percent className="w-5 h-5 text-red-500" />
           <div>
             <p className="text-lg font-bold">{winRate.toFixed(1)}%</p>
             <p className="text-xs text-muted-foreground">Win Rate</p>

@@ -23,16 +23,16 @@ const categoryIcons = {
 };
 
 const categoryColors = {
-  feature: "from-blue-500 to-cyan-500",
+  feature: "from-blue-500 to-red-500",
   bugfix: "from-red-500 to-rose-500",
-  improvement: "from-green-500 to-emerald-500",
+  improvement: "from-red-500 to-red-500",
   security: "from-yellow-500 to-amber-500",
 };
 
 const categoryBadgeColors = {
   feature: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   bugfix: "bg-red-500/20 text-red-400 border-red-500/30",
-  improvement: "bg-green-500/20 text-green-400 border-green-500/30",
+  improvement: "bg-red-500/20 text-red-400 border-red-500/30",
   security: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
 };
 

@@ -60,7 +60,7 @@ export function PricingSection() {
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Join{' '}
-            <GradientText colors={['#00D9A5', '#00B4D8', '#0077B6', '#00D9A5']}>
+            <GradientText colors={['#991b1b', '#dc2626', '#7f1d1d', '#991b1b']}>
               {(stats?.totalUsers || 0).toLocaleString()}+
             </GradientText>
             {' '}users already using UserVault

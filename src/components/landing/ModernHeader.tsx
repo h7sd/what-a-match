@@ -165,7 +165,7 @@ export function ModernHeader() {
                 {user ? (
                   <Link
                     to="/dashboard"
-                    className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#00B4D8] to-[#00D9A5] text-white font-semibold border border-white/10"
+                    className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#dc2626] to-[#991b1b] text-white font-semibold border border-white/10"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Dashboard
@@ -181,7 +181,7 @@ export function ModernHeader() {
                     </Link>
                     <Link
                       to="/auth"
-                      className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#00B4D8] to-[#00D9A5] text-white font-semibold border border-white/10"
+                      className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#dc2626] to-[#991b1b] text-white font-semibold border border-white/10"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Get Started

@@ -116,7 +116,7 @@ export function SocialLinksGrid({ existingLinks, onAddLink, isLoading }: SocialL
               />
               {isAdded && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-lg">
-                  <Check className="w-4 h-4 text-green-500" />
+                  <Check className="w-4 h-4 text-red-500" />
                 </div>
               )}
             </motion.button>

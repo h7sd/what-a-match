@@ -77,7 +77,7 @@ export default function AliasRespond() {
           {status === 'success' && (
             <>
               {responseType === 'approved' ? (
-                <CheckCircle2 className="w-16 h-16 mx-auto text-green-500 mb-4" />
+                <CheckCircle2 className="w-16 h-16 mx-auto text-red-500 mb-4" />
               ) : (
                 <XCircle className="w-16 h-16 mx-auto text-red-500 mb-4" />
               )}

@@ -59,7 +59,7 @@ export function ModernFooter() {
   return (
     <footer ref={ref} className="border-t border-border/30 mt-20 relative overflow-hidden">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#00D9A5]/5 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#991b1b]/5 to-transparent" />
       
       <div className="max-w-6xl mx-auto px-6 py-20 relative z-10">
         <motion.div
@@ -80,7 +80,7 @@ export function ModernFooter() {
             {user && (
               <button
                 onClick={handleLogout}
-                className="text-sm text-muted-foreground hover:text-[#00D9A5] transition-colors font-medium"
+                className="text-sm text-muted-foreground hover:text-[#991b1b] transition-colors font-medium"
               >
                 Sign out
               </button>

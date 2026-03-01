@@ -158,7 +158,7 @@ export default function Status() {
   const getStatusIcon = (status: ServiceStatus) => {
     switch (status) {
       case 'operational':
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+        return <CheckCircle2 className="w-5 h-5 text-red-500" />;
       case 'degraded':
         return <AlertCircle className="w-5 h-5 text-yellow-500" />;
       case 'outage':
@@ -171,7 +171,7 @@ export default function Status() {
   const getStatusColor = (status: ServiceStatus) => {
     switch (status) {
       case 'operational':
-        return 'bg-green-500/20 border-green-500/30';
+        return 'bg-red-500/20 border-red-500/30';
       case 'degraded':
         return 'bg-yellow-500/20 border-yellow-500/30';
       case 'outage':
@@ -334,7 +334,7 @@ export default function Status() {
           </h3>
           <div className="flex flex-wrap gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <CheckCircle2 className="w-4 h-4 text-red-500" />
               <span>Operational</span>
             </div>
             <div className="flex items-center gap-2">

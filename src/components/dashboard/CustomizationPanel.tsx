@@ -503,7 +503,7 @@ export function CustomizationPanel(props: CustomizationPanelProps) {
               >
                 {props.discordUserId ? (
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
                     <div>
                       <p className="text-sm font-medium">Connected</p>
                       <p className="text-xs text-muted-foreground">ID: {props.discordUserId}</p>

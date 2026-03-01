@@ -95,7 +95,7 @@
          </Button>
  
          {lastResult && (
-           <div className={`p-3 rounded-lg text-sm ${lastResult.success ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
+           <div className={`p-3 rounded-lg text-sm ${lastResult.success ? "bg-red-500/10 text-red-400" : "bg-red-500/10 text-red-400"}`}>
              {lastResult.success ? (
                <div className="flex items-center gap-2">
                  <CheckCircle className="h-4 w-4" />

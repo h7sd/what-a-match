@@ -376,7 +376,7 @@ export function UserBanManager() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 text-xs border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10"
+                        className="h-7 text-xs border-red-500/50 text-red-500 hover:bg-red-500/10"
                         onClick={() => handleUnbanClick(record)}
                         disabled={unbanningId === record.user_id}
                       >
@@ -468,7 +468,7 @@ export function UserBanManager() {
       <Dialog open={isUnbanDialogOpen} onOpenChange={setIsUnbanDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-emerald-500">
+            <DialogTitle className="flex items-center gap-2 text-red-500">
               <ShieldOff className="w-5 h-5" />
               Unban User
             </DialogTitle>
@@ -493,7 +493,7 @@ export function UserBanManager() {
               Cancel
             </Button>
             <Button
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+              className="flex-1 bg-red-600 hover:bg-red-700"
               onClick={handleUnban}
               disabled={unbanningId !== null}
             >

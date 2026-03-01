@@ -139,7 +139,7 @@ export function ProfileCommentsViewer() {
                   className="h-7 w-7 flex-shrink-0"
                   onClick={() => markAsRead(comment.id)}
                 >
-                  <Check className="w-4 h-4 text-green-500" />
+                  <Check className="w-4 h-4 text-red-500" />
                 </Button>
               )}
             </div>

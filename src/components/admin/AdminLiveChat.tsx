@@ -347,7 +347,7 @@ export function AdminLiveChat() {
       return <Badge variant="destructive" className="text-[10px]">Waiting</Badge>;
     }
     if (assignedId) {
-      return <Badge className="bg-green-500/20 text-green-500 text-[10px]">Claimed</Badge>;
+      return <Badge className="bg-red-500/20 text-red-500 text-[10px]">Claimed</Badge>;
     }
     return <Badge className="bg-amber-500/20 text-amber-500 text-[10px]">Active</Badge>;
   };

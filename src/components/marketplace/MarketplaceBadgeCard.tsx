@@ -94,7 +94,7 @@
                  {item.badge_name || 'Unnamed Badge'}
                </h3>
                {isPurchased && (
-                 <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-[10px] px-1 py-0 h-4">
+                 <Badge className="bg-red-500/20 text-red-400 border-0 text-[10px] px-1 py-0 h-4">
                    <Check className="w-2.5 h-2.5" />
                  </Badge>
                )}

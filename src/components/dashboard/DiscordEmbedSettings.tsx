@@ -388,7 +388,7 @@ export function DiscordEmbedSettings({
                 >
                   {copied ? (
                     <>
-                      <Check className="w-4 h-4 mr-1 text-green-500" />
+                      <Check className="w-4 h-4 mr-1 text-red-500" />
                       Kopiert!
                     </>
                   ) : (

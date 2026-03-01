@@ -131,7 +131,7 @@ export function AdminMarketplaceManager() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="gap-1 text-green-500 hover:text-green-600 hover:bg-green-500/10"
+                        className="gap-1 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                         onClick={() => handleApprove(item)}
                         disabled={reviewMutation.isPending}
                       >

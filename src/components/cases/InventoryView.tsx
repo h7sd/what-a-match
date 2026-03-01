@@ -173,9 +173,9 @@ function AddToBadgesDialog({ item, count, open, onClose, alreadyOwned }: AddToBa
           </div>
 
           {alreadyOwned ? (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/30">
-              <Check className="w-4 h-4 text-green-400" />
-              <span className="text-sm text-green-400">Already on your profile</span>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30">
+              <Check className="w-4 h-4 text-red-400" />
+              <span className="text-sm text-red-400">Already on your profile</span>
             </div>
           ) : (
             <p className="text-sm text-gray-400 text-center">
@@ -302,9 +302,9 @@ function InventoryCard({ item, count, allIds, selected, onToggleSelect, ownedBad
                 color: accentColor,
                 border: `1px solid ${accentColor}40`,
               } : {
-                background: 'rgba(34,197,94,0.1)',
-                color: '#4ade80',
-                border: '1px solid rgba(34,197,94,0.3)',
+                background: 'rgba(239,68,68,0.1)',
+                color: '#f87171',
+                border: '1px solid rgba(239,68,68,0.3)',
               }}
             >
               {alreadyOwned ? (

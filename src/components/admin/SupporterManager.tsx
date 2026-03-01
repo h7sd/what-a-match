@@ -161,7 +161,7 @@ export function SupporterManager() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <HeadphonesIcon className="w-5 h-5 text-emerald-400" />
+        <HeadphonesIcon className="w-5 h-5 text-red-400" />
         <h3 className="font-semibold">Supporter Management</h3>
       </div>
 
@@ -190,7 +190,7 @@ export function SupporterManager() {
         <Button
           onClick={handleAddSupporter}
           disabled={!searchUsername.trim() || isAdding}
-          className="bg-emerald-500 hover:bg-emerald-600"
+          className="bg-red-500 hover:bg-red-600"
         >
           {isAdding ? (
             <Loader2 className="w-4 h-4 animate-spin" />

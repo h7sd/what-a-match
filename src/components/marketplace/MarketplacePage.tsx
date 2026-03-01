@@ -156,8 +156,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Transaction History</span>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Earned: <span className="text-emerald-500 font-medium">{formatUC(balance?.lifetime_earned)}</span></span>
+                <TrendingUp className="w-3.5 h-3.5 text-red-500" />
+                <span>Earned: <span className="text-red-500 font-medium">{formatUC(balance?.lifetime_earned)}</span></span>
               </div>
             </div>
             <TransactionHistory transactions={transactions || []} />

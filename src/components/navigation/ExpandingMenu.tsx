@@ -34,7 +34,7 @@ function FeaturesPopover() {
           <p className="text-sm font-semibold text-foreground">Case Gambling</p>
           <p className="text-xs text-muted-foreground leading-tight">Open cases, win badges & the Premium Key</p>
         </div>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex-shrink-0">Live</span>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 flex-shrink-0">Live</span>
       </Link>
 
       <div className="relative flex items-center gap-3 px-3 py-3 rounded-xl overflow-hidden cursor-not-allowed select-none">

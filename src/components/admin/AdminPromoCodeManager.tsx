@@ -228,7 +228,7 @@ export function AdminPromoCodeManager() {
         <Card className="bg-card/50 backdrop-blur-sm">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Percent className="w-5 h-5 text-green-500" />
+              <Percent className="w-5 h-5 text-red-500" />
               <div>
                 <p className="text-2xl font-bold">{discountCodes.length}</p>
                 <p className="text-xs text-muted-foreground">Discount Codes</p>

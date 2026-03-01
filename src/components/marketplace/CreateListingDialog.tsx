@@ -434,9 +434,9 @@ export function CreateListingDialog({ open, onOpenChange }: CreateListingDialogP
               </div>
 
               {exportCurrentProfile && (
-                <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg flex gap-2">
-                  <Sparkles className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-green-500">
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex gap-2">
+                  <Sparkles className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-red-500">
                     <p className="font-medium">Profile style will be exported!</p>
                     <p className="text-xs mt-1 opacity-80">
                       Only visual settings are included. Personal data (username, UID, bio content, display name) 
