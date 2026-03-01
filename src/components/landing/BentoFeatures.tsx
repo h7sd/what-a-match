@@ -91,12 +91,11 @@ const features: FeatureItem[] = [
   },
   {
     icon: Package,
-    title: 'Case Opening',
-    description: 'Open cases with your coins to win exclusive badges and the ultra-rare 1-in-50,000 Premium Key.',
+    title: 'Daily Rewards',
+    description: 'Log in daily to earn coins and claim exclusive badges. Build your streak for bigger rewards.',
     gradient: 'from-amber-500/10 via-orange-500/10 to-yellow-500/10',
     iconBg: 'from-amber-500 to-orange-500',
     size: 'medium',
-    link: '/cases',
   },
 ];
 

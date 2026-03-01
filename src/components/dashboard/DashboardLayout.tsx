@@ -44,7 +44,6 @@ const baseNavItems: { icon: React.ElementType; label: string; tab: TabType }[] =
   { icon: Link2, label: 'Links', tab: 'links' },
   { icon: Award, label: 'Badges', tab: 'badges' },
   { icon: Bell, label: 'Notifications', tab: 'notifications' },
-  { icon: ShoppingBag, label: 'Marketplace', tab: 'marketplace' },
   { icon: Settings, label: 'Settings', tab: 'settings' },
 ];
 

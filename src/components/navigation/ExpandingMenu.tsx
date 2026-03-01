@@ -26,32 +26,25 @@ function FeaturesPopover() {
     <div className="p-1 space-y-1">
       <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 pt-1 pb-2">Features</p>
 
-      <Link to="/cases" className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 transition-colors">
+      <Link to="/premium" className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 transition-colors">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #f59e0b, #ea580c)' }}>
-          <Package className="w-4 h-4 text-white" />
+          <Sparkles className="w-4 h-4 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground">Case Gambling</p>
-          <p className="text-xs text-muted-foreground leading-tight">Open cases, win badges & the Premium Key</p>
+          <p className="text-sm font-semibold text-foreground">Premium</p>
+          <p className="text-xs text-muted-foreground leading-tight">Unlock all features and customization options</p>
         </div>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 flex-shrink-0">Live</span>
       </Link>
 
-      <div className="relative flex items-center gap-3 px-3 py-3 rounded-xl overflow-hidden cursor-not-allowed select-none">
-        <div className="absolute inset-0 backdrop-blur-[2px] bg-background/40 z-10 rounded-xl flex items-center justify-center">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/80 border border-border/50">
-            <Lock className="w-3 h-3 text-muted-foreground" />
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">In Development</span>
-          </div>
-        </div>
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-500/20">
-          <ShoppingBag className="w-4 h-4 text-blue-400" />
+      <Link to="/dashboard" className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 transition-colors">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-red-500/20">
+          <LayoutDashboard className="w-4 h-4 text-red-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground">Marketplace</p>
-          <p className="text-xs text-muted-foreground leading-tight">Trade badges and items with others</p>
+          <p className="text-sm font-semibold text-foreground">Dashboard</p>
+          <p className="text-xs text-muted-foreground leading-tight">Manage your profile, links, and badges</p>
         </div>
-      </div>
+      </Link>
     </div>
   );
 }
