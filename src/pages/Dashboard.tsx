@@ -1029,10 +1029,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div>
-                  <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">Live Case Openings</h2>
-                  <LiveFeed />
-                </div>
               </div>
             </div>
           </div>
