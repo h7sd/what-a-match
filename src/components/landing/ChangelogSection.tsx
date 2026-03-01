@@ -72,7 +72,7 @@ export function ChangelogSection() {
 
   return (
     <section className="py-24 px-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
 
       <div className="max-w-6xl mx-auto relative z-10">
         <motion.div

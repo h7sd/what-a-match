@@ -22,8 +22,6 @@ export function ShowcaseSection() {
 
   return (
     <section ref={ref} className="py-32 px-6 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-to-t from-primary/5 via-transparent to-transparent" />
       
       <div className="max-w-6xl mx-auto relative z-10">
         {/* Section header */}

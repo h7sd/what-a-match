@@ -36,7 +36,7 @@ export function HeroSection() {
   const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
 
   return (
-    <section ref={containerRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24">
+    <section ref={containerRef} className="relative min-h-screen flex items-center justify-center pt-24">
       {/* Subtle grid pattern */}
       <div 
         className="absolute inset-0 opacity-[0.03]"
@@ -173,8 +173,6 @@ export function HeroSection() {
         </motion.div>
       </motion.div>
 
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none" />
     </section>
   );
 }

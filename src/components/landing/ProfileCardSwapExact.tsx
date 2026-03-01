@@ -224,7 +224,6 @@ export function ProfileCardSwapExact() {
 
   return (
     <section ref={sectionRef} className="py-24 px-6 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Left */}
