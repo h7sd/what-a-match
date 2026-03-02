@@ -718,35 +718,26 @@ Deno.serve(async (req) => {
       }
 
       case 'get_hero_avatars': {
-        // Fetch avatar URLs for uid 1-5, returns only URLs (no IDs/metadata)
         const { data, error } = await supabase
           .from('profiles')
           .select('avatar_url')
-          .in('uid_number', [1, 2, 3, 4, 5])
-          .order('uid_number');
+          .not('avatar_url', 'is', null)
+          .neq('avatar_url', '')
+          .order('uid_number', { ascending: true })
+          .limit(20);
 
         if (error) throw error;
 
-        // Proxy URL to hide Supabase infrastructure
-        const PROXY_URL = 'https://api.uservault.cc';
-        const supabaseUrlPattern = /https:\/\/[a-z0-9]+\.supabase\.co/gi;
-
-        // Return only non-null avatar URLs, transformed through proxy
         const avatars = (data || [])
           .map(p => p.avatar_url)
-          .filter(Boolean)
-          .map((url: string) => {
-            // Replace Supabase URL with proxy URL
-            return url.replace(supabaseUrlPattern, PROXY_URL);
-          });
+          .filter(Boolean);
 
-        // Shuffle for randomness
         for (let i = avatars.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [avatars[i], avatars[j]] = [avatars[j], avatars[i]];
         }
 
-        result = avatars;
+        result = avatars.slice(0, 5);
         break;
       }
 
