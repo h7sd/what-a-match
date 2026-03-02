@@ -84,16 +84,16 @@ export function HeroSection() {
         >
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.1]">
             <BlurText
-              text="Your digital"
+              text="One link."
               className="justify-center text-foreground"
               delay={80}
             />
-            <GradientText 
+            <GradientText
               className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight"
               colors={['#991b1b', '#dc2626', '#7f1d1d', '#991b1b']}
               animationSpeed={4}
             >
-              identity.
+              All of you.
             </GradientText>
           </h1>
         </motion.div>
