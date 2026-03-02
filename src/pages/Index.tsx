@@ -47,9 +47,10 @@ export default function Index() {
     <div className="min-h-screen relative bg-background overflow-hidden">
       {/* Liquid Ether Background - lazy loaded after initial render */}
       <div className="fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#7f1d1d]/20 via-background to-[#991b1b]/10" />
         {showBackground && (
-          <Suspense fallback={<div className="absolute inset-0 bg-gradient-to-br from-[#7f1d1d]/20 via-background to-[#991b1b]/10" />}>
-            <LiquidEther 
+          <Suspense fallback={null}>
+            <LiquidEther
               colors={['#991b1b', '#dc2626', '#7f1d1d']}
               autoDemo={true}
               autoSpeed={0.4}

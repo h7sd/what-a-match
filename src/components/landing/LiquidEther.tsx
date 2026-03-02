@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import './LiquidEther.css';
 
@@ -83,9 +83,17 @@ export function LiquidEther({
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
   const isVisibleRef = useRef<boolean>(true);
   const resizeRafRef = useRef<number | null>(null);
+  const [webglFailed, setWebglFailed] = useState(false);
 
   useEffect(() => {
     if (!mountRef.current) return;
+
+    const testCanvas = document.createElement('canvas');
+    const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+    if (!gl) {
+      setWebglFailed(true);
+      return;
+    }
 
     function makePaletteTexture(stops: string[]): THREE.DataTexture {
       let arr: string[];
@@ -1137,15 +1145,26 @@ export function LiquidEther({
     container.style.position = container.style.position || 'relative';
     container.style.overflow = container.style.overflow || 'hidden';
 
-    const webgl = new WebGLManager({
-      $wrapper: container,
-      autoDemo,
-      autoSpeed,
-      autoIntensity,
-      takeoverDuration,
-      autoResumeDelay,
-      autoRampDuration
-    });
+    let webgl: WebGLManager;
+    try {
+      webgl = new WebGLManager({
+        $wrapper: container,
+        autoDemo,
+        autoSpeed,
+        autoIntensity,
+        takeoverDuration,
+        autoResumeDelay,
+        autoRampDuration
+      });
+    } catch {
+      setWebglFailed(true);
+      return;
+    }
+
+    if (!Common.renderer || !Common.renderer.domElement.parentNode) {
+      setWebglFailed(true);
+      return;
+    }
 
     webglRef.current = webgl;
 
@@ -1288,6 +1307,18 @@ export function LiquidEther({
     autoResumeDelay,
     autoRampDuration
   ]);
+
+  if (webglFailed) {
+    return (
+      <div
+        className={`liquid-ether-container ${className || ''}`}
+        style={{
+          ...style,
+          background: 'radial-gradient(ellipse at center, rgba(153,27,27,0.3) 0%, rgba(5,2,16,1) 70%)',
+        }}
+      />
+    );
+  }
 
   return <div ref={mountRef} className={`liquid-ether-container ${className || ''}`} style={style} />;
 }
