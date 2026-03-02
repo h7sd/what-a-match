@@ -9,27 +9,34 @@ import { BlurText } from './BlurText';
 import { GradientText } from './GradientText';
 
 function HeroAvatarRow({ avatars }: { avatars: string[] }) {
-  const [loaded, setLoaded] = useState<Record<number, boolean>>({});
-  const [errored, setErrored] = useState<Record<number, boolean>>({});
+  const [status, setStatus] = useState<Record<number, 'loaded' | 'error'>>({});
 
-  const visibleAvatars = avatars.filter((_, i) => loaded[i] && !errored[i]);
+  const visibleIndices = avatars
+    .map((_, i) => i)
+    .filter(i => status[i] === 'loaded')
+    .slice(0, 5);
+
+  let shownCount = 0;
 
   return (
     <div className="flex -space-x-3">
-      {avatars.map((url, i) => (
-        <img
-          key={i}
-          src={url}
-          alt=""
-          className="w-10 h-10 rounded-full border-2 border-background object-cover bg-muted"
-          style={{ display: loaded[i] && !errored[i] ? 'block' : 'none' }}
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          onLoad={() => setLoaded(prev => ({ ...prev, [i]: true }))}
-          onError={() => setErrored(prev => ({ ...prev, [i]: true }))}
-        />
-      ))}
-      {visibleAvatars.length === 0 && avatars.length === 0 && (
+      {avatars.map((url, i) => {
+        const isVisible = status[i] === 'loaded' && shownCount < 5;
+        if (isVisible) shownCount++;
+        return (
+          <img
+            key={i}
+            src={url}
+            alt=""
+            className="w-10 h-10 rounded-full border-2 border-background object-cover bg-muted"
+            style={{ display: isVisible ? 'block' : 'none' }}
+            referrerPolicy="no-referrer"
+            onLoad={() => setStatus(prev => ({ ...prev, [i]: 'loaded' }))}
+            onError={() => setStatus(prev => ({ ...prev, [i]: 'error' }))}
+          />
+        );
+      })}
+      {visibleIndices.length === 0 && avatars.length === 0 && (
         [...Array(5)].map((_, i) => (
           <div
             key={i}

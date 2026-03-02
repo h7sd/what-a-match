@@ -737,7 +737,7 @@ Deno.serve(async (req) => {
           [avatars[i], avatars[j]] = [avatars[j], avatars[i]];
         }
 
-        result = avatars.slice(0, 5);
+        result = avatars.slice(0, 15);
         break;
       }
 
