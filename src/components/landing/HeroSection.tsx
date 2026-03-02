@@ -82,18 +82,18 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="mb-8"
         >
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.1]">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.15]">
             <BlurText
-              text="One link."
+              text="uservault"
               className="justify-center text-foreground"
               delay={80}
             />
             <GradientText
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight"
               colors={['#991b1b', '#dc2626', '#7f1d1d', '#991b1b']}
               animationSpeed={4}
             >
-              All of you.
+              the best Bio-Link site.
             </GradientText>
           </h1>
         </motion.div>
