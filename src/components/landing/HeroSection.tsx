@@ -1,12 +1,47 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Play } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { getHeroAvatars, getPublicStats } from '@/lib/api';
 import { BlurText } from './BlurText';
 import { GradientText } from './GradientText';
+
+function HeroAvatarRow({ avatars }: { avatars: string[] }) {
+  const [loaded, setLoaded] = useState<Record<number, boolean>>({});
+  const [errored, setErrored] = useState<Record<number, boolean>>({});
+
+  const visibleAvatars = avatars.filter((_, i) => loaded[i] && !errored[i]);
+
+  return (
+    <div className="flex -space-x-3">
+      {avatars.map((url, i) => (
+        <img
+          key={i}
+          src={url}
+          alt=""
+          className="w-10 h-10 rounded-full border-2 border-background object-cover bg-muted"
+          style={{ display: loaded[i] && !errored[i] ? 'block' : 'none' }}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onLoad={() => setLoaded(prev => ({ ...prev, [i]: true }))}
+          onError={() => setErrored(prev => ({ ...prev, [i]: true }))}
+        />
+      ))}
+      {visibleAvatars.length === 0 && avatars.length === 0 && (
+        [...Array(5)].map((_, i) => (
+          <div
+            key={i}
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 border-2 border-background flex items-center justify-center text-xs font-bold text-primary"
+          >
+            {String.fromCharCode(65 + i)}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
 
 export function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -143,27 +178,7 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.9 }}
           className="mt-16 flex flex-col items-center gap-4"
         >
-          <div className="flex -space-x-3">
-            {(heroAvatars.length > 0 ? heroAvatars.slice(0, 5) : [...Array(5)]).map((avatar, i) => (
-              typeof avatar === 'string' ? (
-                <img
-                  key={i}
-                  src={avatar}
-                  alt=""
-                  className="w-10 h-10 rounded-full border-2 border-background object-cover bg-muted"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div 
-                  key={i} 
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 border-2 border-background flex items-center justify-center text-xs font-bold text-primary"
-                >
-                  {String.fromCharCode(65 + i)}
-                </div>
-              )
-            ))}
-          </div>
+          <HeroAvatarRow avatars={heroAvatars} />
           <p className="text-sm text-muted-foreground">
             <span className="text-foreground font-semibold">
               {userCount !== null ? userCount.toLocaleString('de-DE') : '–'}
