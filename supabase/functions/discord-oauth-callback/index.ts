@@ -2,11 +2,11 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-// Bump this whenever you deploy to quickly verify the running version
-const VERSION = '2026-02-05.1';
+const VERSION = '2026-03-06.1';
 
 interface DiscordUser {
   id: string;
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
   
   // Handle both GET (redirect callback) and POST (AJAX callback)
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
@@ -104,10 +104,10 @@ Deno.serve(async (req) => {
       code = body.code;
       state = body.state;
       redirect_uri = body.redirect_uri;
-      // Read mode/user_id from state (survives redirects) with body as fallback
       const stateData = extractStateData(state);
       mode = body.mode || stateData.mode || 'login';
       user_id = body.user_id || stateData.user_id;
+      frontend_origin = stateData.origin || body.frontend_origin || 'https://uservault.cc';
     }
 
     if (!code) {
@@ -389,10 +389,15 @@ Deno.serve(async (req) => {
           });
       }
 
-      // Generate a magic link for the user to sign in
+      const redirectTo = `${frontend_origin}/auth`;
+      console.log('Generating magic link with redirect_to:', redirectTo);
+
       const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
         type: 'magiclink',
         email: discordUser.email,
+        options: {
+          redirectTo,
+        },
       });
 
       if (linkError || !linkData) {
@@ -400,17 +405,15 @@ Deno.serve(async (req) => {
         throw new Error('Failed to generate login link');
       }
 
-      // Extract the token from the magic link
-      const magicLinkUrl = new URL(linkData.properties.action_link);
-      const token = magicLinkUrl.hash.split('access_token=')[1]?.split('&')[0];
-      
-      // Return success with session info
-      return new Response(JSON.stringify({ 
+      const actionLink = linkData.properties.action_link;
+      console.log('Magic link generated, action_link starts with:', actionLink?.substring(0, 60));
+
+      return new Response(JSON.stringify({
         success: true,
         _version: VERSION,
         is_new_user: isNewUser,
         email: discordUser.email,
-        action_link: linkData.properties.action_link,
+        action_link: actionLink,
         discord_user: {
           id: discordUser.id,
           username: discordUser.global_name || discordUser.username,

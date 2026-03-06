@@ -145,28 +145,45 @@ export function useDiscordOAuth() {
         throw new Error(data.message || data.error || 'OAuth callback failed');
       }
 
-      // If login mode and we got an action link, use it to sign in
       if (mode === 'login' && data.action_link) {
-        // Parse the magic link and extract token
-        const magicUrl = new URL(data.action_link);
-        const hashParams = new URLSearchParams(magicUrl.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
+        try {
+          const actionUrl = new URL(data.action_link);
 
-        if (accessToken && refreshToken) {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-
-          if (sessionError) {
-            console.error('Session error:', sessionError);
-            // Fallback: redirect to magic link
-            window.location.href = data.action_link;
-            return { success: true, ...data };
+          const hashStr = actionUrl.hash?.substring(1);
+          if (hashStr) {
+            const hashParams = new URLSearchParams(hashStr);
+            const at = hashParams.get('access_token');
+            const rt = hashParams.get('refresh_token');
+            if (at && rt) {
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token: at,
+                refresh_token: rt,
+              });
+              if (!sessionError) {
+                return { success: true, ...data };
+              }
+            }
           }
-        } else {
-          // Fallback: redirect to magic link
+
+          const token = actionUrl.searchParams.get('token');
+          const type = actionUrl.searchParams.get('type');
+
+          if (token && type === 'magiclink') {
+            const { error: otpError } = await supabase.auth.verifyOtp({
+              token_hash: token,
+              type: 'magiclink',
+            });
+
+            if (!otpError) {
+              return { success: true, ...data };
+            }
+            console.error('OTP verify error:', otpError);
+          }
+
+          window.location.href = data.action_link;
+          return { success: true, ...data };
+        } catch (linkErr) {
+          console.error('Action link processing error:', linkErr);
           window.location.href = data.action_link;
           return { success: true, ...data };
         }
