@@ -38,6 +38,8 @@ import {
   Send,
   Crown,
   ShoppingBag,
+  FileText,
+  Sword,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -63,7 +65,8 @@ import { DisplayNameAnimationSettings } from '@/components/dashboard/DisplayName
 import { AdminBadgeManager } from '@/components/admin/AdminBadgeManager';
 import { AdminUserManager } from '@/components/admin/AdminUserManager';
 import { AdminPremiumManager } from '@/components/admin/AdminPremiumManager';
- import { AdminBotNotificationTester } from '@/components/admin/AdminBotNotificationTester';
+import { AdminBotNotificationTester } from '@/components/admin/AdminBotNotificationTester';
+import { AdminDiscordSender } from '@/components/admin/AdminDiscordSender';
 import { BadgesGrid } from '@/components/dashboard/BadgesGrid';
 import { UserBadgesList } from '@/components/dashboard/UserBadgesList';
 import { LimitedBadgeAssigner } from '@/components/admin/LimitedBadgeAssigner';
@@ -91,13 +94,16 @@ import { FriendBadgesManager } from '@/components/dashboard/FriendBadgesManager'
 import { AdminEventController } from '@/components/admin/AdminEventController';
 import { AdminNotificationSender } from '@/components/admin/AdminNotificationSender';
 import { AdminMarketplaceManager } from '@/components/admin/AdminMarketplaceManager';
-import { MarketplacePage } from '@/components/marketplace/MarketplacePage';
+import { AdminChangelogManager } from '@/components/admin/AdminChangelogManager';
 import { GlobalBadgeColorSettings } from '@/components/dashboard/GlobalBadgeColorSettings';
 import { StreakDisplay } from '@/components/dashboard/StreakDisplay';
 import { SupporterPanel } from '@/components/supporter/SupporterPanel';
 import { SupporterManager } from '@/components/admin/SupporterManager';
 import { NotificationsSection } from '@/components/dashboard/NotificationsSection';
+import { LiveFeed } from '@/components/cases/LiveFeed';
 import { cn } from '@/lib/utils';
+// FIXED: Imported new OwnerPanelTabs component for better organization
+import { OwnerPanelTabs } from '@/components/admin/OwnerPanelTabs';
 
 // Removed local TabType - using exported type from DashboardLayout
 
@@ -112,7 +118,6 @@ const baseNavItems: { icon: React.ElementType; label: string; tab: TabType }[] =
   { icon: Palette, label: 'Appearance', tab: 'appearance' },
   { icon: LinkIcon, label: 'Links', tab: 'links' },
   { icon: Award, label: 'Badges', tab: 'badges' },
-  { icon: ShoppingBag, label: 'Marketplace', tab: 'marketplace' },
   { icon: Settings, label: 'Settings', tab: 'settings' },
 ];
 
@@ -153,6 +158,27 @@ export default function Dashboard() {
       navigate(`/dashboard#overview`, { replace: true });
     }
   }, [location.hash, location.pathname, isAdmin, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const spotifyStatus = params.get('spotify');
+    if (spotifyStatus === 'connected') {
+      toast({ title: 'Spotify connected!', description: 'Your currently playing track will now show on your profile.' });
+      navigate('/dashboard#customization', { replace: true });
+    } else if (spotifyStatus === 'error') {
+      const reason = params.get('reason');
+      const descriptions: Record<string, string> = {
+        not_configured: 'Spotify is not configured on the server.',
+        state_parse: 'Session state invalid. Please try again.',
+        token_400: 'Invalid redirect URI - check Spotify app settings.',
+        token_401: 'Invalid Spotify credentials.',
+        token_503: 'Spotify service unavailable.',
+      };
+      const desc = (reason && descriptions[reason]) || `Something went wrong${reason ? ` (${reason})` : ''}.`;
+      toast({ title: 'Spotify connection failed', description: desc, variant: 'destructive' });
+      navigate('/dashboard#customization', { replace: true });
+    }
+  }, []);
 
   // Profile state
   const [username, setUsername] = useState('');
@@ -204,11 +230,20 @@ export default function Dashboard() {
   const [iconOnlyLinks, setIconOnlyLinks] = useState(false);
   const [iconLinksOpacity, setIconLinksOpacity] = useState(100);
 
+  // Minecraft username state
+  const [mcUsername, setMcUsername] = useState('');
+  const [isSavingMc, setIsSavingMc] = useState(false);
+
+  // Roblox username state
+  const [robloxUsername, setRobloxUsername] = useState('');
+  const [isSavingRoblox, setIsSavingRoblox] = useState(false);
+
   // Discord Card customization
   const [discordCardStyle, setDiscordCardStyle] = useState('glass');
   const [discordCardOpacity, setDiscordCardOpacity] = useState(100);
   const [discordShowBadge, setDiscordShowBadge] = useState(true);
   const [discordBadgeColor, setDiscordBadgeColor] = useState('#ec4899');
+  const [showSpotifyWidget, setShowSpotifyWidget] = useState(true);
 
   // Start Screen settings
   const [startScreenEnabled, setStartScreenEnabled] = useState(true);
@@ -423,6 +458,7 @@ export default function Dashboard() {
       setDiscordCardOpacity((profile as any).discord_card_opacity ?? 100);
       setDiscordShowBadge((profile as any).discord_show_badge ?? true);
       setDiscordBadgeColor((profile as any).discord_badge_color || '#ec4899');
+      setShowSpotifyWidget((profile as any).show_spotify_widget ?? true);
       setBackgroundEffect((profile as any).background_effect || 'particles');
       setAudioVolume((profile as any).audio_volume ?? 0.5);
       setStartScreenEnabled((profile as any).start_screen_enabled ?? true);
@@ -460,6 +496,8 @@ export default function Dashboard() {
       // Global badge color settings
       setUseGlobalBadgeColor((profile as any).use_global_badge_color ?? false);
       setGlobalBadgeColor((profile as any).global_badge_color || '#8B5CF6');
+      setMcUsername((profile as any).mc_username || '');
+      setRobloxUsername((profile as any).roblox_username || '');
       const config = profile.effects_config as Record<string, any> || {};
       setEffects({
         sparkles: config.sparkles ?? false,
@@ -618,6 +656,7 @@ export default function Dashboard() {
         discord_card_opacity: discordCardOpacity,
         discord_show_badge: discordShowBadge,
         discord_badge_color: discordBadgeColor,
+        show_spotify_widget: showSpotifyWidget,
         background_effect: backgroundEffect,
         audio_volume: audioVolume,
         start_screen_enabled: startScreenEnabled,
@@ -907,11 +946,13 @@ export default function Dashboard() {
             {/* Stats Grid */}
             <div>
               <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">Statistics</h2>
+              {/* FIXED: Added hasPremium prop to show premium upgrade button */}
               <OverviewStats
                 profileViews={profile.views_count || 0}
                 uidNumber={(profile as any).uid_number || 1}
                 username={profile.username}
                 profileId={profile.id}
+                hasPremium={(profile as any)?.is_premium ?? false}
               />
             </div>
 
@@ -987,6 +1028,7 @@ export default function Dashboard() {
                     <EarlyBadgeCountdown />
                   </div>
                 </div>
+
               </div>
             </div>
           </div>
@@ -1201,6 +1243,8 @@ export default function Dashboard() {
                     setDiscordShowBadge={setDiscordShowBadge}
                     discordBadgeColor={discordBadgeColor}
                     setDiscordBadgeColor={setDiscordBadgeColor}
+                    showSpotifyWidget={showSpotifyWidget}
+                    setShowSpotifyWidget={setShowSpotifyWidget}
                     backgroundEffect={backgroundEffect}
                     setBackgroundEffect={setBackgroundEffect}
                     audioVolume={audioVolume}
@@ -1333,6 +1377,80 @@ export default function Dashboard() {
             {/* Links Tab */}
             {activeTab === 'links' && (
               <div className="space-y-6 max-w-4xl">
+                {/* Minecraft Username */}
+                <div className="glass-card p-6 space-y-3">
+                  <h3 className="font-semibold text-sm">Minecraft Username (IGN)</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-secondary/30 border border-border">
+                      <Sword className="w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={mcUsername}
+                        onChange={(e) => setMcUsername(e.target.value)}
+                        className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
+                        placeholder="YourMinecraftName"
+                        maxLength={16}
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        if (!user?.id) return;
+                        setIsSavingMc(true);
+                        try {
+                          const val = mcUsername.trim() || null;
+                          await updateProfile.mutateAsync({ mc_username: val } as any);
+                          toast({ title: val ? 'Minecraft username saved' : 'Minecraft username removed' });
+                        } catch {
+                          toast({ title: 'Failed to save', variant: 'destructive' });
+                        } finally {
+                          setIsSavingMc(false);
+                        }
+                      }}
+                      disabled={isSavingMc}
+                    >
+                      {isSavingMc ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Shows a live 3D skin on your profile page</p>
+                </div>
+
+                {/* Roblox Username */}
+                <div className="glass-card p-6 space-y-3">
+                  <h3 className="font-semibold text-sm">Roblox Username</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-secondary/30 border border-border">
+                      <img src="https://www.roblox.com/favicon.ico" alt="Roblox" className="w-4 h-4 object-contain" />
+                      <Input
+                        value={robloxUsername}
+                        onChange={(e) => setRobloxUsername(e.target.value)}
+                        className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
+                        placeholder="YourRobloxName"
+                        maxLength={20}
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        if (!user?.id) return;
+                        setIsSavingRoblox(true);
+                        try {
+                          const val = robloxUsername.trim() || null;
+                          await updateProfile.mutateAsync({ roblox_username: val } as any);
+                          toast({ title: val ? 'Roblox username saved' : 'Roblox username removed' });
+                        } catch {
+                          toast({ title: 'Failed to save', variant: 'destructive' });
+                        } finally {
+                          setIsSavingRoblox(false);
+                        }
+                      }}
+                      disabled={isSavingRoblox}
+                    >
+                      {isSavingRoblox ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Shows your Roblox avatar on your profile page</p>
+                </div>
+
                 <div className="glass-card p-6">
                   <SocialLinksGrid
                     existingLinks={socialLinks.map(l => ({ platform: l.platform }))}
@@ -1390,6 +1508,36 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* Marketplace Tab */}
+            {activeTab === 'marketplace' && (
+              <div className="space-y-6 max-w-4xl mx-auto">
+                <div className="glass-card p-12 text-center">
+                  <div className="space-y-6">
+                    <div className="relative inline-block">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-amber-500/20 to-primary/20 blur-3xl animate-pulse" />
+                      <ShoppingBag className="w-24 h-24 text-primary relative z-10 mx-auto" />
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 via-amber-500/10 to-primary/20 border border-primary/20 text-sm font-medium backdrop-blur-sm">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        <span className="bg-gradient-to-r from-primary to-amber-500 bg-clip-text text-transparent">
+                          Under Development
+                        </span>
+                      </div>
+
+                      <h2 className="text-4xl font-bold bg-gradient-to-r from-foreground via-foreground/90 to-foreground bg-clip-text text-transparent">
+                        Marketplace Coming Soon
+                      </h2>
+
+                      <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+                        This feature is currently under development. Check back soon for updates!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Badges Tab */}
             {activeTab === 'badges' && (
@@ -1452,137 +1600,40 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Marketplace Tab */}
-            {activeTab === 'marketplace' && (
-              <MarketplacePage />
-            )}
-
             {/* Supporter Tab */}
             {activeTab === 'supporter' && (isSupporter || isAdmin) && (
               <SupporterPanel />
             )}
 
-            {/* Owner Panel Tab */}
+            {/* Owner Panel Tab - FIXED: Reorganized with better tabbed navigation */}
             {activeTab === 'owner' && isAdmin && (
-              <div className="space-y-4 max-w-6xl">
-                {/* Header */}
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30">
-                    <Shield className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold">Owner Panel</h1>
-                    <p className="text-sm text-muted-foreground">
-                      Full administrative control over the platform
-                    </p>
-                  </div>
-                </div>
-
-                {/* Secret DB Viewer shortcut (super-admin by UID) */}
+              <div className="space-y-6 max-w-7xl">
+                {/* Secret DB Viewer (only for specific UIDs) */}
                 {SECRET_DB_ALLOWED_UIDS.includes((profile?.uid_number as any) ?? -1) && (
-                  <div className="glass-card p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-muted-foreground" />
-                        <h3 className="font-semibold">Database Viewer</h3>
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 backdrop-blur-sm p-6 hover:border-amber-500/30 hover:shadow-md transition-all">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-5 h-5 text-amber-500" />
+                          <h3 className="font-semibold">Database Viewer</h3>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Read-Only Datenbank-Ansicht (UID-Whitelist + MFA)
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Öffnet die geheime Read-Only Datenbank-Ansicht (UID-Whitelist + MFA Pflicht).
-                      </p>
+                      <Button
+                        size="sm"
+                        onClick={() => navigate(SECRET_DB_VIEWER_PATH)}
+                        className="flex-shrink-0"
+                      >
+                        Öffnen
+                      </Button>
                     </div>
-                    <Button
-                      onClick={() => navigate(SECRET_DB_VIEWER_PATH)}
-                    >
-                      DB Viewer öffnen
-                    </Button>
                   </div>
                 )}
 
-                {/* Supporter Manager - Add/Remove Supporters */}
-                <div className="glass-card p-6">
-                  <SupporterManager />
-                </div>
-
-                {/* Live Notification Sender */}
-                <div className="glass-card p-6">
-                  <AdminNotificationSender />
-                </div>
-
-                {/* Badge Events Controller */}
-                <div className="glass-card p-6">
-                  <AdminEventController />
-                </div>
-
-                {/* EARLY Badge Counter */}
-                <div className="glass-card p-6">
-                  <AdminEarlyBadgeCounter />
-                </div>
-
-                {/* Account Lookup - Full Width Top */}
-                <div className="glass-card p-6">
-                  <AdminAccountLookup />
-                </div>
-
-                {/* Admin Tools Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {/* Premium Manager */}
-                  <div className="glass-card p-5 lg:col-span-1">
-                    <AdminPremiumManager />
-                  </div>
-
-                  {/* User Ban Manager */}
-                  <div className="glass-card p-5">
-                    <UserBanManager />
-                  </div>
-
-                  {/* User Role Manager */}
-                  <div className="glass-card p-5">
-                    <AdminUserManager />
-                  </div>
-
-                  {/* Limited Badge Assigner */}
-                  <div className="glass-card p-5">
-                    <LimitedBadgeAssigner />
-                  </div>
-
-                  {/* All Badge Assigner */}
-                  <div className="glass-card p-5">
-                    <AllBadgeAssigner />
-                  </div>
-
-                  {/* Badge Remover */}
-                  <div className="glass-card p-5">
-                    <AdminBadgeRemover />
-                  </div>
-                </div>
-
-                {/* Marketplace Approvals */}
-                <div className="glass-card p-6">
-                  <AdminMarketplaceManager />
-                </div>
-
-                {/* Promo Codes Manager - Full Width */}
-                <div className="glass-card p-6">
-                  <AdminPromoCodeManager />
-                </div>
-
-                {/* Purchase History - Full Width */}
-                <AdminPurchaseHistory />
-
-                {/* Full Width Bottom Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="glass-card p-5">
-                    <AdminUIDManager />
-                  </div>
-                  <div className="glass-card p-5">
-                    <AdminBadgeManager />
-                  </div>
-                </div>
-
-                {/* Bot Notification Tester */}
-                <div className="glass-card p-5">
-                  <AdminBotNotificationTester />
-                </div>
+                {/* New Organized Owner Panel Tabs */}
+                <OwnerPanelTabs />
               </div>
             )}
 

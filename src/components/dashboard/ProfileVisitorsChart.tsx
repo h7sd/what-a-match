@@ -114,7 +114,7 @@ export function ProfileVisitorsChart({
       <Suspense fallback={null}>
         <div className="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-500">
           <Aurora
-            colorStops={['#00B4D8', '#00D9A5', '#0077B6']}
+            colorStops={['#dc2626', '#991b1b', '#7f1d1d']}
             amplitude={0.6}
             blend={0.7}
             speed={0.4}
@@ -125,8 +125,8 @@ export function ProfileVisitorsChart({
       <div className="relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00B4D8]/20 via-[#00D9A5]/15 to-[#0077B6]/20 flex items-center justify-center border border-[#00D9A5]/20">
-              <Eye className="w-5 h-5 text-[#00D9A5]" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600/20 via-red-800/15 to-red-900/20 flex items-center justify-center border border-red-800/20">
+              <Eye className="w-5 h-5 text-red-800" />
             </div>
             <div>
               <h3 className="font-semibold text-white text-sm">Profile Visitors</h3>
@@ -150,8 +150,8 @@ export function ProfileVisitorsChart({
             <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
               <defs>
                 <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00D9A5" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#00D9A5" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#991b1b" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#991b1b" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <XAxis 
@@ -180,7 +180,7 @@ export function ProfileVisitorsChart({
               <Area
                 type="monotone"
                 dataKey="views"
-                stroke="#00D9A5"
+                stroke="#991b1b"
                 strokeWidth={2}
                 fillOpacity={1}
                 fill="url(#colorViews)"
@@ -193,7 +193,7 @@ export function ProfileVisitorsChart({
           <div className="flex items-center gap-2">
             <span className="text-white/50">Visitors last {timeRange} days:</span>
             <span className="font-semibold text-white">{totalInRange}</span>
-            <TrendingUp className="w-4 h-4 text-[#00D9A5]" />
+            <TrendingUp className="w-4 h-4 text-red-800" />
           </div>
           <div className="text-white/40">
             Daily average: {dailyAverage} visitors/day

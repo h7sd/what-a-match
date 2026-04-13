@@ -469,7 +469,7 @@ export default function PublishBookmarklet() {
                 <FileText className="w-4 h-4 mr-2" />
                 Admin Changelog
               </TabsTrigger>
-              <TabsTrigger value="announce" className="data-[state=active]:bg-emerald-600">
+              <TabsTrigger value="announce" className="data-[state=active]:bg-red-600">
                 <Megaphone className="w-4 h-4 mr-2" />
                 Global Announce
               </TabsTrigger>
@@ -485,8 +485,8 @@ export default function PublishBookmarklet() {
             </TabsContent>
             
             <TabsContent value="announce" className="space-y-6">
-              <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                <p className="text-sm text-emerald-300">
+              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                <p className="text-sm text-red-300">
                   <strong>Global Announce:</strong> Public announcements for all users. 
                   Use this for new features, events, and important updates.
                 </p>
@@ -798,16 +798,16 @@ export default function PublishBookmarklet() {
               </div>
               
               {/* Summary */}
-              <div className={`p-3 rounded-lg ${notificationType === 'changelog' ? 'bg-purple-500/10 border border-purple-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'}`}>
+              <div className={`p-3 rounded-lg ${notificationType === 'changelog' ? 'bg-purple-500/10 border border-purple-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
                 <div className="flex flex-wrap gap-2 text-sm">
-                  <span className={notificationType === 'changelog' ? 'text-purple-300' : 'text-emerald-300'}>
+                  <span className={notificationType === 'changelog' ? 'text-purple-300' : 'text-red-300'}>
                     <strong>Webhook:</strong>{' '}
-                    {selectedWebhookId === 'default' 
-                      ? 'Default' 
+                    {selectedWebhookId === 'default'
+                      ? 'Default'
                       : webhooks.find(w => w.id === selectedWebhookId)?.name || 'Unknown'}
                   </span>
                   <span className="text-gray-500">•</span>
-                  <span className={notificationType === 'changelog' ? 'text-purple-300' : 'text-emerald-300'}>
+                  <span className={notificationType === 'changelog' ? 'text-purple-300' : 'text-red-300'}>
                     <strong>Tagging:</strong>{' '}
                     {selectedRoleIds.length === 0 
                       ? 'No roles' 
@@ -819,7 +819,7 @@ export default function PublishBookmarklet() {
               <Button
                 onClick={sendNotification}
                 disabled={sending}
-                className={`w-full ${notificationType === 'changelog' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                className={`w-full ${notificationType === 'changelog' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-red-600 hover:bg-red-700'}`}
               >
                 {sending ? (
                   <>
@@ -862,7 +862,7 @@ export default function PublishBookmarklet() {
                 onClick={copyBookmarklet}
                 className="border-white/20 text-white hover:bg-white/10"
               >
-                {copied ? <Check className="w-4 h-4 mr-2 text-green-400" /> : <Copy className="w-4 h-4 mr-2" />}
+                {copied ? <Check className="w-4 h-4 mr-2 text-red-400" /> : <Copy className="w-4 h-4 mr-2" />}
                 {copied ? 'Copied!' : 'Copy'}
               </Button>
             </div>

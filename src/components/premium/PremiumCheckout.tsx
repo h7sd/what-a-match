@@ -337,11 +337,11 @@ export function PremiumCheckout({ onSuccess }: PremiumCheckoutProps) {
         {/* Trust badges */}
         <div className="flex items-center justify-center gap-4 pt-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
-            <Check className="w-3 h-3 text-green-500" />
+            <Check className="w-3 h-3 text-red-500" />
             <span>Secure Payment</span>
           </div>
           <div className="flex items-center gap-1">
-            <Check className="w-3 h-3 text-green-500" />
+            <Check className="w-3 h-3 text-red-500" />
             <span>Instant Activation</span>
           </div>
         </div>

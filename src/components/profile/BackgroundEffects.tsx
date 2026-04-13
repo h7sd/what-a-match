@@ -53,19 +53,24 @@ export function BackgroundEffects({
   // Optimize video playback
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !backgroundVideoUrl) return;
+    if (!video || !backgroundVideoUrl || backgroundVideoUrl.trim() === '') return;
 
     // Force hardware acceleration and smooth playback
     video.style.willChange = 'transform';
-    
-    const handleCanPlay = () => {
+
+    // Reset to beginning
+    video.currentTime = 0;
+    video.load();
+
+    const handleLoadedData = () => {
+      video.currentTime = 0;
       video.play().catch(() => {});
     };
 
-    video.addEventListener('canplay', handleCanPlay);
-    
+    video.addEventListener('loadeddata', handleLoadedData, { once: true });
+
     return () => {
-      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('loadeddata', handleLoadedData);
     };
   }, [backgroundVideoUrl]);
 
@@ -485,7 +490,7 @@ export function BackgroundEffects({
   return (
     <div className="fixed inset-0 -z-10">
       {/* Video background with optimized 60fps playback */}
-      {backgroundVideoUrl && (
+      {backgroundVideoUrl && backgroundVideoUrl.trim() !== '' && (
         <video
           ref={videoRef}
           autoPlay
@@ -519,7 +524,7 @@ export function BackgroundEffects({
       )}
 
       {/* Image background */}
-      {!backgroundVideoUrl && backgroundUrl && (
+      {(!backgroundVideoUrl || backgroundVideoUrl.trim() === '') && backgroundUrl && backgroundUrl.trim() !== '' && (
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${backgroundUrl})` }}
@@ -527,7 +532,7 @@ export function BackgroundEffects({
       )}
 
       {/* Color background */}
-      {!backgroundVideoUrl && !backgroundUrl && (
+      {(!backgroundVideoUrl || backgroundVideoUrl.trim() === '') && (!backgroundUrl || backgroundUrl.trim() === '') && (
         <div
           className="absolute inset-0"
           style={{ backgroundColor: backgroundColor || '#0a0a0a' }}

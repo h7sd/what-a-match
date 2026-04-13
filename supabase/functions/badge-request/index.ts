@@ -381,6 +381,7 @@ serve(async (req) => {
           badge_description: badgeDescription,
           badge_color: badgeColor,
           badge_icon_url: badgeIconUrl,
+          status: 'pending',
         })
         .select()
         .single();

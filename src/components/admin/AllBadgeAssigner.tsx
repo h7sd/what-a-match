@@ -231,21 +231,21 @@ export function AllBadgeAssigner() {
               onClick={() => handleBadgeClick(badge)}
               className={`
                 flex items-center gap-1.5 p-1.5 rounded-lg border transition-colors
-                ${hasBadge ? 'border-green-500/50 bg-green-500/10' : 'border-border bg-secondary/20'}
+                ${hasBadge ? 'border-red-500/50 bg-red-500/10' : 'border-border bg-secondary/20'}
                 ${selectedUser ? 'cursor-pointer hover:bg-secondary/40' : 'cursor-not-allowed opacity-50'}
               `}
             >
               <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${badge.color || '#8B5CF6'}20` }}>
                 {isAssigning ? (
                   <Loader2 className="w-3 h-3 animate-spin" style={{ color: badge.color || '#8B5CF6' }} />
-                ) : badge.icon_url ? (
+                ) : badge.icon_url && badge.icon_url.trim() !== '' ? (
                   <img src={badge.icon_url} alt={badge.name} className="w-3 h-3" />
                 ) : (
                   <Icon className="w-3 h-3" style={{ color: badge.color || '#8B5CF6' }} />
                 )}
               </div>
               <span className="text-[10px] truncate flex-1">{badge.name}</span>
-              {hasBadge && <Check className="w-3 h-3 text-green-500 flex-shrink-0" />}
+              {hasBadge && <Check className="w-3 h-3 text-red-500 flex-shrink-0" />}
             </div>
           );
         })}

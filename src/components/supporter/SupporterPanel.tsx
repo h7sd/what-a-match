@@ -10,8 +10,8 @@ export function SupporterPanel() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
-          <HeadphonesIcon className="w-6 h-6 text-emerald-400" />
+        <div className="p-2 rounded-lg bg-gradient-to-br from-red-500/20 to-red-500/20 border border-red-500/30">
+          <HeadphonesIcon className="w-6 h-6 text-red-400" />
         </div>
         <div>
           <h1 className="text-2xl font-bold">Supporter Panel</h1>
@@ -25,14 +25,14 @@ export function SupporterPanel() {
         <TabsList className="grid w-full max-w-md grid-cols-2 bg-card/50 border border-border/50">
           <TabsTrigger 
             value="tickets" 
-            className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400"
+            className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400"
           >
             <MessageSquare className="w-4 h-4 mr-2" />
             Support Tickets
           </TabsTrigger>
-          <TabsTrigger 
+          <TabsTrigger
             value="chat"
-            className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400"
+            className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400"
           >
             <HeadphonesIcon className="w-4 h-4 mr-2" />
             Live Chat

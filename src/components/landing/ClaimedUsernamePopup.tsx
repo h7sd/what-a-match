@@ -53,10 +53,10 @@ function getRarityConfig(rarity: 'legendary' | 'epic' | 'rare' | 'common') {
       return {
         icon: Sparkles,
         label: 'RARE',
-        gradient: 'from-blue-400 via-cyan-500 to-blue-600',
+        gradient: 'from-blue-400 via-red-500 to-blue-600',
         border: 'border-blue-500/50',
         glow: 'shadow-[0_0_20px_rgba(59,130,246,0.4)]',
-        bg: 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20',
+        bg: 'bg-gradient-to-r from-blue-500/20 to-red-500/20',
       };
     default:
       return {

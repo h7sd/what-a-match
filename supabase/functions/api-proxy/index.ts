@@ -289,6 +289,24 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const url = new URL(req.url);
+
+  // Handle Spotify OAuth callback (GET request from Spotify redirect)
+  if (req.method === 'GET' && url.pathname.endsWith('/api-proxy') && url.searchParams.get('spotify_callback') === '1') {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const code = url.searchParams.get('code');
+    const state = url.searchParams.get('state');
+    const error = url.searchParams.get('error');
+
+    const callbackUrl = new URL(`${supabaseUrl}/functions/v1/spotify-auth`);
+    callbackUrl.searchParams.set('action', 'callback');
+    if (code) callbackUrl.searchParams.set('code', code);
+    if (state) callbackUrl.searchParams.set('state', state);
+    if (error) callbackUrl.searchParams.set('error', error);
+
+    return Response.redirect(callbackUrl.toString(), 302);
+  }
+
   // Get client IP for rate limiting
   const forwardedFor = req.headers.get('x-forwarded-for');
   const realIp = req.headers.get('x-real-ip');
@@ -518,6 +536,13 @@ Deno.serve(async (req) => {
           throw new Error('Invalid input');
         }
 
+        // Block UUID attempts - UUIDs should never be used in profile URLs
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if ((username && uuidPattern.test(username)) || (alias && uuidPattern.test(alias))) {
+          result = null;
+          break;
+        }
+
         let query = supabase.from('profiles').select(`
           username, display_name, bio, avatar_url, background_url,
           background_color, accent_color, card_color, effects_config,
@@ -537,20 +562,15 @@ Deno.serve(async (req) => {
           animated_title, swap_bio_colors, glow_username, glow_socials,
           glow_badges, enable_profile_gradient, icon_only_links,
           icon_links_opacity, transparent_badges, ascii_size, ascii_waves, is_premium,
-          display_name_animation, show_likes, show_comments, likes_count, dislikes_count
+          display_name_animation, show_likes, show_comments, likes_count, dislikes_count,
+          mc_username, roblox_username, use_global_badge_color, global_badge_color, og_embed_color,
+          show_spotify_widget, id
         `);
 
         if (alias) {
           query = query.eq('alias_username', alias.toLowerCase());
         } else {
-          const normalizedUsername = username.toLowerCase();
-          const isNumeric = /^\d+$/.test(normalizedUsername);
-
-          if (isNumeric) {
-            query = query.eq('uid_number', parseInt(normalizedUsername, 10));
-          } else {
-            query = query.eq('username', normalizedUsername);
-          }
+          query = query.eq('username', username.toLowerCase());
         }
 
         const { data, error } = await query.maybeSingle();
@@ -698,35 +718,26 @@ Deno.serve(async (req) => {
       }
 
       case 'get_hero_avatars': {
-        // Fetch avatar URLs for uid 1-5, returns only URLs (no IDs/metadata)
         const { data, error } = await supabase
           .from('profiles')
           .select('avatar_url')
-          .in('uid_number', [1, 2, 3, 4, 5])
-          .order('uid_number');
+          .not('avatar_url', 'is', null)
+          .neq('avatar_url', '')
+          .order('uid_number', { ascending: true })
+          .limit(20);
 
         if (error) throw error;
 
-        // Proxy URL to hide Supabase infrastructure
-        const PROXY_URL = 'https://api.uservault.cc';
-        const supabaseUrlPattern = /https:\/\/[a-z0-9]+\.supabase\.co/gi;
-
-        // Return only non-null avatar URLs, transformed through proxy
         const avatars = (data || [])
           .map(p => p.avatar_url)
-          .filter(Boolean)
-          .map((url: string) => {
-            // Replace Supabase URL with proxy URL
-            return url.replace(supabaseUrlPattern, PROXY_URL);
-          });
+          .filter(Boolean);
 
-        // Shuffle for randomness
         for (let i = avatars.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [avatars[i], avatars[j]] = [avatars[j], avatars[i]];
         }
 
-        result = avatars;
+        result = avatars.slice(0, 15);
         break;
       }
 

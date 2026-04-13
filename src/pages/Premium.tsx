@@ -83,19 +83,19 @@ export default function Premium() {
             </p>
             <div className="flex flex-col gap-2 text-left bg-card/50 rounded-lg p-6 border border-primary/20">
               <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-green-500" />
+                <Check className="w-4 h-4 text-red-500" />
                 <span>Advanced Themes & Animations</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-green-500" />
+                <Check className="w-4 h-4 text-red-500" />
                 <span>Exclusive Effects & Fonts</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-green-500" />
+                <Check className="w-4 h-4 text-red-500" />
                 <span>Custom Domain for your Profile</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-green-500" />
+                <Check className="w-4 h-4 text-red-500" />
                 <span>Premium Badge</span>
               </div>
             </div>

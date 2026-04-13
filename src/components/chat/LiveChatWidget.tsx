@@ -590,7 +590,7 @@ export function LiveChatWidget() {
                 msg.sender_type === 'user' || msg.sender_type === 'visitor'
                   ? 'bg-primary' 
                   : msg.sender_type === 'admin'
-                    ? 'bg-green-500/20'
+                    ? 'bg-red-500/20'
                     : 'bg-secondary'
               }`}>
                 {msg.sender_type === 'user' || msg.sender_type === 'visitor' ? (
@@ -599,7 +599,7 @@ export function LiveChatWidget() {
                   agentInfo?.avatar_url ? (
                     <img src={agentInfo.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <Users className="w-3.5 h-3.5 text-green-500" />
+                    <Users className="w-3.5 h-3.5 text-red-500" />
                   )
                 ) : (
                   <Bot className="w-3.5 h-3.5 text-muted-foreground" />
@@ -626,11 +626,11 @@ export function LiveChatWidget() {
           )}
           {agentIsTyping && !isLoading && (
             <div className="flex gap-2 items-center">
-              <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center overflow-hidden">
+              <div className="w-7 h-7 rounded-full bg-red-500/20 flex items-center justify-center overflow-hidden">
                 {agentInfo?.avatar_url ? (
                   <img src={agentInfo.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <Users className="w-3.5 h-3.5 text-green-500" />
+                  <Users className="w-3.5 h-3.5 text-red-500" />
                 )}
               </div>
               <div className="bg-secondary px-4 py-3 rounded-2xl rounded-tl-sm">

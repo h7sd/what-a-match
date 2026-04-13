@@ -22,8 +22,6 @@ export function useDiscordOAuth() {
   const { toast } = useToast();
 
   const getRedirectUri = useCallback(() => {
-    // IMPORTANT: This must be a backend callback URL that Discord can reach.
-    // Using the API proxy keeps the backend project URL hidden and is whitelisted in Discord.
     return `https://api.uservault.cc/functions/v1/discord-oauth-callback`;
   }, []);
 
@@ -68,10 +66,12 @@ export function useDiscordOAuth() {
       // Redirect back to the currently running app (preview or production)
       const targetOrigin = window.location.origin;
       const { data, error } = await supabase.functions.invoke('discord-oauth', {
-        body: { 
+        body: {
           action: 'get_auth_url',
           redirect_uri: getRedirectUri(),
-          frontend_origin: targetOrigin
+          frontend_origin: targetOrigin,
+          mode: 'link',
+          user_id: userId,
         }
       });
 
@@ -102,7 +102,7 @@ export function useDiscordOAuth() {
     try {
       // The state is base64-encoded JSON from the backend, not from sessionStorage
       // Parse the state to extract nonce and origin for validation
-      let parsedState: { nonce?: string; origin?: string } = {};
+      let parsedState: { nonce?: string; origin?: string; mode?: string; user_id?: string } = {};
       try {
         const decodedState = atob(state);
         parsedState = JSON.parse(decodedState);
@@ -110,9 +110,9 @@ export function useDiscordOAuth() {
         console.warn('Could not parse state, proceeding anyway:', e);
       }
 
-      // Get mode from sessionStorage if available, default to login
-      const mode = sessionStorage.getItem('discord_oauth_mode') || 'login';
-      const userId = sessionStorage.getItem('discord_oauth_user_id');
+      // Read mode/user_id from state (reliable) with sessionStorage as fallback
+      let mode = parsedState.mode || sessionStorage.getItem('discord_oauth_mode') || 'login';
+      let userId = parsedState.user_id || sessionStorage.getItem('discord_oauth_user_id') || null;
 
       // Clear stored state
       sessionStorage.removeItem('discord_oauth_state');
@@ -130,32 +130,60 @@ export function useDiscordOAuth() {
         }
       });
 
-      if (error || data?.error) {
-        throw new Error(data?.error || error?.message || 'OAuth callback failed');
+      if (error) {
+        let errorMessage = (error as any)?.message || 'OAuth callback failed';
+        try {
+          const errorBody = await (error as any).context?.json?.();
+          if (errorBody) {
+            errorMessage = errorBody.message || errorBody.error || errorMessage;
+          }
+        } catch {}
+        throw new Error(errorMessage);
       }
 
-      // If login mode and we got an action link, use it to sign in
+      if (data?.error) {
+        throw new Error(data.message || data.error || 'OAuth callback failed');
+      }
+
       if (mode === 'login' && data.action_link) {
-        // Parse the magic link and extract token
-        const magicUrl = new URL(data.action_link);
-        const hashParams = new URLSearchParams(magicUrl.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
+        try {
+          const actionUrl = new URL(data.action_link);
 
-        if (accessToken && refreshToken) {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-
-          if (sessionError) {
-            console.error('Session error:', sessionError);
-            // Fallback: redirect to magic link
-            window.location.href = data.action_link;
-            return { success: true, ...data };
+          const hashStr = actionUrl.hash?.substring(1);
+          if (hashStr) {
+            const hashParams = new URLSearchParams(hashStr);
+            const at = hashParams.get('access_token');
+            const rt = hashParams.get('refresh_token');
+            if (at && rt) {
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token: at,
+                refresh_token: rt,
+              });
+              if (!sessionError) {
+                return { success: true, ...data };
+              }
+            }
           }
-        } else {
-          // Fallback: redirect to magic link
+
+          const token = actionUrl.searchParams.get('token');
+          const type = actionUrl.searchParams.get('type');
+
+          if (token && type === 'magiclink') {
+            const { error: otpError } = await supabase.auth.verifyOtp({
+              token_hash: token,
+              type: 'magiclink',
+            });
+
+            if (!otpError) {
+              return { success: true, ...data };
+            }
+            console.error('OTP verify error:', otpError);
+          }
+
+          window.location.href = data.action_link;
+          return { success: true, ...data };
+        } catch (linkErr) {
+          console.error('Action link processing error:', linkErr);
           window.location.href = data.action_link;
           return { success: true, ...data };
         }

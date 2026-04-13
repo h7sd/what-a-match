@@ -12,12 +12,42 @@ import {
   Github,
   Sparkles,
   Activity,
-  Bell
+  Bell,
+  ShoppingBag,
+  Lock
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LandingEventsPopover } from '@/components/landing/LandingEventsPopover';
+
+function FeaturesPopover() {
+  return (
+    <div className="p-1 space-y-1">
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 pt-1 pb-2">Features</p>
+
+      <Link to="/premium" className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 transition-colors">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #f59e0b, #ea580c)' }}>
+          <Sparkles className="w-4 h-4 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground">Premium</p>
+          <p className="text-xs text-muted-foreground leading-tight">Unlock all features and customization options</p>
+        </div>
+      </Link>
+
+      <Link to="/dashboard" className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 transition-colors">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-red-500/20">
+          <LayoutDashboard className="w-4 h-4 text-red-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground">Dashboard</p>
+          <p className="text-xs text-muted-foreground leading-tight">Manage your profile, links, and badges</p>
+        </div>
+      </Link>
+    </div>
+  );
+}
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 interface MenuItem {
@@ -48,7 +78,8 @@ export function ExpandingMenu() {
     {
       icon: Grid3x3,
       label: 'Features',
-      href: '/#features'
+      isPopover: true,
+      popoverContent: <FeaturesPopover />
     },
     {
       icon: Package,

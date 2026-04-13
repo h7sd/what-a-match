@@ -23,7 +23,7 @@ export function OrbitingAvatar({
   };
 
   // Don't render anything if no avatar URL
-  if (!avatarUrl) {
+  if (!avatarUrl || avatarUrl.trim() === '') {
     return null;
   }
 

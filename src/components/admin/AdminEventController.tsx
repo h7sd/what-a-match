@@ -346,7 +346,7 @@ export function AdminEventController() {
                 exit={{ opacity: 0, x: -100 }}
                 className={`p-4 rounded-lg border transition-all ${
                   event.is_active 
-                    ? 'border-green-500/50 bg-green-500/10' 
+                    ? 'border-red-500/50 bg-red-500/10' 
                     : 'border-border bg-card'
                 }`}
               >
@@ -358,7 +358,7 @@ export function AdminEventController() {
                         {event.event_type === 'steal' ? 'Steal' : 'Hunt'}
                       </Badge>
                       {event.is_active && (
-                        <Badge variant="outline" className="text-green-400 border-green-500/50">
+                        <Badge variant="outline" className="text-red-400 border-red-500/50">
                           Active
                         </Badge>
                       )}

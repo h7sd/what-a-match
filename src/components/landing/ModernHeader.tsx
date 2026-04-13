@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Menu, X, Sparkles, ShoppingBag } from 'lucide-react';
+import { Menu, X, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { ReportUserDialog } from './ReportUserDialog';
 import { Magnet } from './Magnet';
@@ -30,7 +30,6 @@ export function ModernHeader() {
     { label: 'Pricing', to: '/premium' },
     { label: 'Discord', href: 'https://discord.gg/uservault', external: true },
     { label: 'Status', to: '/status' },
-    { label: 'Market', to: '/marketplace', icon: ShoppingBag },
   ];
 
   return (
@@ -162,11 +161,11 @@ export function ModernHeader() {
                 )
               )}
 
-              <div className="pt-4 mt-2 border-t border-border/50 flex flex-col gap-3">
+              <div className="pt-4 mt-2 flex flex-col gap-3">
                 {user ? (
                   <Link
                     to="/dashboard"
-                    className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#00B4D8] to-[#00D9A5] text-white font-semibold border border-white/10"
+                    className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#dc2626] to-[#991b1b] text-white font-semibold border border-white/10"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Dashboard
@@ -182,7 +181,7 @@ export function ModernHeader() {
                     </Link>
                     <Link
                       to="/auth"
-                      className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#00B4D8] to-[#00D9A5] text-white font-semibold border border-white/10"
+                      className="text-center py-3.5 rounded-xl bg-gradient-to-r from-[#dc2626] to-[#991b1b] text-white font-semibold border border-white/10"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Get Started

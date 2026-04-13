@@ -112,3 +112,7 @@ export function getBadgeIcon(name: string): BadgeIconComponent {
 export function getBadgeImage(name: string): string | null {
   return badgeImages[name.toLowerCase()] ?? null;
 }
+
+export function isValidIconUrl(iconUrl: string | null | undefined): boolean {
+  return !!iconUrl && iconUrl.trim() !== '';
+}

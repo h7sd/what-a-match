@@ -21,6 +21,8 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   overflow: hidden;
+  isolation: isolate;
+  contain: paint layout;
 }
 
 @media (max-width: 768px) {

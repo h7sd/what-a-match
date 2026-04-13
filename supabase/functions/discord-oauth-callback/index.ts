@@ -2,11 +2,11 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-// Bump this whenever you deploy to quickly verify the running version
-const VERSION = '2026-02-05.1';
+const VERSION = '2026-03-06.1';
 
 interface DiscordUser {
   id: string;
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
   
   // Handle both GET (redirect callback) and POST (AJAX callback)
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
@@ -35,14 +35,18 @@ Deno.serve(async (req) => {
     let user_id: string | null = null;
     let frontend_origin: string = 'https://uservault.cc'; // Default
 
-    // Helper to extract origin from state
-    const extractOriginFromState = (stateParam: string | null): string => {
-      if (!stateParam) return 'https://uservault.cc';
+    const extractStateData = (stateParam: string | null): { origin: string; mode: string; user_id: string | null } => {
+      const defaults = { origin: 'https://uservault.cc', mode: 'login', user_id: null };
+      if (!stateParam) return defaults;
       try {
         const decoded = JSON.parse(atob(stateParam));
-        return decoded.origin || 'https://uservault.cc';
+        return {
+          origin: decoded.origin || defaults.origin,
+          mode: decoded.mode || defaults.mode,
+          user_id: decoded.user_id || null,
+        };
       } catch {
-        return 'https://uservault.cc';
+        return defaults;
       }
     };
 
@@ -50,15 +54,15 @@ Deno.serve(async (req) => {
       // Redirect callback from Discord
       code = url.searchParams.get('code');
       state = url.searchParams.get('state');
-      
-      // Extract origin from state
-      frontend_origin = extractOriginFromState(state);
-      console.log('GET callback - redirecting to:', frontend_origin);
-      
-      // IMPORTANT: return an HTML redirect page instead of a 302.
-      // Some proxies (e.g. Worker fetch with redirect: "follow") can swallow 302s and
-      // return the frontend HTML under the proxy origin, which breaks asset loading.
-      const redirectUrl = new URL('/auth', frontend_origin);
+
+      const stateData = extractStateData(state);
+      frontend_origin = stateData.origin;
+      const callbackMode = stateData.mode;
+      console.log('GET callback - mode:', callbackMode, 'redirecting to:', frontend_origin);
+
+      // Link mode: go to dedicated callback page so logged-in users never see the login screen
+      const callbackPath = callbackMode === 'link' ? '/discord-link-callback' : '/auth';
+      const redirectUrl = new URL(callbackPath, frontend_origin);
       if (code && state) {
         redirectUrl.searchParams.set('discord_code', code);
         redirectUrl.searchParams.set('discord_state', state);
@@ -100,8 +104,10 @@ Deno.serve(async (req) => {
       code = body.code;
       state = body.state;
       redirect_uri = body.redirect_uri;
-      mode = body.mode || 'login';
-      user_id = body.user_id;
+      const stateData = extractStateData(state);
+      mode = body.mode || stateData.mode || 'login';
+      user_id = body.user_id || stateData.user_id;
+      frontend_origin = stateData.origin || body.frontend_origin || 'https://uservault.cc';
     }
 
     if (!code) {
@@ -231,22 +237,61 @@ Deno.serve(async (req) => {
       // Login/Register mode
       console.log('Processing Discord login/register...');
 
-      // Check if user exists with this email
-      // IMPORTANT: listUsers() is paginated and defaults to a small page size.
-      // If we don't raise perPage, we can miss existing users and then createUser() fails with "email_exists".
-      const { data: existingUsers, error: listUsersError } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-      if (listUsersError) {
-        console.error('listUsers error:', listUsersError);
-        throw new Error('Failed to look up existing users');
-      }
-      const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === discordUser.email?.toLowerCase());
-
       let userId: string;
       let isNewUser = false;
 
-      if (existingUser) {
-        // User exists - sign them in
-        console.log('Existing user found, signing in...');
+      // First: check if Discord ID is already linked to an account
+      const { data: discordIntegration } = await supabase
+        .from('discord_integrations')
+        .select('user_id')
+        .eq('discord_id', discordUser.id)
+        .maybeSingle();
+
+      // Second: if not found by Discord ID, look up by email
+      // IMPORTANT: listUsers() is paginated and defaults to a small page size.
+      // If we don't raise perPage, we can miss existing users and then createUser() fails with "email_exists".
+      let existingUser = null;
+      if (!discordIntegration) {
+        const { data: existingUsers, error: listUsersError } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+        if (listUsersError) {
+          console.error('listUsers error:', listUsersError);
+          throw new Error('Failed to look up existing users');
+        }
+        existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === discordUser.email?.toLowerCase());
+      }
+
+      if (discordIntegration) {
+        // User found by Discord ID - sign them in
+        console.log('Existing user found by Discord ID, signing in...');
+        userId = discordIntegration.user_id;
+
+        // Get the actual email of the linked account (NOT Discord email)
+        const { data: linkedUserData } = await supabase.auth.admin.getUserById(userId);
+        if (linkedUserData?.user?.email) {
+          // Use the real account email so the magic link signs into the correct account
+          discordUser.email = linkedUserData.user.email;
+        }
+
+        // Update Discord integration with latest info
+        await supabase
+          .from('discord_integrations')
+          .update({
+            username: discordUser.global_name || discordUser.username,
+            discriminator: discordUser.discriminator,
+            avatar: discordUser.avatar,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('discord_id', discordUser.id);
+
+        // Update profile discord_user_id
+        await supabase
+          .from('profiles')
+          .update({ discord_user_id: discordUser.id })
+          .eq('user_id', userId);
+
+      } else if (existingUser) {
+        // User exists by email - sign them in
+        console.log('Existing user found by email, signing in...');
         userId = existingUser.id;
         
         // Update their Discord integration
@@ -344,10 +389,15 @@ Deno.serve(async (req) => {
           });
       }
 
-      // Generate a magic link for the user to sign in
+      const redirectTo = `${frontend_origin}/auth`;
+      console.log('Generating magic link with redirect_to:', redirectTo);
+
       const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
         type: 'magiclink',
         email: discordUser.email,
+        options: {
+          redirectTo,
+        },
       });
 
       if (linkError || !linkData) {
@@ -355,17 +405,15 @@ Deno.serve(async (req) => {
         throw new Error('Failed to generate login link');
       }
 
-      // Extract the token from the magic link
-      const magicLinkUrl = new URL(linkData.properties.action_link);
-      const token = magicLinkUrl.hash.split('access_token=')[1]?.split('&')[0];
-      
-      // Return success with session info
-      return new Response(JSON.stringify({ 
+      const actionLink = linkData.properties.action_link;
+      console.log('Magic link generated, action_link starts with:', actionLink?.substring(0, 60));
+
+      return new Response(JSON.stringify({
         success: true,
         _version: VERSION,
         is_new_user: isNewUser,
         email: discordUser.email,
-        action_link: linkData.properties.action_link,
+        action_link: actionLink,
         discord_user: {
           id: discordUser.id,
           username: discordUser.global_name || discordUser.username,
@@ -379,15 +427,15 @@ Deno.serve(async (req) => {
   } catch (error: unknown) {
     console.error('Discord OAuth callback error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    
+
     if (req.method === 'GET') {
       const errorUrl = new URL('/auth', url.origin);
       errorUrl.searchParams.set('error', message);
       return Response.redirect(errorUrl.toString(), 302);
     }
-    
-    return new Response(JSON.stringify({ error: message, _version: VERSION }), {
-      status: 500,
+
+    return new Response(JSON.stringify({ success: false, message, error: message, _version: VERSION }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

@@ -105,7 +105,7 @@ export function BadgeAssignmentSection({ userId, userBadgeIds, onBadgeAssigned }
 
       {unassignedBadges.length === 0 ? (
         <div className="text-center py-4 text-muted-foreground text-sm">
-          <Check className="w-6 h-6 mx-auto mb-2 text-green-500" />
+          <Check className="w-6 h-6 mx-auto mb-2 text-red-500" />
           User has all available badges!
         </div>
       ) : (
@@ -131,7 +131,7 @@ export function BadgeAssignmentSection({ userId, userBadgeIds, onBadgeAssigned }
                 >
                   {isAssigning ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: badge.color || '#8B5CF6' }} />
-                  ) : badge.icon_url ? (
+                  ) : badge.icon_url && badge.icon_url.trim() !== '' ? (
                     <img src={badge.icon_url} alt={badge.name} className="w-4 h-4" />
                   ) : (
                     <Icon className="w-3.5 h-3.5" style={{ color: badge.color || '#8B5CF6' }} />
@@ -155,7 +155,7 @@ export function BadgeAssignmentSection({ userId, userBadgeIds, onBadgeAssigned }
       {/* Show summary of assigned badges */}
       {assignedBadges.length > 0 && (
         <div className="text-xs text-muted-foreground pt-2 border-t">
-          <span className="text-green-500 font-medium">{assignedBadges.length}</span> badge{assignedBadges.length !== 1 ? 's' : ''} already assigned
+          <span className="text-red-500 font-medium">{assignedBadges.length}</span> badge{assignedBadges.length !== 1 ? 's' : ''} already assigned
         </div>
       )}
     </div>

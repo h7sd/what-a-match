@@ -9,7 +9,7 @@
  */
 
 // The actual Supabase URL (hidden from clients)
-const SUPABASE_URL = "https://cjulgfbmcnmrkvnzkpym.supabase.co";
+const SUPABASE_URL = "https://nuszlhxbyxdjlaubuwzd.supabase.co";
 
 // Paths that should be proxied
 const PROXY_PATHS = [
@@ -137,6 +137,57 @@ export default {
       return proxyToSupabase(request, pathname);
     }
     
+    // Handle Spotify OAuth callback redirect
+    if (pathname === "/api-proxy" && url.searchParams.get("spotify_callback") === "1") {
+      const code = url.searchParams.get("code");
+      const state = url.searchParams.get("state");
+      const spotifyError = url.searchParams.get("error");
+
+      const newParams = new URLSearchParams({ action: "callback" });
+      if (code) newParams.set("code", code);
+      if (state) newParams.set("state", state);
+      if (spotifyError) newParams.set("error", spotifyError);
+
+      // Use a special action that returns JSON instead of a redirect so we can read it
+      const jsonParams = new URLSearchParams({ action: "callback_json" });
+      if (code) jsonParams.set("code", code);
+      if (state) jsonParams.set("state", state);
+      if (spotifyError) jsonParams.set("error", spotifyError);
+
+      const targetUrl = `${SUPABASE_URL}/functions/v1/spotify-auth?${jsonParams.toString()}`;
+
+      try {
+        const res = await fetch(targetUrl, {
+          method: "GET",
+          headers: {
+            "apikey": env.SUPABASE_ANON_KEY || "",
+            "Authorization": `Bearer ${env.SUPABASE_ANON_KEY || ""}`,
+          },
+        });
+
+        let location = "https://uservault.cc/dashboard?spotify=error";
+
+        if (res.ok) {
+          const data = await res.json().catch(() => null);
+          if (data && data.redirect) {
+            location = data.redirect
+              .replace(/https?:\/\/uservault\.net\//g, "https://uservault.cc/");
+          }
+        }
+
+        return new Response(null, {
+          status: 302,
+          headers: { Location: location },
+        });
+      } catch (err) {
+        console.error("[Spotify Callback] error:", err);
+        return new Response(null, {
+          status: 302,
+          headers: { Location: "https://uservault.cc/dashboard?spotify=error" },
+        });
+      }
+    }
+
     // Not an API request - return 404 or pass through
     return new Response(JSON.stringify({ error: "Not found" }), {
       status: 404,

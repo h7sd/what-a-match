@@ -128,7 +128,7 @@ export function ProfileLikeButtons({
           "flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-200",
           "border backdrop-blur-sm",
           userVote === true
-            ? "bg-green-500/20 border-green-500/50 text-green-400"
+            ? "bg-red-500/20 border-red-500/50 text-red-400"
             : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20"
         )}
         whileHover={{ scale: 1.05 }}

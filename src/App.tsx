@@ -7,11 +7,11 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { AuthProvider, useAuth } from "@/lib/auth";
 import Index from "./pages/Index";
 import { ClaimedUsernamePopup } from "@/components/landing/ClaimedUsernamePopup";
-import { WelcomeBackGate } from "@/components/auth/WelcomeBackGate";
 import { EventAnnouncementBanner } from "@/components/landing/EventAnnouncementBanner";
 import { GlobalAdminNotification } from "@/components/notifications/GlobalAdminNotification";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MaintenanceOverlay from "@/components/landing/MaintenanceOverlay";
+import { CookieConsent } from "@/components/CookieConsent";
 import { supabase } from "@/integrations/supabase/client";
 
 // Maintenance mode flag - set to false to disable
@@ -29,9 +29,12 @@ const Status = lazy(() => import("./pages/Status"));
 const AliasRespond = lazy(() => import("./pages/AliasRespond"));
 const Premium = lazy(() => import("./pages/Premium"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
+const Cases = lazy(() => import("./pages/Cases"));
 const PublishBookmarklet = lazy(() => import("./pages/PublishBookmarklet"));
 const SecretDatabaseViewer = lazy(() => import("./pages/SecretDatabaseViewer"));
 const DiscordOAuthCallback = lazy(() => import("./pages/DiscordOAuthCallback"));
+const DiscordLinkCallback = lazy(() => import("./pages/DiscordLinkCallback"));
+const Changelog = lazy(() => import("./pages/Changelog"));
 
 const queryClient = new QueryClient();
 
@@ -167,6 +170,7 @@ function MaintenanceRouter() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/imprint" element={<Imprint />} />
+            <Route path="/changelog" element={<Changelog />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
@@ -180,7 +184,6 @@ function MaintenanceRouter() {
       <>
         <Toaster />
         <Sonner />
-        <WelcomeBackGate />
         <GlobalPopups />
         <GlobalAdminNotification />
         <EventBannerGate />
@@ -193,8 +196,8 @@ function MaintenanceRouter() {
               path="/functions/v1/discord-oauth-callback"
               element={<DiscordOAuthCallback />}
             />
+            <Route path="/discord-link-callback" element={<DiscordLinkCallback />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/premium" element={<Premium />} />
             <Route path="/admin/publish" element={<PublishBookmarklet />} />
             <Route
@@ -204,6 +207,7 @@ function MaintenanceRouter() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/imprint" element={<Imprint />} />
+            <Route path="/changelog" element={<Changelog />} />
             <Route path="/status" element={<Status />} />
             <Route path="/alias-respond" element={<AliasRespond />} />
             <Route path="/s/:username" element={<ShareRedirect />} />
@@ -231,7 +235,6 @@ function MaintenanceRouter() {
           <Route path="/auth" element={<Auth />} />
           {/* Redirect all protected routes to landing */}
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
-          <Route path="/marketplace" element={<Navigate to="/" replace />} />
           <Route path="/premium" element={<Navigate to="/" replace />} />
           {/* Status page stays accessible */}
           <Route path="/status" element={<Status />} />
@@ -239,6 +242,7 @@ function MaintenanceRouter() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/imprint" element={<Imprint />} />
+          <Route path="/changelog" element={<Changelog />} />
           {/* Everything else redirects to landing */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -269,7 +273,6 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <WelcomeBackGate />
             <GlobalPopups />
             <GlobalAdminNotification />
             {/* Global Event Banner (also visible on profile pages) */}
@@ -284,8 +287,8 @@ const App = () => {
                   path="/functions/v1/discord-oauth-callback"
                   element={<DiscordOAuthCallback />}
                 />
+                <Route path="/discord-link-callback" element={<DiscordLinkCallback />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/premium" element={<Premium />} />
                 <Route path="/admin/publish" element={<PublishBookmarklet />} />
                 <Route
@@ -295,6 +298,7 @@ const App = () => {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/imprint" element={<Imprint />} />
+                <Route path="/changelog" element={<Changelog />} />
                 <Route path="/status" element={<Status />} />
                 <Route path="/alias-respond" element={<AliasRespond />} />
                 <Route path="/s/:username" element={<ShareRedirect />} />
@@ -303,6 +307,7 @@ const App = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
+            <CookieConsent />
           </TooltipProvider>
         </AuthProvider>
       </BrowserRouter>

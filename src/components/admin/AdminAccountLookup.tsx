@@ -211,8 +211,8 @@ export function AdminAccountLookup() {
         .from('user_balances')
         .select('balance')
         .eq('user_id', user.user_id)
-        .single();
-      
+        .maybeSingle();
+
       setUserBalance(ucToBigInt(balance?.balance ?? 0));
     } catch (error: any) {
       toast({ title: error.message || 'Error loading user details', variant: 'destructive' });
@@ -616,7 +616,7 @@ export function AdminAccountLookup() {
                         {isSavingUsername ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
                         ) : (
-                          <Save className="w-3 h-3 text-green-500" />
+                          <Save className="w-3 h-3 text-red-500" />
                         )}
                       </Button>
                       <Button
@@ -672,7 +672,7 @@ export function AdminAccountLookup() {
                         {isSavingAlias ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
                         ) : (
-                          <Save className="w-3 h-3 text-green-500" />
+                          <Save className="w-3 h-3 text-red-500" />
                         )}
                       </Button>
                       <Button
@@ -853,7 +853,7 @@ export function AdminAccountLookup() {
                                   <div
                                     className="w-8 h-8 rounded-lg flex items-center justify-center bg-destructive/10"
                                   >
-                                    {ub.badge.icon_url ? (
+                                    {ub.badge.icon_url && ub.badge.icon_url.trim() !== '' ? (
                                       <img src={ub.badge.icon_url} alt="" className="w-5 h-5 opacity-40 grayscale" />
                                     ) : (
                                       <Icon className="w-4 h-4 text-destructive opacity-60" />
@@ -895,7 +895,7 @@ export function AdminAccountLookup() {
                     {/* Enabled Badges */}
                     {enabledBadges.length > 0 && (
                       <div>
-                        <h5 className="text-sm font-medium text-green-500 flex items-center gap-1 mb-2">
+                        <h5 className="text-sm font-medium text-red-500 flex items-center gap-1 mb-2">
                           <Eye className="w-3 h-3" />
                           Active Badges ({enabledBadges.length})
                         </h5>
@@ -905,14 +905,14 @@ export function AdminAccountLookup() {
                             return (
                               <div
                                 key={ub.id}
-                                className="flex items-center justify-between p-2 rounded-lg border border-green-500/30 bg-green-500/5"
+                                className="flex items-center justify-between p-2 rounded-lg border border-red-500/30 bg-red-500/5"
                               >
                                 <div className="flex items-center gap-2">
                                   <div
                                     className="w-8 h-8 rounded-lg flex items-center justify-center"
                                     style={{ backgroundColor: `${ub.badge.color || '#8B5CF6'}20` }}
                                   >
-                                    {ub.badge.icon_url ? (
+                                    {ub.badge.icon_url && ub.badge.icon_url.trim() !== '' ? (
                                       <img src={ub.badge.icon_url} alt="" className="w-5 h-5" />
                                     ) : (
                                       <Icon className="w-4 h-4" style={{ color: ub.badge.color || '#8B5CF6' }} />
@@ -976,7 +976,7 @@ export function AdminAccountLookup() {
                                     className="w-8 h-8 rounded-lg flex items-center justify-center"
                                     style={{ backgroundColor: `${ub.badge.color || '#8B5CF6'}10` }}
                                   >
-                                    {ub.badge.icon_url ? (
+                                    {ub.badge.icon_url && ub.badge.icon_url.trim() !== '' ? (
                                       <img src={ub.badge.icon_url} alt="" className="w-5 h-5 opacity-50" />
                                     ) : (
                                       <Icon className="w-4 h-4 opacity-50" style={{ color: ub.badge.color || '#8B5CF6' }} />
@@ -1072,7 +1072,7 @@ export function AdminAccountLookup() {
                       <Button
                         onClick={() => handleGiveCoins(true)}
                         disabled={isGivingCoins || !coinsAmount}
-                        className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
+                        className="flex-1 gap-2 bg-red-600 hover:bg-red-700"
                       >
                         {isGivingCoins ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -1189,7 +1189,7 @@ export function AdminAccountLookup() {
                         </div>
                         <div className="flex items-center gap-2">
                           {link.is_visible ? (
-                            <Eye className="w-4 h-4 text-green-500" />
+                            <Eye className="w-4 h-4 text-red-500" />
                           ) : (
                             <EyeOff className="w-4 h-4 text-muted-foreground" />
                           )}
@@ -1225,9 +1225,9 @@ function SettingRow({ label, value, text }: { label: string; value: boolean; tex
       <span className="text-muted-foreground">{label}</span>
       <div className="flex items-center gap-1">
         {text ? (
-          <span className={value ? 'text-green-500' : 'text-muted-foreground'}>{text}</span>
+          <span className={value ? 'text-red-500' : 'text-muted-foreground'}>{text}</span>
         ) : value ? (
-          <Check className="w-4 h-4 text-green-500" />
+          <Check className="w-4 h-4 text-red-500" />
         ) : (
           <X className="w-4 h-4 text-muted-foreground" />
         )}

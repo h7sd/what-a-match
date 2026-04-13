@@ -111,7 +111,7 @@ interface AuroraProps {
 }
 
 export default function Aurora(props: AuroraProps) {
-  const { colorStops = ['#00B4D8', '#00D9A5', '#0077B6'], amplitude = 1.0, blend = 0.5 } = props;
+  const { colorStops = ['#dc2626', '#991b1b', '#7f1d1d'], amplitude = 1.0, blend = 0.5 } = props;
   const propsRef = useRef<AuroraProps>(props);
   propsRef.current = props;
   const ctnDom = useRef<HTMLDivElement>(null);

@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -8,24 +7,9 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": [
-    "authorization",
-    "x-client-info",
-    "apikey",
-    "content-type",
-    "x-supabase-client-platform",
-    "x-supabase-client-platform-version",
-    "x-supabase-client-runtime",
-    "x-supabase-client-runtime-version",
-    "x-forwarded-for",
-    "x-real-ip",
-    "cf-connecting-ip",
-    "x-client-ip",
-  ].join(", "),
-  "Access-Control-Max-Age": "86400",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-// Helper to send emails
 const sendEmail = async (to: string, subject: string, html: string) => {
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -50,15 +34,14 @@ const sendEmail = async (to: string, subject: string, html: string) => {
   }
 };
 
-const handler = async (req: Request): Promise<Response> => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Get and verify the requesting user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("No authorization header");
@@ -71,13 +54,12 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Invalid token");
     }
 
-    // Check if user is admin
     const { data: roleData, error: roleError } = await supabaseClient
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .eq("role", "admin")
-      .single();
+      .maybeSingle();
 
     if (roleError || !roleData) {
       throw new Error("Admin access required");
@@ -91,19 +73,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Unbanning user:", odst4jf490);
 
-    // Get the banned user's info before deleting the record
     const { data: bannedUser, error: fetchError } = await supabaseClient
       .from("banned_users")
       .select("username, email, user_id")
       .eq("user_id", odst4jf490)
-      .single();
+      .maybeSingle();
 
     if (fetchError || !bannedUser) {
       console.error("Error fetching banned user:", fetchError);
       throw new Error("Banned user not found");
     }
 
-    // Delete the ban record
     const { error: deleteError } = await supabaseClient
       .from("banned_users")
       .delete()
@@ -116,7 +96,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("User unbanned successfully:", odst4jf490);
 
-    // Send welcome back email if we have an email address
     if (bannedUser.email) {
       try {
         const emailHtml = `
@@ -133,12 +112,12 @@ const handler = async (req: Request): Promise<Response> => {
                   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 500px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1)); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 16px; padding: 40px;">
                     <tr>
                       <td align="center" style="padding-bottom: 30px;">
-                        <div style="font-size: 48px; font-weight: bold; background: linear-gradient(135deg, #22c55e, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">UV</div>
+                        <div style="font-size: 48px; font-weight: bold; color: #22c55e;">UV</div>
                       </td>
                     </tr>
                     <tr>
                       <td align="center" style="padding-bottom: 20px;">
-                        <h1 style="color: #ffffff; font-size: 28px; margin: 0;">Welcome Back, ${bannedUser.username}! 🎉</h1>
+                        <h1 style="color: #ffffff; font-size: 28px; margin: 0;">Welcome Back, ${bannedUser.username}!</h1>
                       </td>
                     </tr>
                     <tr>
@@ -169,7 +148,6 @@ const handler = async (req: Request): Promise<Response> => {
         console.log("Welcome back email sent to:", bannedUser.email);
       } catch (emailError) {
         console.error("Failed to send welcome back email:", emailError);
-        // Don't fail the unban if email fails
       }
     }
 
@@ -184,6 +162,4 @@ const handler = async (req: Request): Promise<Response> => {
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
-};
-
-serve(handler);
+});

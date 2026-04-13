@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FadeIn } from './FadeIn';
 
@@ -18,6 +19,9 @@ function useRandomProfiles() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url')
+        .not('avatar_url', 'is', null)
+        .neq('avatar_url', '')
+        .not('username', 'is', null)
         .limit(100);
       
       if (error) throw error;
@@ -33,6 +37,10 @@ function useRandomProfiles() {
 }
 
 function ProfileCard({ profile, index }: { profile: Profile; index: number }) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  if (!profile.avatar_url || imgFailed) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -40,32 +48,23 @@ function ProfileCard({ profile, index }: { profile: Profile; index: number }) {
       transition={{ delay: index * 0.05, duration: 0.3 }}
       className="flex-shrink-0"
     >
-      <Link 
+      <Link
         to={`/${profile.username}`}
         className="flex items-center gap-3 group"
       >
-        {/* Avatar */}
         <motion.div
           className="relative"
           whileHover={{ scale: 1.05 }}
           transition={{ type: 'spring', stiffness: 300 }}
         >
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.display_name || profile.username}
-              className="w-14 h-14 rounded-full object-cover border-2 border-white/10 group-hover:border-primary/50 transition-colors"
-            />
-          ) : (
-            <div className="w-14 h-14 rounded-full bg-[#1a1a2e] border-2 border-white/10 group-hover:border-primary/50 transition-colors flex items-center justify-center">
-              <span className="text-muted-foreground text-lg font-medium">
-                {(profile.display_name || profile.username).charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
+          <img
+            src={profile.avatar_url}
+            alt={profile.display_name || profile.username}
+            className="w-14 h-14 rounded-full object-cover border-2 border-white/10 group-hover:border-primary/50 transition-colors"
+            onError={() => setImgFailed(true)}
+          />
         </motion.div>
-        
-        {/* Name & Username */}
+
         <div className="text-left">
           <p className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors leading-tight">
             {profile.display_name || profile.username}

@@ -25,15 +25,15 @@ export function RegisteredUsersList() {
     fetchUsers();
   }, []);
 
-  const filteredUsers = users.filter(user => 
-    user.u.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredUsers = users.filter(user =>
+    (user.u && user.u.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (user.d && user.d.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   if (isLoading) {
     return (
       <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-5 flex items-center justify-center min-h-[280px]">
-        <Loader2 className="w-6 h-6 animate-spin text-[#00D9A5]" />
+        <Loader2 className="w-6 h-6 animate-spin text-red-800" />
       </div>
     );
   }
@@ -43,12 +43,12 @@ export function RegisteredUsersList() {
       className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-5 space-y-4"
     >
       {/* Static gradient background */}
-      <div className="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-500 bg-gradient-to-br from-[#00B4D8]/30 via-[#00D9A5]/20 to-[#0077B6]/30" />
+      <div className="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-500 bg-gradient-to-br from-red-600/30 via-red-800/20 to-red-900/30" />
 
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00B4D8]/20 via-[#00D9A5]/15 to-[#0077B6]/20 flex items-center justify-center border border-[#00D9A5]/20">
-            <Users className="w-5 h-5 text-[#00D9A5]" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600/20 via-red-800/15 to-red-900/20 flex items-center justify-center border border-red-800/20">
+            <Users className="w-5 h-5 text-red-800" />
           </div>
           <div className="flex-1">
             <h3 className="font-semibold text-white text-sm">Community</h3>
@@ -80,8 +80,8 @@ export function RegisteredUsersList() {
                 className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/[0.04] transition-colors group/item"
               >
                 <div className="relative">
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#00B4D8]/20 to-[#00D9A5]/10 flex items-center justify-center border border-[#00D9A5]/10">
-                    <span className="text-xs font-semibold text-[#00D9A5]">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-600/20 to-red-800/10 flex items-center justify-center border border-red-800/10">
+                    <span className="text-xs font-semibold text-red-800">
                       {user.u.charAt(0).toUpperCase()}
                     </span>
                   </div>

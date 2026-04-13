@@ -347,8 +347,8 @@ export const TemplatePreview = memo(function TemplatePreview({ templateData, min
                           boxShadow: styles.glowBadges ? `0 0 10px ${badge.custom_color || badge.color || accentColor}40` : undefined
                         }}
                       >
-                        {badge.icon_url ? (
-                          <img 
+                        {badge.icon_url && badge.icon_url.trim() !== '' ? (
+                          <img
                             src={badge.icon_url} 
                             alt={badge.name}
                             className="w-full h-full object-contain"

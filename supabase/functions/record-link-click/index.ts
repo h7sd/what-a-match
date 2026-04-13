@@ -1,15 +1,51 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const handler = async (req: Request): Promise<Response> => {
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const MAX_REQUESTS_PER_IP = 30;
+
+const ipRequests = new Map<string, { count: number; resetTime: number }>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of ipRequests.entries()) {
+    if (value.resetTime <= now) ipRequests.delete(key);
+  }
+}, 60 * 1000);
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = ipRequests.get(ip);
+  if (!record || record.resetTime <= now) {
+    ipRequests.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (record.count >= MAX_REQUESTS_PER_IP) return false;
+  record.count++;
+  ipRequests.set(ip, record);
+  return true;
+}
+
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
+  }
+
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const realIp = req.headers.get("x-real-ip");
+  const clientIp = forwardedFor?.split(",")[0]?.trim() || realIp || "unknown";
+
+  if (!checkRateLimit(clientIp)) {
+    return new Response(
+      JSON.stringify({ error: "Rate limit exceeded" }),
+      { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "60" } }
+    );
   }
 
   try {
@@ -19,48 +55,40 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { linkId } = await req.json();
 
-    if (!linkId) {
+    if (!linkId || typeof linkId !== "string") {
       return new Response(
-        JSON.stringify({ error: "Missing linkId" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ error: "Missing or invalid linkId" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get viewer's IP for deduplication
-    const forwarded = req.headers.get("x-forwarded-for");
-    const realIp = req.headers.get("x-real-ip");
-    const clientIp = forwarded?.split(",")[0]?.trim() || realIp || "unknown";
-    
-    // Hash the IP for privacy
+    // Hash IP + linkId + secret salt for privacy
     const encoder = new TextEncoder();
-    const data = encoder.encode(clientIp + linkId);
+    const data = encoder.encode(clientIp + linkId + (supabaseServiceKey.slice(0, 16)));
     const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const ipHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    const ipHash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 
-    // Check if this IP clicked this link in the last 5 minutes
-    const fiveMinutesAgo = new Date();
-    fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 5);
+    // Dedup: 1 hour window per IP per link to prevent botting
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
     const { data: recentClick } = await supabase
       .from("link_clicks")
       .select("id")
       .eq("link_id", linkId)
       .eq("viewer_ip_hash", ipHash)
-      .gte("clicked_at", fiveMinutesAgo.toISOString())
+      .gte("clicked_at", oneHourAgo)
       .maybeSingle();
 
     if (recentClick) {
       return new Response(
-        JSON.stringify({ success: true, message: "Click already recorded" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ success: true, recorded: false }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get country from CF headers
     const country = req.headers.get("cf-ipcountry") || null;
 
-    // Record the click
     const { error: clickError } = await supabase
       .from("link_clicks")
       .insert({
@@ -73,37 +101,27 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error recording click:", clickError);
       return new Response(
         JSON.stringify({ error: "Failed to record click" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Increment the click count on the link
-    const { error: updateError } = await supabase.rpc('increment_link_click_count', { 
-      p_link_id: linkId 
+    const { error: rpcError } = await supabase.rpc("increment_link_click_count", {
+      p_link_id: linkId,
     });
 
-    // If RPC doesn't exist, do a manual update
-    if (updateError) {
-      await supabase
-        .from("social_links")
-        .update({ click_count: supabase.rpc('coalesce', { val: 0 }) })
-        .eq("id", linkId);
+    if (rpcError) {
+      console.error("Error incrementing click count:", rpcError);
     }
 
-    console.log(`Link click recorded for ${linkId} from ${country || 'unknown'}`);
-
     return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      JSON.stringify({ success: true, recorded: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in record-link-click function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      JSON.stringify({ error: "Internal server error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-};
-
-serve(handler);
+});

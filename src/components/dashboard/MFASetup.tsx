@@ -221,7 +221,7 @@ export function MFASetup({ isOpen, onClose, onSuccess }: MFASetupProps) {
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center justify-center py-8"
             >
-              <CheckCircle className="w-16 h-16 text-green-500" />
+              <CheckCircle className="w-16 h-16 text-red-500" />
               <p className="mt-4 font-medium">Two-Factor Authentication Enabled!</p>
               <p className="text-sm text-muted-foreground">Your account is now more secure.</p>
             </motion.div>

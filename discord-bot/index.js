@@ -20,17 +20,20 @@ const { handValue, formatHand, createDeck, sendReward, getBalance } = require('.
 // ============================================
 const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const EDGE_FUNCTION_URL = process.env.EDGE_FUNCTION_URL;
-const BADGE_REQUEST_EDGE_URL = process.env.BADGE_REQUEST_EDGE_URL || 'https://cjulgfbmcnmrkvnzkpym.supabase.co/functions/v1/badge-request';
+const BADGE_REQUEST_EDGE_URL = process.env.BADGE_REQUEST_EDGE_URL || 'https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/badge-request';
 const GUILD_ID = process.env.GUILD_ID;
 const WEBHOOK_SECRET = process.env.DISCORD_WEBHOOK_SECRET;
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS || '').split(',').filter(Boolean);
 const BADGE_REQUEST_CHANNEL_ID = process.env.BADGE_REQUEST_CHANNEL_ID || '1466581321169240076';
-const BOT_BADGE_REQUESTS_URL = process.env.BOT_BADGE_REQUESTS_URL || 'https://cjulgfbmcnmrkvnzkpym.supabase.co/functions/v1/bot-badge-requests';
-const MINIGAME_EDGE_URL = process.env.MINIGAME_EDGE_URL || 'https://cjulgfbmcnmrkvnzkpym.supabase.co/functions/v1/minigame-reward';
+const BOT_BADGE_REQUESTS_URL = process.env.BOT_BADGE_REQUESTS_URL || 'https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/bot-badge-requests';
+const MINIGAME_EDGE_URL = process.env.MINIGAME_EDGE_URL || 'https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/minigame-reward';
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+const CHANGELOG_CHANNEL_ID = process.env.CHANGELOG_CHANNEL_ID;
+const CHANGELOGS_API_URL = process.env.CHANGELOGS_API_URL || 'https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/get-changelogs';
 
 // Track already notified requests to avoid duplicates
 const notifiedRequests = new Set();
+const notifiedChangelogs = new Set();
 
 // Config object for minigame handlers
 const minigameConfig = {
@@ -84,9 +87,9 @@ function generateSignature(payload, timestamp) {
 // ============================================
 // HIDDEN ENDPOINT URLS FOR BADGE ACTIONS
 // ============================================
-const APPROVE_ENDPOINT = 'https://cjulgfbmcnmrkvnzkpym.supabase.co/functions/v1/x98zg89ezhg938g893g9389g3489g3894z';
-const DENY_ENDPOINT = 'https://cjulgfbmcnmrkvnzkpym.supabase.co/functions/v1/x809guj305gh9i00hezg890zu9ergo9ieuoh';
-const EDIT_APPROVE_ENDPOINT = 'https://cjulgfbmcnmrkvnzkpym.supabase.co/functions/v1/x67ytf6t9f85hzohjoi90879sft7t623ui23u4g';
+const APPROVE_ENDPOINT = 'https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/x98zg89ezhg938g893g9389g3489g3894z';
+const DENY_ENDPOINT = 'https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/x809guj305gh9i00hezg890zu9ergo9ieuoh';
+const EDIT_APPROVE_ENDPOINT = 'https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/x67ytf6t9f85hzohjoi90879sft7t623ui23u4g';
 
 // ============================================
 // BADGE REQUEST HANDLING
@@ -189,28 +192,28 @@ client.on('interactionCreate', async (interaction) => {
     return handleBlackjackButton(interaction);
   }
 
-  // Handle button clicks
+  // Handle button clicks with cryptic IDs
   if (interaction.isButton()) {
     const customId = interaction.customId;
-    
-    // Badge Approve Button
-    if (customId.startsWith('badge_approve_')) {
-      const requestId = customId.replace('badge_approve_', '');
-      
+
+    // Badge Approve Button (cryptic ID)
+    if (customId.startsWith('x98zg89ezhg938g893g9389g3489g3894z_')) {
+      const requestId = customId.split('_')[1];
+
       await interaction.deferReply({ ephemeral: true });
-      
+
       try {
         const result = await handleBadgeAction('approve', requestId);
-        
+
         if (result.success) {
           await interaction.editReply({ content: '✅ Badge request approved! User has been notified via email.' });
-          
+
           // Update original message
           const embed = EmbedBuilder.from(interaction.message.embeds[0])
             .setColor(0x22c55e)
             .setTitle('✅ Badge Request APPROVED')
             .setFooter({ text: `Approved by ${interaction.user.tag}` });
-          
+
           await interaction.message.edit({ embeds: [embed], components: [] });
         } else {
           await interaction.editReply({ content: `❌ Failed to approve: ${result.error}` });
@@ -219,15 +222,15 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.editReply({ content: `❌ Error: ${err.message}` });
       }
     }
-    
-    // Badge Deny Button - Show modal for reason
-    if (customId.startsWith('badge_deny_')) {
-      const requestId = customId.replace('badge_deny_', '');
-      
+
+    // Badge Deny Button (cryptic ID)
+    if (customId.startsWith('x809guj305gh9i00hezg890zu9ergo9ieuoh_')) {
+      const requestId = customId.split('_')[1];
+
       const modal = new ModalBuilder()
-        .setCustomId(`badge_deny_modal_${requestId}`)
+        .setCustomId(`deny_modal_${requestId}`)
         .setTitle('Deny Badge Request');
-      
+
       const reasonInput = new TextInputBuilder()
         .setCustomId('denial_reason')
         .setLabel('Reason for denial')
@@ -235,47 +238,47 @@ client.on('interactionCreate', async (interaction) => {
         .setPlaceholder('Please provide a reason for denying this badge request...')
         .setRequired(true)
         .setMaxLength(500);
-      
+
       modal.addComponents(new ActionRowBuilder().addComponents(reasonInput));
-      
+
       await interaction.showModal(modal);
     }
-    
-    // Badge Edit Button - Show modal for editing
-    if (customId.startsWith('badge_edit_')) {
-      const requestId = customId.replace('badge_edit_', '');
-      
+
+    // Badge Edit Button (cryptic ID)
+    if (customId.startsWith('x67ytf6t9f85hzohjoi90879sft7t623ui23u4g_')) {
+      const requestId = customId.split('_')[1];
+
       const modal = new ModalBuilder()
-        .setCustomId(`badge_edit_modal_${requestId}`)
+        .setCustomId(`edit_approve_modal_${requestId}`)
         .setTitle('Edit & Approve Badge');
-      
+
       const nameInput = new TextInputBuilder()
         .setCustomId('edited_name')
         .setLabel('Badge Name (leave empty to keep original)')
         .setStyle(TextInputStyle.Short)
         .setRequired(false)
         .setMaxLength(30);
-      
+
       const descInput = new TextInputBuilder()
         .setCustomId('edited_description')
         .setLabel('Description (leave empty to keep original)')
         .setStyle(TextInputStyle.Paragraph)
         .setRequired(false)
         .setMaxLength(100);
-      
+
       const colorInput = new TextInputBuilder()
         .setCustomId('edited_color')
         .setLabel('Color hex (e.g. #8B5CF6)')
         .setStyle(TextInputStyle.Short)
         .setRequired(false)
         .setMaxLength(7);
-      
+
       modal.addComponents(
         new ActionRowBuilder().addComponents(nameInput),
         new ActionRowBuilder().addComponents(descInput),
         new ActionRowBuilder().addComponents(colorInput)
       );
-      
+
       await interaction.showModal(modal);
     }
   }
@@ -283,27 +286,27 @@ client.on('interactionCreate', async (interaction) => {
   // Handle modal submissions
   if (interaction.isModalSubmit()) {
     const customId = interaction.customId;
-    
+
     // Denial Modal
-    if (customId.startsWith('badge_deny_modal_')) {
-      const requestId = customId.replace('badge_deny_modal_', '');
+    if (customId.startsWith('deny_modal_')) {
+      const requestId = customId.split('_')[2];
       const denialReason = interaction.fields.getTextInputValue('denial_reason');
-      
+
       await interaction.deferReply({ ephemeral: true });
-      
+
       try {
         const result = await handleBadgeAction('deny', requestId, { denialReason });
-        
+
         if (result.success) {
           await interaction.editReply({ content: '✅ Badge request denied. User has been notified via email.' });
-          
+
           // Update original message
           const embed = EmbedBuilder.from(interaction.message.embeds[0])
             .setColor(0xef4444)
             .setTitle('❌ Badge Request DENIED')
             .addFields({ name: '📋 Denial Reason', value: denialReason })
             .setFooter({ text: `Denied by ${interaction.user.tag}` });
-          
+
           await interaction.message.edit({ embeds: [embed], components: [] });
         } else {
           await interaction.editReply({ content: `❌ Failed to deny: ${result.error}` });
@@ -312,36 +315,36 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.editReply({ content: `❌ Error: ${err.message}` });
       }
     }
-    
-    // Edit Modal
-    if (customId.startsWith('badge_edit_modal_')) {
-      const requestId = customId.replace('badge_edit_modal_', '');
+
+    // Edit & Approve Modal
+    if (customId.startsWith('edit_approve_modal_')) {
+      const requestId = customId.split('_')[3];
       const editedName = interaction.fields.getTextInputValue('edited_name') || undefined;
       const editedDescription = interaction.fields.getTextInputValue('edited_description') || undefined;
       const editedColor = interaction.fields.getTextInputValue('edited_color') || undefined;
-      
+
       await interaction.deferReply({ ephemeral: true });
-      
+
       try {
         const result = await handleBadgeAction('approve', requestId, {
           editedName,
           editedDescription,
           editedColor,
         });
-        
+
         if (result.success) {
           await interaction.editReply({ content: '✅ Badge edited and approved! User has been notified via email.' });
-          
+
           // Update original message
           const embed = EmbedBuilder.from(interaction.message.embeds[0])
             .setColor(0x22c55e)
             .setTitle('✅ Badge Request APPROVED (Edited)')
             .setFooter({ text: `Approved by ${interaction.user.tag}` });
-          
+
           if (editedName) embed.addFields({ name: '✏️ Edited Name', value: editedName, inline: true });
           if (editedColor) embed.addFields({ name: '🎨 Edited Color', value: editedColor, inline: true });
           if (editedDescription) embed.addFields({ name: '📝 Edited Description', value: editedDescription });
-          
+
           await interaction.message.edit({ embeds: [embed], components: [] });
         } else {
           await interaction.editReply({ content: `❌ Failed to approve: ${result.error}` });
@@ -426,20 +429,20 @@ async function checkForNewBadgeRequests() {
         embed.setThumbnail(request.badge_icon_url);
       }
 
-      // Build buttons
+      // Build buttons with cryptic IDs matching edge functions
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setCustomId(`badge_approve_${request.id}`)
+          .setCustomId(`x98zg89ezhg938g893g9389g3489g3894z_${request.id}`)
           .setLabel('Approve')
           .setStyle(ButtonStyle.Success)
           .setEmoji('✅'),
         new ButtonBuilder()
-          .setCustomId(`badge_deny_${request.id}`)
+          .setCustomId(`x809guj305gh9i00hezg890zu9ergo9ieuoh_${request.id}`)
           .setLabel('Deny')
           .setStyle(ButtonStyle.Danger)
           .setEmoji('❌'),
         new ButtonBuilder()
-          .setCustomId(`badge_edit_${request.id}`)
+          .setCustomId(`x67ytf6t9f85hzohjoi90879sft7t623ui23u4g_${request.id}`)
           .setLabel('Edit & Approve')
           .setStyle(ButtonStyle.Secondary)
           .setEmoji('✏️'),
@@ -458,6 +461,84 @@ async function checkForNewBadgeRequests() {
     }
   } catch (err) {
     console.error('❌ Error checking badge requests:', err.message);
+    console.error('Stack trace:', err.stack);
+  }
+}
+
+// ============================================
+// CHANGELOG POLLING
+// ============================================
+async function checkForNewChangelogs() {
+  if (!CHANGELOG_CHANNEL_ID) {
+    return;
+  }
+
+  try {
+    console.log('🔍 Checking for new changelogs...');
+
+    const response = await fetch(`${CHANGELOGS_API_URL}?limit=5`);
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      console.error(`❌ Failed to fetch changelogs: ${response.status} ${response.statusText}${body ? `\n${body}` : ''}`);
+      return;
+    }
+
+    const data = await response.json();
+    const changelogs = data.changelogs || [];
+    console.log(`📦 Found ${changelogs.length} recent changelog(s)`);
+
+    const channel = client.channels.cache.get(CHANGELOG_CHANNEL_ID);
+
+    if (!channel) {
+      console.error(`❌ Changelog channel not found: ${CHANGELOG_CHANNEL_ID}`);
+      return;
+    }
+
+    console.log(`✅ Changelog Channel found: #${channel.name}`);
+
+    const categoryEmojis = {
+      feature: '✨',
+      bugfix: '🐛',
+      improvement: '⚡',
+      security: '🔒',
+    };
+
+    const categoryColors = {
+      feature: 0x3b82f6,
+      bugfix: 0xef4444,
+      improvement: 0x22c55e,
+      security: 0xeab308,
+    };
+
+    for (const changelog of changelogs) {
+      if (notifiedChangelogs.has(changelog.id)) continue;
+
+      const emoji = categoryEmojis[changelog.category] || '📢';
+      const color = categoryColors[changelog.category] || 0x6366f1;
+
+      const embed = new EmbedBuilder()
+        .setTitle(`${emoji} ${changelog.version} - ${changelog.title}`)
+        .setDescription(changelog.description)
+        .setColor(color)
+        .addFields(
+          { name: 'Category', value: changelog.category.charAt(0).toUpperCase() + changelog.category.slice(1), inline: true },
+          { name: 'Type', value: changelog.is_major ? '🔥 Major Update' : 'Minor Update', inline: true }
+        )
+        .setTimestamp(new Date(changelog.published_at))
+        .setFooter({ text: 'UserVault Changelog' });
+
+      await channel.send({ embeds: [embed] });
+      console.log(`📨 Sent changelog notification for ${changelog.version}`);
+
+      notifiedChangelogs.add(changelog.id);
+    }
+
+    if (changelogs.length === 0 || changelogs.every(c => notifiedChangelogs.has(c.id))) {
+      console.log('✅ No new changelogs to process');
+    }
+  } catch (err) {
+    console.error('❌ Error checking changelogs:', err.message);
     console.error('Stack trace:', err.stack);
   }
 }
@@ -531,9 +612,19 @@ client.once('ready', async () => {
   console.log('🔄 Starting badge request polling (every 30s)...');
   await checkForNewBadgeRequests(); // Initial check
   setInterval(checkForNewBadgeRequests, 30000);
-  
+
+  // Start changelog polling (every 60 seconds)
+  if (CHANGELOG_CHANNEL_ID) {
+    console.log('🔄 Starting changelog polling (every 60s)...');
+    console.log(`📢 Changelog Channel: ${CHANGELOG_CHANNEL_ID}`);
+    await checkForNewChangelogs(); // Initial check
+    setInterval(checkForNewChangelogs, 60000);
+  } else {
+    console.log('⚠️ CHANGELOG_CHANNEL_ID not set - changelog notifications disabled');
+  }
+
   console.log('');
-  console.log('👀 Watching for presence updates and badge requests...');
+  console.log('👀 Watching for presence updates, badge requests, and changelogs...');
   console.log('🎮 Minigame commands: /balance, /daily, /trivia, /coinflip, /slots, /rps, /blackjack, /link');
   console.log('');
 });

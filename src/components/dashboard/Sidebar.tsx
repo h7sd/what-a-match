@@ -79,7 +79,7 @@ export function Sidebar({ username, onSignOut, isPremium = false, isAdmin = fals
     <aside className="w-24 min-h-screen bg-background/50 backdrop-blur-sm border-r border-border/50 flex flex-col items-center">
       <div className="p-4 border-b border-border/50 w-full flex justify-center">
         <Link to="/" className="flex items-center justify-center">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00B4D8] to-[#00D9A5] flex items-center justify-center shadow-lg">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg">
             <span className="text-white font-bold text-sm">UV</span>
           </div>
         </Link>
@@ -105,11 +105,11 @@ export function Sidebar({ username, onSignOut, isPremium = false, isAdmin = fals
         <Button
           variant="ghost"
           size="icon"
-          className="w-12 h-12 rounded-xl border border-[#00B4D8]/30 hover:bg-[#00B4D8]/10 hover:border-[#00B4D8]/60"
+          className="w-12 h-12 rounded-xl border border-red-600/30 hover:bg-red-600/10 hover:border-red-600/60"
           asChild
         >
           <Link to={`/${username}`} target="_blank">
-            <Eye className="w-5 h-5 text-[#00B4D8]" />
+            <Eye className="w-5 h-5 text-red-600" />
           </Link>
         </Button>
 

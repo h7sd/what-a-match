@@ -56,7 +56,7 @@ export function MarketplacePopover() {
                 className="group p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all cursor-pointer"
               >
                 <div className="flex items-start gap-2">
-                  {item.badge_icon_url ? (
+                  {item.badge_icon_url && item.badge_icon_url.trim() !== '' ? (
                     <img 
                       src={item.badge_icon_url} 
                       alt={item.badge_name || ''} 
@@ -97,12 +97,12 @@ export function MarketplacePopover() {
       </div>
       
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 py-2 border-t border-b border-border/50">
+      <div className="grid grid-cols-3 gap-2 py-2">
         <div className="text-center">
           <div className="text-lg font-bold text-foreground">{items?.length || 0}</div>
           <div className="text-[10px] text-muted-foreground uppercase">Items</div>
         </div>
-        <div className="text-center border-x border-border/50">
+        <div className="text-center">
           <div className="text-lg font-bold text-primary">1,000</div>
           <div className="text-[10px] text-muted-foreground uppercase">Start UC</div>
         </div>
@@ -115,14 +115,14 @@ export function MarketplacePopover() {
       {/* CTA */}
       {user ? (
         <Link to="/dashboard?tab=marketplace">
-          <Button className="w-full gap-2 bg-gradient-to-r from-primary to-[#00D9A5] hover:opacity-90">
+          <Button className="w-full gap-2 bg-gradient-to-r from-primary to-[#991b1b] hover:opacity-90">
             Open Marketplace
             <ArrowRight className="w-4 h-4" />
           </Button>
         </Link>
       ) : (
         <Link to="/auth">
-          <Button className="w-full gap-2 bg-gradient-to-r from-primary to-[#00D9A5] hover:opacity-90">
+          <Button className="w-full gap-2 bg-gradient-to-r from-primary to-[#991b1b] hover:opacity-90">
             Sign in to Trade
             <ArrowRight className="w-4 h-4" />
           </Button>

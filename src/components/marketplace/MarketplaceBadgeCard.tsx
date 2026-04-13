@@ -76,7 +76,7 @@
                boxShadow: `0 0 16px ${color}20`,
              }}
            >
-             {item.badge_icon_url ? (
+             {item.badge_icon_url && item.badge_icon_url.trim() !== '' ? (
                <img
                  src={item.badge_icon_url}
                  alt={item.badge_name || 'Badge'}
@@ -94,7 +94,7 @@
                  {item.badge_name || 'Unnamed Badge'}
                </h3>
                {isPurchased && (
-                 <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-[10px] px-1 py-0 h-4">
+                 <Badge className="bg-red-500/20 text-red-400 border-0 text-[10px] px-1 py-0 h-4">
                    <Check className="w-2.5 h-2.5" />
                  </Badge>
                )}
@@ -153,7 +153,7 @@
                      className="w-10 h-10 rounded-lg flex items-center justify-center"
                      style={{ backgroundColor: `${color}15`, border: `1px solid ${color}40` }}
                    >
-                     {item.badge_icon_url ? (
+                     {item.badge_icon_url && item.badge_icon_url.trim() !== '' ? (
                        <img src={item.badge_icon_url} alt="" className="w-6 h-6 object-contain" />
                      ) : (
                        <Sparkles className="w-5 h-5" style={{ color }} />

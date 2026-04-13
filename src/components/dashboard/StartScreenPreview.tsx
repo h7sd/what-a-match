@@ -121,7 +121,7 @@ export function StartScreenPreview({
         <div className="flex gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
           <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
         </div>
         <span className="text-[10px] text-muted-foreground ml-2">Start Screen Preview</span>
       </div>

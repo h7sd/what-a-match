@@ -131,7 +131,7 @@ export function LimitedBadgeAssigner() {
                   className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: `${badge.color || '#8B5CF6'}20` }}
                 >
-                  {badge.icon_url ? (
+                  {badge.icon_url && badge.icon_url.trim() !== '' ? (
                     <img src={badge.icon_url} alt={badge.name} className="w-4 h-4" />
                   ) : (
                     <Icon className="w-4 h-4" style={{ color: badge.color || '#8B5CF6' }} />
@@ -222,8 +222,8 @@ export function LimitedBadgeAssigner() {
 
             {/* Selected User Display */}
             {selectedUser && (
-              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                <p className="text-sm text-green-500">
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                <p className="text-sm text-red-500">
                   Selected: <strong>{selectedUser.display_name || selectedUser.username}</strong> (@{selectedUser.username})
                 </p>
               </div>

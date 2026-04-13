@@ -26,15 +26,15 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
         ease: 'easeInOut',
       }}
     >
-      <stop offset="0%" stopColor="#00B4D8" />
-      <stop offset="50%" stopColor="#00D9A5" />
-      <stop offset="100%" stopColor="#0077B6" />
+      <stop offset="0%" stopColor="#dc2626" />
+      <stop offset="50%" stopColor="#991b1b" />
+      <stop offset="100%" stopColor="#7f1d1d" />
     </motion.linearGradient>
   ) : (
     <linearGradient id="uv-gradient-static" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#00B4D8" />
-      <stop offset="50%" stopColor="#00D9A5" />
-      <stop offset="100%" stopColor="#0077B6" />
+      <stop offset="0%" stopColor="#dc2626" />
+      <stop offset="50%" stopColor="#991b1b" />
+      <stop offset="100%" stopColor="#7f1d1d" />
     </linearGradient>
   );
 
@@ -42,7 +42,7 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
     <motion.svg
       width={size}
       height={size}
-      viewBox="0 0 48 48"
+      viewBox="0 0 64 64"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
@@ -51,38 +51,45 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
     >
       <defs>
         {gradient}
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
       </defs>
 
-      {/* Background rounded square */}
       <rect
-        x="2"
-        y="2"
-        width="44"
-        height="44"
-        rx="10"
+        x="4"
+        y="4"
+        width="56"
+        height="56"
+        rx="14"
         stroke="url(#uv-gradient)"
-        strokeWidth="2"
-        fill="none"
+        strokeWidth="2.5"
+        fill="rgba(220, 38, 38, 0.05)"
+        filter="url(#glow)"
       />
 
-      {/* U letter - clean and clear */}
       <path
-        d="M12 14V23C12 26.866 15.134 30 19 30C22.866 30 26 26.866 26 23V14"
+        d="M10 20V33C10 38.523 14.477 44 20 44C25.523 44 30 38.523 30 33V20"
         stroke="url(#uv-gradient)"
-        strokeWidth="3.5"
+        strokeWidth="4"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
+        filter="url(#glow)"
       />
 
-      {/* V letter - clean and clear */}
       <path
-        d="M28 14L33 34L38 14"
+        d="M36 20L46 44L56 20"
         stroke="url(#uv-gradient)"
-        strokeWidth="3.5"
+        strokeWidth="4"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
+        filter="url(#glow)"
       />
     </motion.svg>
   );
@@ -91,10 +98,10 @@ export function UVLogo({ size = 32, className = '', animated = true }: UVLogoPro
 export function UVLogoText({ className = '' }: { className?: string }) {
   return (
     <span className={`font-bold ${className}`}>
-      <span className="bg-gradient-to-r from-[#00B4D8] via-[#00D9A5] to-[#0077B6] bg-clip-text text-transparent">
+      <span className="bg-gradient-to-r from-[#dc2626] via-[#991b1b] to-[#7f1d1d] bg-clip-text text-transparent">
         User
       </span>
-      <span className="bg-gradient-to-r from-[#00D9A5] to-[#0077B6] bg-clip-text text-transparent">
+      <span className="bg-gradient-to-r from-[#991b1b] to-[#7f1d1d] bg-clip-text text-transparent">
         Vault
       </span>
     </span>

@@ -18,7 +18,7 @@ export function TransactionHistory({ transactions }: TransactionHistoryProps) {
   };
 
   const getColor = (type: string, amount: bigint) => {
-    if (amount > 0n) return 'text-green-500 bg-green-500/10';
+    if (amount > 0n) return 'text-red-500 bg-red-500/10';
     if (amount < 0n) return 'text-red-500 bg-red-500/10';
     return 'text-muted-foreground bg-muted';
   };
@@ -55,7 +55,7 @@ export function TransactionHistory({ transactions }: TransactionHistoryProps) {
           </div>
           <div className={cn(
             "font-bold",
-            tx.amount > 0n ? 'text-green-500' : 'text-red-500'
+            tx.amount > 0n ? 'text-red-500' : 'text-red-500'
           )}>
             {tx.amount > 0n ? '+' : ''}{formatUC(tx.amount)} UC
           </div>

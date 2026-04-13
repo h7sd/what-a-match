@@ -29,10 +29,7 @@ const BOT_PATTERNS = [
 ];
 
 // Edge Function URL for OG HTML generation
-const OG_FUNCTION_URL = "https://cjulgfbmcnmrkvnzkpym.supabase.co/functions/v1/share";
-
-// Lovable origin URL (where the actual app is hosted)
-const LOVABLE_ORIGIN = "https://what-a-match.lovable.app";
+const OG_FUNCTION_URL = "https://nuszlhxbyxdjlaubuwzd.supabase.co/functions/v1/share";
 
 function isBot(request) {
   const ua = request.headers.get("User-Agent") || "";
@@ -49,60 +46,85 @@ function isBot(request) {
 
 function extractUsername(url) {
   const path = url.pathname;
-  
-  const ignorePaths = ["/", "/auth", "/dashboard", "/privacy", "/terms", "/imprint", "/assets", "/favicon.ico", "/robots.txt"];
+
+  // Ignore common app routes and static assets
+  const ignorePaths = [
+    "/", "/auth", "/dashboard", "/privacy", "/terms", "/imprint",
+    "/assets", "/favicon.ico", "/robots.txt", "/premium", "/marketplace",
+    "/changelog", "/status", "/cases", "/og-image.png", "/placeholder.svg"
+  ];
+
   for (const ignore of ignorePaths) {
-    if (path === ignore || path.startsWith(ignore + "/") || path.startsWith("/assets/")) {
+    if (path === ignore || path.startsWith(ignore + "/")) {
       return null;
     }
   }
-  
+
+  // Ignore assets directory completely
+  if (path.startsWith("/assets/") || path.includes(".")) {
+    return null;
+  }
+
+  // Extract username from path (supports @username and plain username)
   let username = path.replace(/^\/+/, "").replace(/^@/, "").replace(/\/+$/, "");
-  if (!username || !/^[a-zA-Z0-9_.]+$/.test(username)) return null;
+
+  // Allow alphanumeric usernames, including pure numbers (like "1" for uid_number)
+  // This supports both usernames and uid_numbers
+  if (!username || !/^[a-zA-Z0-9_.]+$/.test(username)) {
+    return null;
+  }
+
   return username;
 }
 
 async function fetchOGHtml(username, originalUrl) {
-  const encodedUsername = encodeURIComponent(username);
-  const encodedSrc = encodeURIComponent(originalUrl);
-  const res = await fetch(`${OG_FUNCTION_URL}?u=${encodedUsername}&src=${encodedSrc}`);
-  
-  if (!res.ok) {
-    console.log(`[OG] Edge function returned ${res.status} for: ${username}`);
+  try {
+    const encodedUsername = encodeURIComponent(username);
+    const encodedSrc = encodeURIComponent(originalUrl);
+    const ogUrl = `${OG_FUNCTION_URL}?u=${encodedUsername}&src=${encodedSrc}`;
+
+    console.log(`[OG] Fetching embed for username/uid: ${username}`);
+    console.log(`[OG] Request URL: ${ogUrl}`);
+
+    const res = await fetch(ogUrl, {
+      method: "GET",
+      headers: {
+        "User-Agent": "UserVault-OG-Worker/1.0",
+      },
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.log(`[OG] Edge function returned ${res.status} for: ${username}`);
+      console.log(`[OG] Error response: ${errorText.substring(0, 200)}`);
+      return null;
+    }
+
+    const html = await res.text();
+    console.log(`[OG] Successfully generated embed for: ${username}`);
+    return html;
+  } catch (error) {
+    console.error(`[OG] Fetch error for ${username}:`, error.message);
     return null;
   }
-  
-  return await res.text();
 }
 
-// Proxy request to Lovable origin
-async function proxyToOrigin(request) {
+// Pass request through to origin (change YOUR_ORIGIN to your actual origin URL)
+// If using Cloudflare Pages: this should point to your Pages deployment
+// If using other hosting: point to your hosting URL (e.g., "https://your-origin.pages.dev")
+async function passThrough(request, env) {
   const url = new URL(request.url);
-  // Rewrite host to Lovable origin
-  const originUrl = new URL(url.pathname + url.search, LOVABLE_ORIGIN);
 
-  // IMPORTANT: Ensure origin receives the correct Host header.
-  // If we forward the incoming Host (uservault.cc) some origins return a placeholder.
-  const originHost = new URL(LOVABLE_ORIGIN).host;
-  const headers = new Headers(request.headers);
+  // If using Cloudflare Pages with _worker.js, use env.ASSETS.fetch(request)
+  // For standalone worker, replace with your origin URL
+  const originUrl = env.ORIGIN_URL || "https://your-pages-project.pages.dev";
+  const targetUrl = new URL(url.pathname + url.search, originUrl);
 
-  // Explicitly set host + forwarded host for better compatibility.
-  headers.set("Host", originHost);
-  headers.set("X-Forwarded-Host", url.host);
-  headers.set("X-Forwarded-Proto", url.protocol.replace(":", ""));
-
-  // Avoid sending a body for GET/HEAD requests
-  const method = request.method.toUpperCase();
-  const body = method === "GET" || method === "HEAD" ? undefined : request.body;
-
-  const newRequest = new Request(originUrl.toString(), {
-    method,
-    headers,
-    body,
-    redirect: "follow",
+  return fetch(targetUrl, {
+    method: request.method,
+    headers: request.headers,
+    body: request.body
   });
-
-  return fetch(newRequest);
 }
 
 export default {
@@ -110,47 +132,67 @@ export default {
     const url = new URL(request.url);
     const username = extractUsername(url);
     const botDetected = isBot(request);
-    
+    const userAgent = request.headers.get("User-Agent") || "unknown";
+
     // Debug header to confirm Worker is active
     const debugHeaders = {
       "X-OG-Worker": "active",
       "X-OG-Username": username || "null",
       "X-OG-IsBot": String(botDetected),
     };
-    
-    // Not a profile page or not a bot -> proxy to Lovable origin
-    if (!username || !botDetected) {
-      const response = await proxyToOrigin(request);
+
+    console.log(`[OG] Request: ${url.pathname}`);
+    console.log(`[OG] Extracted username/uid: ${username || "none"}`);
+    console.log(`[OG] Bot detected: ${botDetected}`);
+    console.log(`[OG] User-Agent: ${userAgent.substring(0, 100)}`);
+
+    // Not a profile page or not a bot -> pass through to app
+    if (!username) {
+      console.log(`[OG] No username extracted, passing through`);
+      const response = await passThrough(request, env);
       const newResponse = new Response(response.body, response);
       Object.entries(debugHeaders).forEach(([k, v]) => newResponse.headers.set(k, v));
       return newResponse;
     }
-    
-    console.log(`[OG] Bot detected for: ${username}`);
-    
+
+    if (!botDetected) {
+      console.log(`[OG] Not a bot, passing through for: ${username}`);
+      const response = await passThrough(request, env);
+      const newResponse = new Response(response.body, response);
+      Object.entries(debugHeaders).forEach(([k, v]) => newResponse.headers.set(k, v));
+      return newResponse;
+    }
+
+    console.log(`[OG] Bot detected for username/uid: ${username}`);
+
     try {
       const html = await fetchOGHtml(username, url.toString());
-      
+
       if (!html) {
-        console.log(`[OG] No HTML returned for: ${username}`);
-        const response = await proxyToOrigin(request);
+        console.log(`[OG] No HTML returned, passing through for: ${username}`);
+        const response = await passThrough(request, env);
         const newResponse = new Response(response.body, response);
         newResponse.headers.set("X-OG-Worker", "active-no-profile");
         return newResponse;
       }
-      
+
+      console.log(`[OG] Serving generated OG HTML for: ${username}`);
+
       return new Response(html, {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
           "X-Robots-Tag": "noindex",
           "X-OG-Worker": "active-generated",
+          "X-OG-Profile": username,
         },
       });
     } catch (error) {
-      console.error(`[OG] Error:`, error);
-      const response = await proxyToOrigin(request);
+      console.error(`[OG] Error generating embed for ${username}:`, error);
+      const response = await passThrough(request, env);
       const newResponse = new Response(response.body, response);
       newResponse.headers.set("X-OG-Worker", "error");
       newResponse.headers.set("X-OG-Error", error.message);

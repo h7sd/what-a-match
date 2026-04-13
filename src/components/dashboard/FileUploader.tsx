@@ -33,7 +33,7 @@ const typeConfig = {
     label: 'Audio',
     accept: 'audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/aac',
     folder: 'audio',
-    color: 'text-green-400',
+    color: 'text-red-400',
     maxSize: 100 * 1024 * 1024, // 100MB
     allowedMimes: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/aac', 'audio/x-m4a'],
   },

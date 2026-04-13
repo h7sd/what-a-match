@@ -21,12 +21,12 @@ export function TopLinksChart({ links = [] }: TopLinksChartProps) {
     return (
       <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-5 space-y-4">
         {/* Static gradient background */}
-        <div className="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-500 bg-gradient-to-br from-[#00B4D8]/30 via-[#00D9A5]/20 to-[#0077B6]/30" />
+        <div className="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-500 bg-gradient-to-br from-red-600/30 via-red-800/20 to-red-900/30" />
 
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00B4D8]/20 via-[#00D9A5]/15 to-[#0077B6]/20 flex items-center justify-center border border-[#00D9A5]/20">
-              <Link2 className="w-5 h-5 text-[#00D9A5]" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600/20 via-red-800/15 to-red-900/20 flex items-center justify-center border border-red-800/20">
+              <Link2 className="w-5 h-5 text-red-800" />
             </div>
             <div>
               <h3 className="font-semibold text-white text-sm">Top 5 Links</h3>
@@ -44,21 +44,21 @@ export function TopLinksChart({ links = [] }: TopLinksChartProps) {
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 backdrop-blur-xl p-5 space-y-4">
       {/* Static gradient background */}
-      <div className="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-500 bg-gradient-to-br from-[#00B4D8]/30 via-[#00D9A5]/20 to-[#0077B6]/30" />
+      <div className="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-500 bg-gradient-to-br from-red-600/30 via-red-800/20 to-red-900/30" />
 
       <div className="relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00B4D8]/20 via-[#00D9A5]/15 to-[#0077B6]/20 flex items-center justify-center border border-[#00D9A5]/20">
-              <Link2 className="w-5 h-5 text-[#00D9A5]" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600/20 via-red-800/15 to-red-900/20 flex items-center justify-center border border-red-800/20">
+              <Link2 className="w-5 h-5 text-red-800" />
             </div>
             <div>
               <h3 className="font-semibold text-white text-sm">Top 5 Links</h3>
               <p className="text-xs text-white/40">Click analytics</p>
             </div>
           </div>
-          <div className="px-2.5 py-1 rounded-full bg-[#00D9A5]/10 border border-[#00D9A5]/20">
-            <span className="text-xs font-medium text-[#00D9A5]">{totalClicks} clicks</span>
+          <div className="px-2.5 py-1 rounded-full bg-red-800/10 border border-red-800/20">
+            <span className="text-xs font-medium text-red-800">{totalClicks} clicks</span>
           </div>
         </div>
 

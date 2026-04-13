@@ -35,9 +35,6 @@ export function PricingSection() {
 
   return (
     <section ref={ref} className="py-32 px-6 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
-      
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -60,7 +57,7 @@ export function PricingSection() {
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Join{' '}
-            <GradientText colors={['#00D9A5', '#00B4D8', '#0077B6', '#00D9A5']}>
+            <GradientText colors={['#991b1b', '#dc2626', '#7f1d1d', '#991b1b']}>
               {(stats?.totalUsers || 0).toLocaleString()}+
             </GradientText>
             {' '}users already using UserVault

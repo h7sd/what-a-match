@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import CardSwap, { Card } from '@/components/ui/CardSwap';
 import { Sparkles, Eye, AtSign } from 'lucide-react';
 import { OrbitingAvatar } from '@/components/profile/OrbitingAvatar';
+import { getBadgeImage, getBadgeIcon, isValidIconUrl } from '@/lib/badges';
 
 interface ProfileWithBadges {
   id: string;
@@ -40,52 +41,57 @@ function useRandomProfilesWithBadges() {
   return useQuery({
     queryKey: ['card-swap-profiles'],
     queryFn: async () => {
-      // Get random profiles with full customization fields
+      // Step 1: Get all badge assignments to find users who have badges
+      const { data: allUserBadges, error: badgesError } = await supabase
+        .from('user_badges')
+        .select('user_id, badge_id, display_order')
+        .eq('is_enabled', true)
+        .limit(500);
+
+      if (badgesError) throw badgesError;
+      if (!allUserBadges || allUserBadges.length === 0) return [];
+
+      // Step 2: Get unique user IDs that have badges, shuffle and take 5
+      const uniqueUserIds = [...new Set(allUserBadges.map(ub => ub.user_id))];
+      const shuffledUserIds = uniqueUserIds.sort(() => Math.random() - 0.5).slice(0, 5);
+
+      // Step 3: Load badge details
+      const badgeIds = [...new Set(allUserBadges.filter(ub => shuffledUserIds.includes(ub.user_id)).map(ub => ub.badge_id))];
+      const { data: globalBadges } = await supabase
+        .from('global_badges')
+        .select('id, name, color, icon_url')
+        .in('id', badgeIds);
+
+      const badgeDetails: Record<string, { id: string; name: string; color: string | null; icon_url: string | null }> = {};
+      (globalBadges || []).forEach(b => { badgeDetails[b.id] = b; });
+
+      // Step 4: Load profiles for those users
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
-          id, username, display_name, avatar_url, bio, views_count, accent_color, 
-          location, occupation, background_url, background_video_url, 
+          id, username, display_name, avatar_url, bio, views_count, accent_color,
+          location, occupation, background_url, background_video_url,
           profile_opacity, profile_blur, card_color, card_border_enabled,
           card_border_color, card_border_width, avatar_shape, name_font, glow_username
         `)
-        .limit(50);
-      
+        .in('id', shuffledUserIds);
+
       if (profilesError) throw profilesError;
       if (!profiles || profiles.length === 0) return [];
 
-      // Shuffle and take 5
-      const shuffled = profiles.sort(() => Math.random() - 0.5).slice(0, 5);
-      
-      // Get badges for each profile
-      const profilesWithBadges: ProfileWithBadges[] = await Promise.all(
-        shuffled.map(async (profile) => {
-          const { data: userBadges } = await supabase
-            .from('user_badges')
-            .select(`
-              badge_id,
-              global_badges (
-                id,
-                name,
-                color,
-                icon_url
-              )
-            `)
-            .eq('user_id', profile.id)
-            .eq('is_enabled', true)
-            .order('display_order', { ascending: true })
-            .limit(6);
+      // Step 5: Attach badges to profiles
+      const profilesWithBadges: ProfileWithBadges[] = profiles.map((profile) => {
+        const profileBadgeRows = allUserBadges
+          .filter(ub => ub.user_id === profile.id)
+          .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+          .slice(0, 6);
 
-          const badges = (userBadges || [])
-            .map((ub: any) => ub.global_badges)
-            .filter(Boolean);
+        const badges = profileBadgeRows
+          .map(ub => badgeDetails[ub.badge_id])
+          .filter(Boolean);
 
-          return {
-            ...profile,
-            badges
-          };
-        })
-      );
+        return { ...profile, badges };
+      });
 
       return profilesWithBadges;
     },
@@ -249,33 +255,40 @@ function MiniProfileCard({ profile }: { profile: ProfileWithBadges }) {
               {profile.username}
             </p>
 
-            {/* Badges - matching ProfileCard style */}
+            {/* Badges - exact same as ProfileBadgesDisplay / StealableBadge */}
             {profile.badges.length > 0 && (
-              <div className="inline-flex items-center justify-center -space-x-1 mb-4 px-2.5 py-1 rounded-full border border-white/10 bg-black/20 backdrop-blur-sm">
-                {profile.badges.slice(0, 5).map((badge) => (
-                  <div
-                    key={badge.id}
-                    className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-black/50"
-                    style={{
-                      backgroundColor: badge.color ? `${badge.color}30` : 'rgba(255,255,255,0.1)',
-                      boxShadow: badge.color ? `0 0 8px ${badge.color}40` : undefined
-                    }}
-                    title={badge.name}
-                  >
-                    {badge.icon_url ? (
-                      <img src={badge.icon_url} alt={badge.name} className="w-4 h-4" />
-                    ) : (
-                      <span className="text-xs" style={{ color: badge.color || '#fff' }}>
-                        {badge.name.charAt(0)}
-                      </span>
-                    )}
-                  </div>
-                ))}
-                {profile.badges.length > 5 && (
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-black/50 bg-white/5 text-xs text-muted-foreground">
-                    +{profile.badges.length - 5}
-                  </div>
-                )}
+              <div className="w-full flex justify-center mb-4">
+                <div className="inline-flex flex-wrap items-center justify-center gap-1 px-3 py-1.5 rounded-full border border-white/10 bg-black/20 backdrop-blur-sm">
+                  {profile.badges.map((badge) => {
+                    const badgeImage = isValidIconUrl(badge.icon_url) ? badge.icon_url : getBadgeImage(badge.name);
+                    const BadgeIcon = getBadgeIcon(badge.name);
+                    const badgeColor = badge.color || accentColor;
+                    return (
+                      <div
+                        key={badge.id}
+                        className="w-8 h-8 flex items-center justify-center"
+                        title={badge.name}
+                      >
+                        {badgeImage ? (
+                          <img
+                            src={badgeImage}
+                            alt={badge.name}
+                            className="w-5 h-5 object-contain"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <BadgeIcon
+                            className="w-5 h-5"
+                            style={{
+                              color: badgeColor,
+                              filter: `drop-shadow(0 0 4px ${badgeColor}50)`,
+                            }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -337,8 +350,6 @@ export function ProfileCardSwap() {
 
   return (
     <section ref={ref} className="py-32 px-6 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
       
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">

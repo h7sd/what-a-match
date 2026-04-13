@@ -79,8 +79,8 @@ export interface UserBalance {
   id: string;
   user_id: string;
   balance: bigint;
-  total_earned: bigint;
-  total_spent: bigint;
+  lifetime_earned: bigint;
+  lifetime_spent: bigint;
   created_at: string;
   updated_at: string;
 }
@@ -100,8 +100,8 @@ function normalizeUserBalance(row: any): UserBalance {
   return {
     ...row,
     balance: ucToBigInt(row?.balance),
-    total_earned: ucToBigInt(row?.total_earned),
-    total_spent: ucToBigInt(row?.total_spent),
+    lifetime_earned: ucToBigInt(row?.lifetime_earned),
+    lifetime_spent: ucToBigInt(row?.lifetime_spent),
   } as UserBalance;
 }
 
@@ -115,32 +115,32 @@ function normalizeTransaction(row: any): UCTransaction {
 // Get user's UC balance
 export function useUserBalance() {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: ['userBalance', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      
+
       const { data, error } = await supabase
         .from('user_balances')
         .select('*')
         .eq('user_id', user.id)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') throw error;
-      
+        .maybeSingle();
+
+      if (error) throw error;
+
       // If no balance exists, create one with 1000 UC
       if (!data) {
         const { data: newBalance, error: insertError } = await supabase
           .from('user_balances')
-          .insert({ user_id: user.id, balance: 1000, total_earned: 1000 })
+          .insert({ user_id: user.id, balance: 1000, lifetime_earned: 1000 })
           .select()
           .single();
-        
+
         if (insertError) throw insertError;
         return normalizeUserBalance(newBalance);
       }
-      
+
       return normalizeUserBalance(data);
     },
     enabled: !!user?.id,

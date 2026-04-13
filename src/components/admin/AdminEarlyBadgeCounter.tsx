@@ -91,7 +91,7 @@ export function AdminEarlyBadgeCounter() {
               Sold Out
             </span>
           ) : (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
               Active
             </span>
           )}
@@ -111,7 +111,7 @@ export function AdminEarlyBadgeCounter() {
           </div>
           <div>
             <span className="text-white/60">Remaining: </span>
-            <span className={`font-semibold ${remaining <= 10 ? 'text-amber-400' : remaining === 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+            <span className={`font-semibold ${remaining <= 10 ? 'text-amber-400' : remaining === 0 ? 'text-red-400' : 'text-red-400'}`}>
               {remaining}
             </span>
           </div>

@@ -6,9 +6,12 @@ import { useRecordProfileView } from '@/hooks/useProfile';
 import { getPublicProfile, getPublicProfileByAlias, getProfileLinks, getProfileBadges, PublicProfile, PublicLink, PublicBadge } from '@/lib/api';
 import { ProfileCard } from '@/components/profile/ProfileCard';
 import { SocialLinks } from '@/components/profile/SocialLinks';
+import { MinecraftSkinViewer } from '@/components/profile/MinecraftSkinViewer';
+import { RobloxAvatarViewer } from '@/components/profile/RobloxAvatarViewer';
 import { BackgroundEffects } from '@/components/profile/BackgroundEffects';
 import { CustomCursor } from '@/components/profile/CustomCursor';
 import { DiscordPresence } from '@/components/profile/DiscordPresence';
+import { SpotifyNowPlaying } from '@/components/profile/SpotifyNowPlaying';
 import { StartScreen } from '@/components/profile/StartScreen';
 import ElasticSlider from '@/components/profile/ElasticSlider';
 import { ProfileLikeButtons } from '@/components/profile/ProfileLikeButtons';
@@ -186,7 +189,11 @@ export default function UserProfile() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  
+
+  // Block UUID attempts - UUIDs should never be used in profile URLs
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuidAttempt = username && uuidPattern.test(username);
+
   // Use secure API proxy for all profile data
   const { data: profileData, isLoading: profileLoading, error } = useSecureProfile(username || '');
   const profile = profileData?.profile;
@@ -289,6 +296,29 @@ export default function UserProfile() {
 
   const isLoading = profileLoading || !banCheckDone;
 
+  // Show 404 immediately if UUID is detected
+  if (isUuidAttempt) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <h1 className="text-4xl font-bold mb-2">404</h1>
+          <p className="text-muted-foreground mb-6">User not found</p>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Go back home
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -353,8 +383,8 @@ export default function UserProfile() {
   const customCursorUrl = profile.custom_cursor_url as string | null;
 
   // Determine if profile has audio (music OR video background which typically has sound)
-  const hasAudio = Boolean(profile.music_url || profile.background_video_url);
-  
+  const hasAudio = Boolean((profile.music_url && profile.music_url.trim() !== '') || (profile.background_video_url && profile.background_video_url.trim() !== ''));
+
   // Start screen is required if audio is present (browser autoplay policy)
   // Otherwise, respect the user's start_screen_enabled setting
   const shouldShowStartScreen = hasAudio ? true : (profile.start_screen_enabled !== false);
@@ -382,16 +412,16 @@ export default function UserProfile() {
       })()}
 
       {/* Hidden audio element */}
-      {profile.music_url && (
+      {profile.music_url && profile.music_url.trim() !== '' && (
         <audio ref={audioRef} src={profile.music_url} loop />
       )}
 
       {/* Custom cursor with trail or custom image - disabled on mobile */}
-      {!isMobile && (showCursorTrail || customCursorUrl) && hasInteracted && (
-        <CustomCursor 
-          color={accentColor} 
-          showTrail={!!showCursorTrail} 
-          cursorUrl={customCursorUrl || undefined}
+      {!isMobile && (showCursorTrail || (customCursorUrl && customCursorUrl.trim() !== '')) && hasInteracted && (
+        <CustomCursor
+          color={accentColor}
+          showTrail={!!showCursorTrail}
+          cursorUrl={(customCursorUrl && customCursorUrl.trim() !== '') ? customCursorUrl : undefined}
         />
       )}
 
@@ -405,7 +435,7 @@ export default function UserProfile() {
         effectType={(profile.background_effect || 'particles') as any}
       />
 
-      <div 
+      <div
         className="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 pt-32 pb-44"
         style={{ opacity: transparency }}
       >
@@ -413,9 +443,10 @@ export default function UserProfile() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: showStartScreen ? 0 : 1, y: showStartScreen ? 30 : 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="w-full max-w-md mx-auto space-y-6"
+          className={`flex items-start gap-8 ${(profile as any).mc_username ? 'flex-col md:flex-row md:items-center' : 'flex-col'}`}
         >
-          <ProfileCard 
+          <div className="w-full max-w-md space-y-6">
+          <ProfileCard
             profile={{...profile, accent_color: accentColor} as any} 
             badges={badges.map((b: PublicBadge) => ({
               id: b.id || b.name,
@@ -454,9 +485,9 @@ export default function UserProfile() {
 
           {/* Social Links - respect visibility setting */}
           {(profile.show_links ?? true) && socialLinks.length > 0 && (
-            <SocialLinks 
+            <SocialLinks
               links={socialLinks.map((l: PublicLink) => ({
-                id: l.url, // Use URL as ID since we don't expose real IDs
+                id: l.url,
                 profile_id: '',
                 platform: l.platform,
                 url: l.url,
@@ -467,16 +498,60 @@ export default function UserProfile() {
                 display_order: l.display_order,
                 is_visible: l.is_visible,
                 created_at: '',
-              }))} 
+              }))}
               accentColor={accentColor}
               glowingIcons={profile.glow_socials ?? false}
               iconOnly={profile.icon_only_links ?? false}
               iconOpacity={profile.icon_links_opacity ?? 100}
             />
           )}
+          </div>
+
         </motion.div>
 
-        {/* Volume control - fixed top right, below any banners */}
+          {/* Minecraft Skin Viewer - fixed on the left side */}
+          {(profile as any).mc_username && (
+            <motion.div
+              initial={{ opacity: 0, x: -40 }}
+              animate={{ opacity: showStartScreen ? 0 : 1, x: showStartScreen ? -40 : 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="fixed z-40 hidden lg:block"
+              style={{ left: 'calc(50% - 680px)', top: 'calc(50% - 310px)' }}
+            >
+              <MinecraftSkinViewer
+                mcUsername={(profile as any).mc_username}
+                accentColor={accentColor}
+              />
+            </motion.div>
+          )}
+
+          {/* Roblox Avatar Viewer - fixed on the right side */}
+          {profile.roblox_username && (
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: showStartScreen ? 0 : 1, x: showStartScreen ? 40 : 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="fixed z-40 hidden lg:block"
+              style={{ right: 'calc(50% - 680px)', top: 'calc(50% - 310px)' }}
+            >
+              <RobloxAvatarViewer
+                robloxUsername={profile.roblox_username}
+                accentColor={accentColor}
+              />
+            </motion.div>
+          )}
+
+        {/* Spotify Now Playing Widget - fixed top right */}
+        {!showStartScreen && (profile as any).show_spotify_widget !== false && profile.id && (
+          <div className="fixed top-4 right-4 z-50 w-72">
+            <SpotifyNowPlaying
+              userId={profile.id}
+              accentColor={accentColor}
+            />
+          </div>
+        )}
+
+        {/* Volume control - fixed top right, below Spotify widget */}
         {!showStartScreen && profile.music_url && (profile.show_volume_control ?? true) && (
           <div className="fixed top-32 right-4 z-50">
             <ElasticSlider

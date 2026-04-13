@@ -2,7 +2,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -19,11 +20,13 @@ Deno.serve(async (req) => {
   const src = url.searchParams.get("src");
 
   console.log(`[OG-EMBED] Request for username/uid: ${username}, src: ${src}`);
+  console.log(`[OG-EMBED] Full URL: ${req.url}`);
 
   if (!username) {
-    return new Response("Username required. Use ?u=username", { 
+    console.log(`[OG-EMBED] Error: No username provided`);
+    return new Response("Username required. Use ?u=username", {
       status: 400,
-      headers: corsHeaders 
+      headers: corsHeaders
     });
   }
 
@@ -32,45 +35,58 @@ Deno.serve(async (req) => {
   // Try to find profile by username, alias, OR uid_number
   const lowerUsername = username.toLowerCase();
   const maybeUid = parseInt(username, 10);
-  
+
   let profile = null;
   let error = null;
+  let searchMethod = "none";
+
+  console.log(`[OG-EMBED] Searching for: ${lowerUsername}`);
+  console.log(`[OG-EMBED] Is numeric: ${!isNaN(maybeUid)}, value: ${maybeUid}`);
 
   // First try by username or alias
   const { data: byName, error: nameErr } = await supabase
     .from("profiles")
-    .select("username, display_name, bio, avatar_url, og_title, og_description, og_image_url, og_icon_url, uid_number")
+    .select("username, display_name, bio, avatar_url, og_title, og_description, og_image_url, og_icon_url, uid_number, og_embed_color")
     .or(`username.eq.${lowerUsername},alias_username.eq.${lowerUsername}`)
     .maybeSingle();
 
   if (byName) {
     profile = byName;
+    searchMethod = "username_or_alias";
+    console.log(`[OG-EMBED] Found by username/alias: ${byName.username}`);
   } else if (!isNaN(maybeUid) && maybeUid > 0) {
     // If not found and input looks like a number, try by uid_number
+    console.log(`[OG-EMBED] Trying uid_number lookup: ${maybeUid}`);
     const { data: byUid, error: uidErr } = await supabase
       .from("profiles")
-      .select("username, display_name, bio, avatar_url, og_title, og_description, og_image_url, og_icon_url, uid_number")
+      .select("username, display_name, bio, avatar_url, og_title, og_description, og_image_url, og_icon_url, uid_number, og_embed_color")
       .eq("uid_number", maybeUid)
       .maybeSingle();
-    
+
     if (byUid) {
       profile = byUid;
+      searchMethod = "uid_number";
+      console.log(`[OG-EMBED] Found by uid_number: ${byUid.username} (uid: ${byUid.uid_number})`);
     } else {
       error = uidErr || nameErr;
+      console.log(`[OG-EMBED] Not found by uid_number: ${maybeUid}`);
     }
   } else {
     error = nameErr;
+    console.log(`[OG-EMBED] Not found by username/alias: ${lowerUsername}`);
   }
 
   if (error || !profile) {
     console.log(`[OG-EMBED] Profile not found: ${username}`);
-    return new Response("Profile not found", { 
+    console.log(`[OG-EMBED] Search method used: ${searchMethod}`);
+    if (error) console.log(`[OG-EMBED] Error details:`, error);
+    return new Response("Profile not found", {
       status: 404,
-      headers: corsHeaders 
+      headers: corsHeaders
     });
   }
 
-  console.log(`[OG-EMBED] Found profile: ${profile.username} (uid: ${profile.uid_number})`);
+  console.log(`[OG-EMBED] ✅ Found profile: ${profile.username} (uid: ${profile.uid_number}) via ${searchMethod}`);
 
   // Build OG data with fallbacks
   const ogTitle = profile.og_title || `@${profile.username} | uservault.cc`;
@@ -84,13 +100,10 @@ Deno.serve(async (req) => {
   
   const ogIcon = profile.og_icon_url || "https://storage.googleapis.com/gpt-engineer-file-uploads/N7OIoQRjNPSXaLFdJjQDPkdaXHs1/uploads/1769473434323-UserVault%204%20(1).png";
   const defaultProfileUrl = `https://uservault.cc/${profile.username}`;
+  const boltRedirectUrl = `https://h7sd-what-a-match-im-n7az.bolt.host/${profile.username}`;
 
-  // Discord can de-dupe/cache based on og:url. When users paste cache-busters like ?v=123
-  // we need og:url to reflect the original request URL. The Cloudflare Worker should pass
-  // the original URL as `src`.
-  // Use original request URL (incl. cache-busters like ?v=123) to avoid Discord caching old cards.
   const resolvedOgUrl = resolveOgUrl(src) || defaultProfileUrl;
-  const resolvedRedirectUrl = resolveRedirectUrl(src, profile.username) || defaultProfileUrl;
+  const resolvedRedirectUrl = resolveRedirectUrl(src, profile.username) || boltRedirectUrl;
   const updatedTime = new Date().toISOString();
 
   const html = `<!DOCTYPE html>
@@ -103,7 +116,7 @@ Deno.serve(async (req) => {
   <title>${escapeHtml(ogTitle)}</title>
   <meta name="title" content="${escapeHtml(ogTitle)}">
   <meta name="description" content="${escapeHtml(ogDescription)}">
-  <meta name="theme-color" content="#8B5CF6">
+  <meta name="theme-color" content="${escapeHtml(profile.og_embed_color || '#8B5CF6')}">
   
   <!-- Open Graph / Discord -->
   <meta property="og:type" content="website">
@@ -176,17 +189,13 @@ function resolveRedirectUrl(src: string | null, username: string): string | null
 }
 
 function isAllowedHost(host: string): boolean {
-  // Primary domains
   if (host === 'uservault.cc' || host === 'www.uservault.cc') return true;
-
-  // Lovable hosted origins (preview + published)
-  // Examples:
-  // - what-a-match.lovable.app
-  // - id-preview--....lovable.app
-  // - ....lovableproject.com
   if (host.endsWith('.lovable.app')) return true;
   if (host.endsWith('.lovableproject.com')) return true;
-
+  if (host.endsWith('.bolt.host')) return true;
+  if (host.endsWith('.bolt.new')) return true;
+  if (host.endsWith('.webcontainer.io')) return true;
+  if (host === 'localhost' || host.startsWith('localhost:')) return true;
   return false;
 }
 

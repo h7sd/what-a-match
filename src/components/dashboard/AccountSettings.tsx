@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  User, Mail, Shield, Key, LogOut, Loader2, Eye, EyeOff, 
+import {
+  User, Mail, Shield, Key, LogOut, Loader2, Eye, EyeOff,
   Languages, MessageSquare, RefreshCw, Lock, ShieldCheck, ShieldOff,
   Trash2, AlertTriangle, Hash
 } from 'lucide-react';
@@ -129,6 +129,7 @@ export function AccountSettings({ profile, onUpdateUsername, onSaveDisplayName, 
   const [discordIntegration, setDiscordIntegration] = useState<any>(null);
   const { initiateDiscordLink, loading: discordLoading } = useDiscordOAuth();
 
+
   // Email Change State
   const [showEmailChangeDialog, setShowEmailChangeDialog] = useState(false);
   const [newEmail, setNewEmail] = useState('');
@@ -151,6 +152,7 @@ export function AccountSettings({ profile, onUpdateUsername, onSaveDisplayName, 
   useEffect(() => {
     setAliasUsername(profile?.alias_username || '');
   }, [profile?.alias_username]);
+
 
   // Live alias availability check (debounced) - for redirect alias
   useEffect(() => {
@@ -909,7 +911,7 @@ export function AccountSettings({ profile, onUpdateUsername, onSaveDisplayName, 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {isMfaEnabled ? (
-                <ShieldCheck className="w-5 h-5 text-green-500" />
+                <ShieldCheck className="w-5 h-5 text-red-500" />
               ) : (
                 <Shield className="w-5 h-5 text-muted-foreground" />
               )}

@@ -91,7 +91,7 @@ export function AdminPurchaseHistory() {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-card/50 rounded-lg p-3 border border-border/50">
             <p className="text-xs text-muted-foreground">Total Revenue</p>
-            <p className="text-lg font-bold text-green-500">€{totalRevenue.toFixed(2)}</p>
+            <p className="text-lg font-bold text-red-500">€{totalRevenue.toFixed(2)}</p>
           </div>
           <div className="bg-card/50 rounded-lg p-3 border border-border/50">
             <p className="text-xs text-muted-foreground">Total Orders</p>
@@ -137,7 +137,7 @@ export function AdminPurchaseHistory() {
                     <p className="text-xs text-muted-foreground truncate">{maskEmail(purchase.email)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-green-500">€{Number(purchase.amount).toFixed(2)}</p>
+                    <p className="font-bold text-red-500">€{Number(purchase.amount).toFixed(2)}</p>
                     <p className="text-[10px] text-muted-foreground">{purchase.currency}</p>
                   </div>
                 </div>

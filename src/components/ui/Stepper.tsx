@@ -91,8 +91,12 @@ export default function Stepper({
   };
 
   const handleComplete = () => {
-    setDirection(1);
-    updateStep(totalSteps + 1);
+    if (onExternalNext) {
+      onExternalNext();
+    } else {
+      setDirection(1);
+      updateStep(totalSteps + 1);
+    }
   };
 
   // Update direction when external step changes
@@ -189,7 +193,7 @@ function StepContentWrapper({ isCompleted, currentStep, direction, children, cla
   return (
     <motion.div
       className={className}
-      style={{ position: 'relative', overflow: 'hidden' }}
+      style={{ position: 'relative', overflow: 'visible' }}
       animate={{ height: isCompleted ? 0 : parentHeight }}
       transition={{ type: 'spring', duration: 0.4 }}
     >
@@ -228,7 +232,7 @@ function SlideTransition({ children, direction, onHeightReady }: SlideTransition
       animate="center"
       exit="exit"
       transition={{ duration: 0.4 }}
-      style={{ position: 'absolute', left: 0, right: 0, top: 0 }}
+      style={{ position: 'absolute', left: 0, right: 0, top: 0, zIndex: 0 }}
     >
       {children}
     </motion.div>

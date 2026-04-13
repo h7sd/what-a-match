@@ -48,6 +48,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ProfileCard } from '@/components/profile/ProfileCard';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import type { Profile, SocialLink as SocialLinkType } from '@/hooks/useProfile';
+import { AdminDiscordSender } from './AdminDiscordSender';
 
 interface UserProfile {
   id: string;
@@ -144,7 +145,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [previewExpanded, setPreviewExpanded] = useState(true);
-  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'badges' | 'links' | 'visibility'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'badges' | 'links' | 'visibility' | 'admin'>('profile');
   
   // Complete profile form state
   const [formData, setFormData] = useState({
@@ -527,7 +528,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
                 <div className="flex gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-destructive/80" />
                   <div className="w-3 h-3 rounded-full bg-warning/80" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
                 </div>
                 <div className="flex-1 flex justify-center">
                   <div className="bg-muted/50 rounded-md px-4 py-1 text-xs text-muted-foreground">
@@ -629,7 +630,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
       {/* Tabs */}
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-5 mx-4 mt-4 flex-shrink-0" style={{ width: 'calc(100% - 2rem)' }}>
+          <TabsList className="grid w-full grid-cols-6 mx-4 mt-4 flex-shrink-0" style={{ width: 'calc(100% - 2rem)' }}>
             <TabsTrigger value="profile" className="text-xs px-1 min-h-[36px]">
               <User className="w-3 h-3 mr-1 hidden sm:inline" />Profile
             </TabsTrigger>
@@ -644,6 +645,9 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
             </TabsTrigger>
             <TabsTrigger value="visibility" className="text-xs px-1 min-h-[36px]">
               <Eye className="w-3 h-3 mr-1 hidden sm:inline" />Show
+            </TabsTrigger>
+            <TabsTrigger value="admin" className="text-xs px-1 min-h-[36px]">
+              <Settings className="w-3 h-3 mr-1 hidden sm:inline" />Admin
             </TabsTrigger>
           </TabsList>
 
@@ -949,7 +953,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
                           ub.is_locked 
                             ? 'border-destructive/30 bg-destructive/5' 
                             : ub.is_enabled 
-                              ? 'border-green-500/30 bg-green-500/5'
+                              ? 'border-red-500/30 bg-red-500/5'
                               : 'border-border bg-secondary/10'
                         }`}
                       >
@@ -959,7 +963,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
                               className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
                               style={{ backgroundColor: `${ub.badge.color || '#8B5CF6'}20` }}
                             >
-                              {ub.badge.icon_url ? (
+                              {ub.badge.icon_url && ub.badge.icon_url.trim() !== '' ? (
                                 <img src={ub.badge.icon_url} alt="" className="w-6 h-6" />
                               ) : (
                                 <Icon className="w-5 h-5" style={{ color: ub.badge.color || '#8B5CF6' }} />
@@ -1014,7 +1018,7 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
                   {socialLinks.map((link) => (
                     <div
                       key={link.id}
-                      className={`p-4 rounded-lg border ${link.is_visible ? 'border-green-500/30 bg-green-500/5' : 'border-border'}`}
+                      className={`p-4 rounded-lg border ${link.is_visible ? 'border-red-500/30 bg-red-500/5' : 'border-border'}`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
@@ -1175,6 +1179,11 @@ export function AdminUserDashboard({ user, open, onClose }: AdminUserDashboardPr
                   )}
                 </div>
               </div>
+            </TabsContent>
+
+            {/* Admin Tools Tab */}
+            <TabsContent value="admin" className="mt-4">
+              <AdminDiscordSender />
             </TabsContent>
           </ScrollArea>
         </Tabs>

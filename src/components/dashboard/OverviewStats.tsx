@@ -1,13 +1,18 @@
-import { Eye, Hash, ThumbsUp, ThumbsDown, MessageCircle, TrendingUp } from 'lucide-react';
+// FIXED: Added Crown icon for premium button
+import { Eye, Hash, ThumbsUp, ThumbsDown, MessageCircle, TrendingUp, Crown, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
 
+// FIXED: Added hasPremium prop to check premium status
 interface OverviewStatsProps {
   profileViews: number;
   uidNumber: number;
   username: string;
   profileId?: string;
+  hasPremium?: boolean;
 }
 
 function AnimatedNumber({ value, duration = 1.5 }: { value: number; duration?: number }) {
@@ -43,7 +48,7 @@ interface StatCardProps {
   label: string;
   index: number;
   isNumber?: boolean;
-  color?: 'primary' | 'blue' | 'amber' | 'emerald' | 'rose';
+  color?: 'primary' | 'blue' | 'amber' | 'red' | 'rose';
 }
 
 function StatCard({
@@ -56,16 +61,16 @@ function StatCard({
 }: StatCardProps) {
   const colorStyles = {
     primary: {
-      iconBg: 'from-[#00B4D8]/20 via-[#00D9A5]/15 to-[#0077B6]/20',
-      iconBorder: 'border-[#00D9A5]/30 group-hover:border-[#00D9A5]/50',
-      iconColor: 'text-[#00D9A5]',
-      glow: 'shadow-[#00D9A5]/20',
+      iconBg: 'from-red-600/20 via-red-800/15 to-red-900/20',
+      iconBorder: 'border-red-800/30 group-hover:border-red-800/50',
+      iconColor: 'text-red-800',
+      glow: 'shadow-red-800/20',
     },
     blue: {
-      iconBg: 'from-[#00B4D8]/20 to-[#0077B6]/20',
-      iconBorder: 'border-[#00B4D8]/30 group-hover:border-[#00B4D8]/50',
-      iconColor: 'text-[#00B4D8]',
-      glow: 'shadow-[#00B4D8]/20',
+      iconBg: 'from-red-600/20 to-red-900/20',
+      iconBorder: 'border-red-600/30 group-hover:border-red-600/50',
+      iconColor: 'text-red-600',
+      glow: 'shadow-red-600/20',
     },
     amber: {
       iconBg: 'from-amber-500/20 to-amber-500/5',
@@ -73,11 +78,11 @@ function StatCard({
       iconColor: 'text-amber-400',
       glow: 'shadow-amber-500/20',
     },
-    emerald: {
-      iconBg: 'from-[#00D9A5]/20 to-[#00D9A5]/5',
-      iconBorder: 'border-[#00D9A5]/30 group-hover:border-[#00D9A5]/50',
-      iconColor: 'text-[#00D9A5]',
-      glow: 'shadow-[#00D9A5]/20',
+    red: {
+      iconBg: 'from-red-500/20 to-red-500/5',
+      iconBorder: 'border-red-500/30 group-hover:border-red-500/50',
+      iconColor: 'text-red-400',
+      glow: 'shadow-red-500/20',
     },
     rose: {
       iconBg: 'from-rose-500/20 to-rose-500/5',
@@ -124,7 +129,8 @@ function StatCard({
   );
 }
 
-export function OverviewStats({ profileViews, uidNumber, username, profileId }: OverviewStatsProps) {
+// FIXED: Added hasPremium parameter
+export function OverviewStats({ profileViews, uidNumber, username, profileId, hasPremium = false }: OverviewStatsProps) {
   const [likesCount, setLikesCount] = useState(0);
   const [dislikesCount, setDislikesCount] = useState(0);
   const [commentsCount, setCommentsCount] = useState(0);
@@ -174,50 +180,76 @@ export function OverviewStats({ profileViews, uidNumber, username, profileId }: 
   }, [profileId]);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-      <StatCard
-        icon={Eye}
-        value={profileViews}
-        label="Views"
-        index={0}
-        color="primary"
-      />
-      <StatCard
-        icon={Hash}
-        value={`#${uidNumber}`}
-        label="User ID"
-        index={1}
-        isNumber={false}
-        color="blue"
-      />
-      <StatCard
-        icon={ThumbsUp}
-        value={likesCount}
-        label="Likes"
-        index={2}
-        color="emerald"
-      />
-      <StatCard
-        icon={ThumbsDown}
-        value={dislikesCount}
-        label="Dislikes"
-        index={3}
-        color="rose"
-      />
-      <StatCard
-        icon={MessageCircle}
-        value={commentsCount}
-        label="Comments"
-        index={4}
-        color="amber"
-      />
-      <StatCard
-        icon={TrendingUp}
-        value={linkClicks}
-        label="Clicks"
-        index={5}
-        color="blue"
-      />
+    <div className="space-y-4">
+      {/* FIXED: Added Premium Upgrade Button if user doesn't have premium */}
+      {!hasPremium && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Link to="/premium">
+            <Button
+              className="w-full h-auto p-4 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-600 hover:via-amber-500 hover:to-yellow-500 text-black font-bold rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 group"
+            >
+              <div className="flex items-center justify-center gap-3 w-full">
+                <Crown className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                <div className="flex flex-col items-start">
+                  <span className="text-lg">Upgrade to Premium</span>
+                  <span className="text-xs font-normal opacity-80">Unlock exclusive features & customization</span>
+                </div>
+                <Sparkles className="w-5 h-5 ml-auto group-hover:rotate-12 transition-transform" />
+              </div>
+            </Button>
+          </Link>
+        </motion.div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <StatCard
+          icon={Eye}
+          value={profileViews}
+          label="Views"
+          index={0}
+          color="primary"
+        />
+        <StatCard
+          icon={Hash}
+          value={`#${uidNumber}`}
+          label="User ID"
+          index={1}
+          isNumber={false}
+          color="blue"
+        />
+        <StatCard
+          icon={ThumbsUp}
+          value={likesCount}
+          label="Likes"
+          index={2}
+          color="red"
+        />
+        <StatCard
+          icon={ThumbsDown}
+          value={dislikesCount}
+          label="Dislikes"
+          index={3}
+          color="rose"
+        />
+        <StatCard
+          icon={MessageCircle}
+          value={commentsCount}
+          label="Comments"
+          index={4}
+          color="amber"
+        />
+        <StatCard
+          icon={TrendingUp}
+          value={linkClicks}
+          label="Clicks"
+          index={5}
+          color="blue"
+        />
+      </div>
     </div>
   );
 }

@@ -88,13 +88,16 @@ export function DiscordEmbedSettings({
   const animationRef = useRef<NodeJS.Timeout | null>(null);
 
   const displayTitle = ogTitle || `@${username} | uservault.cc`;
-  const shareUrl = `https://uservault.cc/${username}`;
+  const shareUrl = `https://share.uservault.cc/${username}`;
 
   const copyShareLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      toast({ title: 'Share link copied!', description: 'Use this link when sharing on Discord for custom embeds.' });
+      toast({
+        title: 'Share link copied!',
+        description: 'Post this URL on Discord to show your custom embed.'
+      });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast({ title: 'Failed to copy', variant: 'destructive' });
@@ -385,7 +388,7 @@ export function DiscordEmbedSettings({
                 >
                   {copied ? (
                     <>
-                      <Check className="w-4 h-4 mr-1 text-green-500" />
+                      <Check className="w-4 h-4 mr-1 text-red-500" />
                       Kopiert!
                     </>
                   ) : (

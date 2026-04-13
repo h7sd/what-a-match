@@ -2,6 +2,7 @@ import { useState, useRef, lazy, Suspense } from 'react';
 import { ChevronLeft, ChevronRight, Award, HelpCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getBadgeImage } from '@/lib/badges';
 
 // Lazy load Aurora for performance
 const Aurora = lazy(() => import('@/components/ui/Aurora'));
@@ -55,7 +56,7 @@ export function BadgesCarousel({ badges, totalBadges = 10 }: BadgesCarouselProps
       <Suspense fallback={null}>
         <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-500">
           <Aurora
-            colorStops={['#00B4D8', '#00D9A5', '#0077B6']}
+            colorStops={['#dc2626', '#991b1b', '#7f1d1d']}
             amplitude={0.8}
             blend={0.6}
             speed={0.5}
@@ -65,16 +66,16 @@ export function BadgesCarousel({ badges, totalBadges = 10 }: BadgesCarouselProps
 
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00B4D8]/20 via-[#00D9A5]/15 to-[#0077B6]/20 flex items-center justify-center border border-[#00D9A5]/20">
-            <Award className="w-5 h-5 text-[#00D9A5]" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600/20 via-red-800/15 to-red-900/20 flex items-center justify-center border border-red-800/20">
+            <Award className="w-5 h-5 text-red-800" />
           </div>
           <div className="flex-1">
             <h3 className="font-semibold text-white text-sm">Limited Badges</h3>
             <p className="text-xs text-white/40">Collect rare achievements</p>
           </div>
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#00D9A5]/10 border border-[#00D9A5]/20">
-            <Sparkles className="w-3 h-3 text-[#00D9A5]" />
-            <span className="text-xs font-medium text-[#00D9A5]">{badges.length}/{totalBadges}</span>
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-800/10 border border-red-800/20">
+            <Sparkles className="w-3 h-3 text-red-800" />
+            <span className="text-xs font-medium text-red-800">{badges.length}/{totalBadges}</span>
           </div>
         </div>
 
@@ -91,40 +92,45 @@ export function BadgesCarousel({ badges, totalBadges = 10 }: BadgesCarouselProps
 
           <div className="flex-1 flex items-center gap-2 overflow-hidden py-1">
             <AnimatePresence mode="popLayout">
-              {visibleBadges.map((badge, index) => (
-                <motion.div
-                  key={badge.id}
-                  initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: -10 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`
-                    flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium
-                    transition-all duration-200
-                    ${badge.unlocked 
-                      ? 'bg-gradient-to-r from-[#00B4D8]/20 to-[#00D9A5]/10 border border-[#00D9A5]/30 text-white' 
-                      : 'bg-white/[0.03] border border-white/[0.06] text-white/40'
-                    }
-                    ${index === 0 && badge.unlocked ? 'ring-2 ring-[#00D9A5]/50 ring-offset-2 ring-offset-[#0a0a0b]' : ''}
-                  `}
-                >
-                  {badge.unlocked ? (
-                    <>
-                      {badge.icon_url ? (
-                        <img src={badge.icon_url} alt={badge.name} className="w-4 h-4" />
-                      ) : (
-                        <Award className="w-4 h-4 text-[#00D9A5]" />
-                      )}
-                      <span className="whitespace-nowrap">{badge.name}</span>
-                    </>
-                  ) : (
-                    <>
-                      <HelpCircle className="w-4 h-4" />
-                      <span>???</span>
-                    </>
-                  )}
-                </motion.div>
-              ))}
+              {visibleBadges.map((badge, index) => {
+                const customImage = badge.unlocked ? getBadgeImage(badge.name) : null;
+                return (
+                  <motion.div
+                    key={badge.id}
+                    initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`
+                      flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium
+                      transition-all duration-200
+                      ${badge.unlocked
+                        ? 'bg-gradient-to-r from-red-600/20 to-red-800/10 border border-red-800/30 text-white'
+                        : 'bg-white/[0.03] border border-white/[0.06] text-white/40'
+                      }
+                      ${index === 0 && badge.unlocked ? 'ring-2 ring-red-800/50 ring-offset-2 ring-offset-[#0a0a0b]' : ''}
+                    `}
+                  >
+                    {badge.unlocked ? (
+                      <>
+                        {badge.icon_url && badge.icon_url.trim() !== '' ? (
+                          <img src={badge.icon_url} alt={badge.name} className="w-4 h-4 object-contain" loading="lazy" />
+                        ) : customImage ? (
+                          <img src={customImage} alt={badge.name} className="w-4 h-4 object-contain" loading="lazy" />
+                        ) : (
+                          <Award className="w-4 h-4 text-red-800" />
+                        )}
+                        <span className="whitespace-nowrap">{badge.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <HelpCircle className="w-4 h-4" />
+                        <span>???</span>
+                      </>
+                    )}
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
 
@@ -143,7 +149,7 @@ export function BadgesCarousel({ badges, totalBadges = 10 }: BadgesCarouselProps
         <div className="space-y-2">
           <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
             <motion.div 
-              className="h-full bg-gradient-to-r from-[#00B4D8] via-[#00D9A5] to-[#0077B6] rounded-full"
+              className="h-full bg-gradient-to-r from-red-600 via-red-800 to-red-900 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progressPercent}%` }}
               transition={{ duration: 1, ease: 'easeOut' }}

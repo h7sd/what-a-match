@@ -1,12 +1,54 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Play } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { getHeroAvatars, getPublicStats } from '@/lib/api';
 import { BlurText } from './BlurText';
 import { GradientText } from './GradientText';
+
+function HeroAvatarRow({ avatars }: { avatars: string[] }) {
+  const [status, setStatus] = useState<Record<number, 'loaded' | 'error'>>({});
+
+  const visibleIndices = avatars
+    .map((_, i) => i)
+    .filter(i => status[i] === 'loaded')
+    .slice(0, 5);
+
+  let shownCount = 0;
+
+  return (
+    <div className="flex -space-x-3">
+      {avatars.map((url, i) => {
+        const isVisible = status[i] === 'loaded' && shownCount < 5;
+        if (isVisible) shownCount++;
+        return (
+          <img
+            key={i}
+            src={url}
+            alt=""
+            className="w-10 h-10 rounded-full border-2 border-background object-cover bg-muted"
+            style={{ display: isVisible ? 'block' : 'none' }}
+            referrerPolicy="no-referrer"
+            onLoad={() => setStatus(prev => ({ ...prev, [i]: 'loaded' }))}
+            onError={() => setStatus(prev => ({ ...prev, [i]: 'error' }))}
+          />
+        );
+      })}
+      {visibleIndices.length === 0 && avatars.length === 0 && (
+        [...Array(5)].map((_, i) => (
+          <div
+            key={i}
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 border-2 border-background flex items-center justify-center text-xs font-bold text-primary"
+          >
+            {String.fromCharCode(65 + i)}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
 
 export function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -36,7 +78,7 @@ export function HeroSection() {
   const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
 
   return (
-    <section ref={containerRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24">
+    <section ref={containerRef} className="relative min-h-screen flex items-center justify-center pt-24">
       {/* Subtle grid pattern */}
       <div 
         className="absolute inset-0 opacity-[0.03]"
@@ -82,18 +124,18 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="mb-8"
         >
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.1]">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.15]">
             <BlurText
-              text="Your digital"
+              text="uservault"
               className="justify-center text-foreground"
               delay={80}
             />
-            <GradientText 
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight"
-              colors={['#00D9A5', '#00B4D8', '#0077B6', '#00D9A5']}
+            <GradientText
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight"
+              colors={['#991b1b', '#dc2626', '#7f1d1d', '#991b1b']}
               animationSpeed={4}
             >
-              identity.
+              the best Bio-Link site.
             </GradientText>
           </h1>
         </motion.div>
@@ -118,7 +160,7 @@ export function HeroSection() {
         >
           <Link
             to={user ? '/dashboard' : '/auth'}
-            className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-[#00B4D8] via-[#00D9A5] to-[#0077B6] text-white font-semibold text-lg transition-all hover:shadow-2xl hover:shadow-[#00D9A5]/30 overflow-hidden border border-white/20 hover:scale-[1.02] active:scale-[0.98]"
+            className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-[#dc2626] via-[#991b1b] to-[#7f1d1d] text-white font-semibold text-lg transition-all hover:shadow-2xl hover:shadow-[#991b1b]/30 overflow-hidden border border-white/20 hover:scale-[1.02] active:scale-[0.98]"
           >
             <span className="relative z-10">{user ? 'Open Dashboard' : 'Start for Free'}</span>
             <ArrowRight className="w-5 h-5 relative z-10 transition-transform group-hover:translate-x-1" />
@@ -129,9 +171,9 @@ export function HeroSection() {
           
           <Link
             to="/uservault"
-            className="group inline-flex items-center gap-3 px-8 py-4 rounded-xl border border-[#00D9A5]/30 hover:border-[#00D9A5]/60 text-foreground font-semibold text-lg transition-all hover:bg-[#00D9A5]/5 backdrop-blur-sm bg-white/[0.02] hover:scale-[1.02] active:scale-[0.98]"
+            className="group inline-flex items-center gap-3 px-8 py-4 rounded-xl border border-[#991b1b]/30 hover:border-[#991b1b]/60 text-foreground font-semibold text-lg transition-all hover:bg-[#991b1b]/5 backdrop-blur-sm bg-white/[0.02] hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Play className="w-5 h-5 text-[#00D9A5]" />
+            <Play className="w-5 h-5 text-[#991b1b]" />
             <span>View Demo</span>
           </Link>
         </motion.div>
@@ -143,27 +185,7 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.9 }}
           className="mt-16 flex flex-col items-center gap-4"
         >
-          <div className="flex -space-x-3">
-            {(heroAvatars.length > 0 ? heroAvatars.slice(0, 5) : [...Array(5)]).map((avatar, i) => (
-              typeof avatar === 'string' ? (
-                <img
-                  key={i}
-                  src={avatar}
-                  alt=""
-                  className="w-10 h-10 rounded-full border-2 border-background object-cover bg-muted"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div 
-                  key={i} 
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 border-2 border-background flex items-center justify-center text-xs font-bold text-primary"
-                >
-                  {String.fromCharCode(65 + i)}
-                </div>
-              )
-            ))}
-          </div>
+          <HeroAvatarRow avatars={heroAvatars} />
           <p className="text-sm text-muted-foreground">
             <span className="text-foreground font-semibold">
               {userCount !== null ? userCount.toLocaleString('de-DE') : '–'}
@@ -173,8 +195,6 @@ export function HeroSection() {
         </motion.div>
       </motion.div>
 
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none" />
     </section>
   );
 }

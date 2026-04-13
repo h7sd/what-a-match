@@ -13,14 +13,14 @@ interface DiscordPresenceProps {
 }
 
 const statusColors = {
-  online: '#22c55e',
+  online: '#ef4444',
   idle: '#f59e0b',
   dnd: '#ef4444',
   offline: '#6b7280',
 };
 
 const statusDotStyles = {
-  online: 'bg-green-500',
+  online: 'bg-red-500',
   idle: 'bg-yellow-500',
   dnd: 'bg-red-500',
   offline: 'bg-gray-500',

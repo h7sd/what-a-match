@@ -44,7 +44,6 @@ const baseNavItems: { icon: React.ElementType; label: string; tab: TabType }[] =
   { icon: Link2, label: 'Links', tab: 'links' },
   { icon: Award, label: 'Badges', tab: 'badges' },
   { icon: Bell, label: 'Notifications', tab: 'notifications' },
-  { icon: ShoppingBag, label: 'Marketplace', tab: 'marketplace' },
   { icon: Settings, label: 'Settings', tab: 'settings' },
 ];
 
@@ -105,7 +104,7 @@ export function DashboardLayout({
       <div className="p-4 border-b border-white/5 w-full flex justify-center">
         <Link to="/" className="flex items-center justify-center group">
           <div
-            className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-[#00B4D8] to-[#00D9A5] flex items-center justify-center overflow-hidden transition-transform duration-200 hover:scale-105 shadow-lg shadow-[#00B4D8]/20"
+            className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center overflow-hidden transition-transform duration-200 hover:scale-105 shadow-lg shadow-red-600/20"
           >
             <div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"
@@ -135,11 +134,11 @@ export function DashboardLayout({
         <Button
           variant="ghost"
           size="icon"
-          className="w-12 h-12 rounded-xl border border-[#00B4D8]/30 hover:bg-[#00B4D8]/10 hover:border-[#00B4D8]/60 transition-all duration-200"
+          className="w-12 h-12 rounded-xl border border-red-600/30 hover:bg-red-600/10 hover:border-red-600/60 transition-all duration-200"
           asChild
         >
           <Link to={`/${username}`} target="_blank">
-            <Eye className="w-5 h-5 text-[#00B4D8]" />
+            <Eye className="w-5 h-5 text-red-600" />
           </Link>
         </Button>
 
@@ -160,7 +159,7 @@ export function DashboardLayout({
       <div className="p-5 border-b border-white/5">
         <Link to="/" className="flex items-center gap-3 group">
           <div
-            className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-[#00B4D8] to-[#00D9A5] flex items-center justify-center overflow-hidden transition-transform duration-200 hover:scale-105 shadow-lg shadow-[#00B4D8]/20"
+            className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center overflow-hidden transition-transform duration-200 hover:scale-105 shadow-lg shadow-red-600/20"
           >
             <div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"
@@ -197,7 +196,7 @@ export function DashboardLayout({
             >
               <div
                 className={cn(
-                  'absolute inset-0 bg-gradient-to-r from-[#00B4D8]/20 via-[#00D9A5]/10 to-transparent rounded-xl',
+                  'absolute inset-0 bg-gradient-to-r from-red-600/20 via-red-700/10 to-transparent rounded-xl',
                   'transition-opacity duration-200',
                   isActive ? 'opacity-100' : 'opacity-0'
                 )}
@@ -205,7 +204,7 @@ export function DashboardLayout({
 
               <div
                 className={cn(
-                  'absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-7 bg-gradient-to-b from-[#00B4D8] to-[#00D9A5] rounded-r-full',
+                  'absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-7 bg-gradient-to-b from-red-600 to-red-800 rounded-r-full',
                   'transition-all duration-200',
                   isActive ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0'
                 )}
@@ -215,13 +214,13 @@ export function DashboardLayout({
                 className={cn(
                   'relative z-10 w-9 h-9 rounded-lg flex items-center justify-center',
                   'transition-all duration-200',
-                  isActive ? 'bg-[#00B4D8]/20' : 'bg-white/5 group-hover:bg-white/10'
+                  isActive ? 'bg-red-600/20' : 'bg-white/5 group-hover:bg-white/10'
                 )}
               >
                 <Icon
                   className={cn(
                     'w-4 h-4 transition-colors duration-200',
-                    isActive ? 'text-[#00B4D8]' : 'text-white/60 group-hover:text-white/80'
+                    isActive ? 'text-red-600' : 'text-white/60 group-hover:text-white/80'
                   )}
                 />
               </div>
@@ -236,7 +235,7 @@ export function DashboardLayout({
 
               {isActive && !showBadge && (
                 <div className="relative z-10 ml-auto flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#00B4D8] animate-pulse" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
                 </div>
               )}
             </button>
@@ -306,61 +305,22 @@ export function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-[#0a0a0b] flex">
-      {/* Global Aurora Background for all tabs except owner */}
-      {!isOwnerTab && (
-        <Suspense fallback={null}>
-          <div className="fixed inset-0 z-0 opacity-40">
-            <Aurora
-              colorStops={['#00B4D8', '#00D9A5', '#0077B6']}
-              amplitude={1.0}
-              blend={0.5}
-              speed={0.5}
-            />
-          </div>
-        </Suspense>
-      )}
-
-      {/* Owner Terminal Background - optimized for mobile */}
-      {isOwnerTab && !isMobile && (
-        <Suspense fallback={null}>
-          <div className="fixed inset-0 z-0">
-            <FaultyTerminal
-              scale={1.5}
-              gridMul={[2, 1]}
-              digitSize={1.2}
-              timeScale={0.3}
-              pause={false}
-              scanlineIntensity={0.3}
-              glitchAmount={0.8}
-              flickerAmount={0.5}
-              noiseAmp={0.8}
-              chromaticAberration={0}
-              dither={0}
-              curvature={0.05}
-              tint="#00D9A5"
-              mouseReact
-              mouseStrength={0.3}
-              pageLoadAnimation
-              brightness={0.4}
-            />
-          </div>
-        </Suspense>
-      )}
-      
-      {/* Mobile owner background - simple gradient instead of heavy terminal */}
-      {isOwnerTab && isMobile && (
-        <div className="fixed inset-0 z-0 bg-gradient-to-br from-[#0a0a0b] via-[#0d1a15] to-[#0a0a0b]">
-          <div className="absolute inset-0 opacity-30">
-            <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(0deg,transparent_24%,rgba(0,217,165,0.03)_25%,rgba(0,217,165,0.03)_26%,transparent_27%,transparent_74%,rgba(0,217,165,0.03)_75%,rgba(0,217,165,0.03)_76%,transparent_77%)] bg-[length:50px_50px]" />
-            <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(90deg,transparent_24%,rgba(0,217,165,0.03)_25%,rgba(0,217,165,0.03)_26%,transparent_27%,transparent_74%,rgba(0,217,165,0.03)_75%,rgba(0,217,165,0.03)_76%,transparent_77%)] bg-[length:50px_50px]" />
-          </div>
+      {/* Global Aurora Background for all tabs */}
+      <Suspense fallback={null}>
+        <div className="fixed inset-0 z-0 opacity-50">
+          <Aurora
+            colorStops={['#dc2626', '#991b1b', '#7f1d1d']}
+            amplitude={1.2}
+            blend={0.6}
+            speed={0.4}
+          />
         </div>
-      )}
-      
+      </Suspense>
+
       {/* Subtle background gradient overlay */}
       <div className="fixed inset-0 pointer-events-none z-[1]">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#00B4D8]/3 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[#00D9A5]/3 rounded-full blur-[100px]" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-red-800/5 rounded-full blur-[100px]" />
       </div>
 
       {/* Desktop Sidebar */}

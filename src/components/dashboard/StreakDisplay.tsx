@@ -43,7 +43,7 @@ export function StreakDisplay() {
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.5 }}
-              className="absolute top-2 right-2 bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full border border-green-500/30"
+              className="absolute top-2 right-2 bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full border border-red-500/30"
             >
               +1 Day! 🎉
             </motion.div>

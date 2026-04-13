@@ -149,7 +149,7 @@ export function AliasRequestsSection() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-green-500/30 text-green-500 hover:bg-green-500/10"
+                    className="border-red-500/30 text-red-500 hover:bg-red-500/10"
                     onClick={() => handleRespond(request.id, 'approved')}
                     disabled={responding === request.id}
                   >

@@ -11,7 +11,7 @@ interface StatCardProps {
     value: number;
     isPositive: boolean;
   };
-  color?: 'primary' | 'blue' | 'amber' | 'rose' | 'emerald';
+  color?: 'primary' | 'blue' | 'amber' | 'rose' | 'red';
   animateNumber?: boolean;
   showAurora?: boolean;
 }
@@ -56,9 +56,9 @@ export function StatCard({
 }: StatCardProps) {
   const colorStyles = {
     primary: {
-      gradient: 'from-[#00B4D8]/20 via-[#00D9A5]/15 to-[#0077B6]/20',
-      border: 'border-[#00D9A5]/20',
-      text: 'text-[#00D9A5]',
+      gradient: 'from-red-600/20 via-red-800/15 to-red-900/20',
+      border: 'border-red-800/20',
+      text: 'text-red-800',
     },
     blue: {
       gradient: 'from-blue-500/20 to-blue-500/5',
@@ -75,10 +75,10 @@ export function StatCard({
       border: 'border-rose-500/10',
       text: 'text-rose-400',
     },
-    emerald: {
-      gradient: 'from-emerald-500/20 to-emerald-500/5',
-      border: 'border-emerald-500/10',
-      text: 'text-emerald-400',
+    red: {
+      gradient: 'from-red-500/20 to-red-500/5',
+      border: 'border-red-500/10',
+      text: 'text-red-400',
     }
   };
 
@@ -92,7 +92,7 @@ export function StatCard({
     >
       {/* Static gradient background instead of Aurora for performance */}
       {showAurora && (
-        <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-500 bg-gradient-to-br from-[#00B4D8]/30 via-[#00D9A5]/20 to-[#0077B6]/30" />
+        <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-500 bg-gradient-to-br from-red-600/30 via-red-800/20 to-red-900/30" />
       )}
 
       <div className="relative z-10">
@@ -108,8 +108,8 @@ export function StatCard({
           {trend && (
             <div className={cn(
               'px-2.5 py-1 rounded-full text-xs font-medium',
-              trend.isPositive 
-                ? 'bg-emerald-500/10 text-emerald-400' 
+              trend.isPositive
+                ? 'bg-red-500/10 text-red-400'
                 : 'bg-rose-500/10 text-rose-400'
             )}>
               {trend.isPositive ? '+' : ''}{trend.value}%
